@@ -1613,11 +1613,14 @@ document.getElementById('tk-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
+  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목코드,구분,수량,체결가,투자금구분)`); return; }
     const [date, account, code, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
-    const name = lookupKrStock(code) || code;
+    const foundName = lookupKrStock(code);
+    if (!foundName) unmapped++;
+    const name = foundName || '';
     const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
     const qty = parseFloat(qtyRaw);
     const price = parseFloat(priceRaw);
@@ -1634,6 +1637,7 @@ document.getElementById('tk-bulk-save').onclick = async () => {
   await saveTxns();
   document.getElementById('tk-bulk-form').style.display = 'none';
   renderAll();
+  if (unmapped > 0) showToast(`${unmapped}건은 종목명을 자동으로 찾지 못했어요. 목록에서 "수정" 버튼으로 직접 입력해 주세요.`, 'info', 6000);
   if (errors.length > 0) { err.textContent = `${newRecords.length}건 저장됨. 일부 행은 건너뜀:\n` + errors.join('\n'); err.style.display='block'; document.getElementById('tk-bulk-form').style.display='block'; }
 };
 
@@ -1788,11 +1792,14 @@ document.getElementById('dk-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
+  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 5) { errors.push(`${i+1}행: 항목 수가 부족해요 (계좌,종목코드,지급일,주수,배당기준액)`); return; }
     const [account, code, date, sharesRaw, rateRaw] = parts;
-    const name = lookupKrStock(code) || code;
+    const foundName = lookupKrStock(code);
+    if (!foundName) unmapped++;
+    const name = foundName || '';
     const shares = parseFloat(sharesRaw);
     const rate = parseFloat(rateRaw);
     if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
@@ -1806,6 +1813,7 @@ document.getElementById('dk-bulk-save').onclick = async () => {
   await saveDivKr();
   document.getElementById('dk-bulk-form').style.display = 'none';
   renderAll();
+  if (unmapped > 0) showToast(`${unmapped}건은 종목명을 자동으로 찾지 못했어요. 목록에서 "수정" 버튼으로 직접 입력해 주세요.`, 'info', 6000);
   if (errors.length > 0) { err.textContent = `${newRecords.length}건 저장됨. 일부 행은 건너뜀:\n` + errors.join('\n'); err.style.display='block'; document.getElementById('dk-bulk-form').style.display='block'; }
 };
 
@@ -2036,13 +2044,16 @@ document.getElementById('ds-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
+  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (배당락일,지급일,국가,종목코드,배당금(원화),배당금(달러))`); return; }
     const [exDate, payDate, countryRaw, codeRaw, krwRaw, usdRaw] = parts;
     const country = countryRaw === '미국' ? '미국' : '한국';
     const code = codeRaw.toUpperCase();
-    const name = country === '한국' ? (lookupKrStock(code) || code) : code;
+    let name;
+    if (country === '한국') { const found = lookupKrStock(code); if (!found) unmapped++; name = found || ''; }
+    else { name = code; }
     const krwAmount = parseFloat(krwRaw) || 0;
     const usdAmount = parseFloat(usdRaw) || 0;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(payDate)) { errors.push(`${i+1}행: 지급일 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
@@ -2055,6 +2066,7 @@ document.getElementById('ds-bulk-save').onclick = async () => {
   await saveDivStatus();
   document.getElementById('ds-bulk-form').style.display = 'none';
   renderAll();
+  if (unmapped > 0) showToast(`${unmapped}건은 종목명을 자동으로 찾지 못했어요. 목록에서 "수정" 버튼으로 직접 입력해 주세요.`, 'info', 6000);
   if (errors.length > 0) { err.textContent = `${newRecords.length}건 저장됨. 일부 행은 건너뜀:\n` + errors.join('\n'); err.style.display='block'; document.getElementById('ds-bulk-form').style.display='block'; }
 };
 
