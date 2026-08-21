@@ -97,6 +97,11 @@
   .empty .big { font-size: 14px; color: var(--ink-soft); margin-bottom: 4px; }
 
   .actions-cell { text-align: right; white-space: nowrap; }
+  .checkbox-cell { width: 34px; text-align: center; }
+  th.checkbox-cell input, td.checkbox-cell input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
+  button.ghost-btn.danger-btn { color: var(--down); border-color: #f0c7c7; }
+  button.ghost-btn.danger-btn:hover:not(:disabled) { background: var(--down-soft); }
+  button.ghost-btn.danger-btn:disabled { opacity: 0.4; cursor: default; }
   .overflow-x { overflow-x: auto; }
 
   .toast-wrap { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
@@ -224,7 +229,10 @@
   <div class="panel active" id="panel-holdings">
     <div class="toolbar">
       <span class="hint">매매 내역을 종합해 자동으로 계산돼요. 종목을 추가하려면 매매내역 탭에서 거래를 등록하세요.</span>
-      <button class="ghost-btn" id="h-download-btn">다운로드</button>
+      <div class="btn-group">
+        <button class="ghost-btn" id="h-fetch-prices-btn">현재가 자동조회</button>
+        <button class="ghost-btn" id="h-download-btn">다운로드</button>
+      </div>
     </div>
     <div class="asset-trend-row" id="asset-trend-row"></div>
     <div class="div-chart-card" id="div-chart-card" style="display:none;">
@@ -259,6 +267,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="tk-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="tk-download-btn">다운로드</button>
         <button class="ghost-btn" id="tk-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="tk-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>거래 추가</button>
@@ -302,7 +311,7 @@
     <div class="overflow-x">
     <table id="tk-table" style="display:none;">
       <thead><tr>
-        <th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tk-body"></tbody>
     </table>
@@ -314,6 +323,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="tu-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="tu-download-btn">다운로드</button>
         <button class="ghost-btn" id="tu-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="tu-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>거래 추가</button>
@@ -357,7 +367,7 @@
     <div class="overflow-x">
     <table id="tu-table" style="display:none;">
       <thead><tr>
-        <th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tu-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tu-body"></tbody>
     </table>
@@ -369,6 +379,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="dk-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="dk-download-btn">다운로드</button>
         <button class="ghost-btn" id="dk-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="dk-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>배당금 추가</button>
@@ -412,7 +423,7 @@
     <div class="overflow-x">
     <table id="dk-table" style="display:none;">
       <thead><tr>
-        <th>계좌</th><th>종목코드</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="dk-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목코드</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
       </tr></thead>
       <tbody id="dk-body"></tbody>
     </table>
@@ -424,6 +435,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="du-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="du-download-btn">다운로드</button>
         <button class="ghost-btn" id="du-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="du-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>배당금 추가</button>
@@ -467,7 +479,7 @@
     <div class="overflow-x">
     <table id="du-table" style="display:none;">
       <thead><tr>
-        <th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="du-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
       </tr></thead>
       <tbody id="du-body"></tbody>
     </table>
@@ -479,6 +491,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="fx-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="fx-download-btn">다운로드</button>
         <button class="ghost-btn" id="fx-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="fx-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>환전 추가</button>
@@ -523,7 +536,7 @@
     <div class="overflow-x">
     <table id="fx-table" style="display:none;">
       <thead><tr>
-        <th>일자</th><th>계좌</th><th>구분</th><th class="num">환율</th><th class="num">원화</th><th class="num">달러</th><th>자금구분</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="fx-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>구분</th><th class="num">환율</th><th class="num">원화</th><th class="num">달러</th><th>자금구분</th><th></th>
       </tr></thead>
       <tbody id="fx-body"></tbody>
     </table>
@@ -549,6 +562,7 @@
     <div class="toolbar">
       <span></span>
       <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="ds-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="ds-download-btn">다운로드</button>
         <button class="ghost-btn" id="ds-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
         <button class="primary-btn" id="ds-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>배당현황 추가</button>
@@ -592,7 +606,7 @@
     <div class="overflow-x">
     <table id="ds-table" style="display:none;">
       <thead><tr>
-        <th>배당락일</th><th>지급일</th><th>국가</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
       </tr></thead>
       <tbody id="ds-body"></tbody>
     </table>
@@ -606,11 +620,126 @@ let currentPrices = {}; // key: name+"|"+ccy -> price
 let editTkId = null, editTuId = null, editDkId = null, editDuId = null, editFxId = null, editDsId = null;
 let dcYear = new Date().getFullYear();
 
+// ---- Row selection (checkboxes) ----
+const selection = { tk: new Set(), tu: new Set(), dk: new Set(), du: new Set(), fx: new Set(), ds: new Set() };
+const lastVisibleIds = { tk: [], tu: [], dk: [], du: [], fx: [], ds: [] };
+
+function updateSelectionBar(prefix) {
+  const set = selection[prefix];
+  const visible = lastVisibleIds[prefix];
+  const selectAllCb = document.getElementById(prefix + '-select-all');
+  const delBtn = document.getElementById(prefix + '-delete-selected-btn');
+  const selectedVisible = visible.filter(id => set.has(id)).length;
+  if (selectAllCb) {
+    selectAllCb.checked = visible.length > 0 && selectedVisible === visible.length;
+    selectAllCb.indeterminate = selectedVisible > 0 && selectedVisible < visible.length;
+  }
+  if (delBtn) {
+    delBtn.textContent = set.size > 0 ? `선택 삭제 (${set.size})` : '선택 삭제';
+    delBtn.disabled = set.size === 0;
+  }
+}
+
+function checkboxTd(prefix, id) {
+  return `<td class="checkbox-cell"><input type="checkbox" class="row-check" data-id="${id}" ${selection[prefix].has(id) ? 'checked' : ''}></td>`;
+}
+
+function wireRowCheckboxes(prefix, bodyId) {
+  document.getElementById(bodyId).querySelectorAll('.row-check').forEach(cb => {
+    cb.onchange = () => {
+      const id = cb.dataset.id;
+      if (cb.checked) selection[prefix].add(id); else selection[prefix].delete(id);
+      updateSelectionBar(prefix);
+    };
+  });
+  updateSelectionBar(prefix);
+}
+
+function bindSelectAllOnce(prefix) {
+  const cb = document.getElementById(prefix + '-select-all');
+  if (!cb || cb.dataset.bound) return;
+  cb.dataset.bound = '1';
+  cb.onchange = () => {
+    const ids = lastVisibleIds[prefix];
+    if (cb.checked) ids.forEach(id => selection[prefix].add(id));
+    else ids.forEach(id => selection[prefix].delete(id));
+    document.querySelectorAll(`#${prefix}-body .row-check`).forEach(rc => { rc.checked = cb.checked; });
+    updateSelectionBar(prefix);
+  };
+}
+['tk','tu','dk','du','fx','ds'].forEach(bindSelectAllOnce);
+
+document.getElementById('tk-delete-selected-btn').onclick = async () => {
+  const set = selection.tk;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  txns = txns.filter(t => !set.has(t.id));
+  set.clear();
+  await saveTxns();
+  renderAll();
+};
+document.getElementById('tu-delete-selected-btn').onclick = async () => {
+  const set = selection.tu;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  txns = txns.filter(t => !set.has(t.id));
+  set.clear();
+  await saveTxns();
+  renderAll();
+};
+document.getElementById('dk-delete-selected-btn').onclick = async () => {
+  const set = selection.dk;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  divKr = divKr.filter(d => !set.has(d.id));
+  set.clear();
+  await saveDivKr();
+  renderAll();
+};
+document.getElementById('du-delete-selected-btn').onclick = async () => {
+  const set = selection.du;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  divUs = divUs.filter(d => !set.has(d.id));
+  set.clear();
+  await saveDivUs();
+  renderAll();
+};
+document.getElementById('fx-delete-selected-btn').onclick = async () => {
+  const set = selection.fx;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  fx = fx.filter(f => !set.has(f.id));
+  set.clear();
+  await saveFx();
+  renderAll();
+};
+document.getElementById('ds-delete-selected-btn').onclick = async () => {
+  const set = selection.ds;
+  if (set.size === 0) return;
+  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
+  divStatus = divStatus.filter(d => !set.has(d.id));
+  set.clear();
+  await saveDivStatus();
+  renderAll();
+};
+
 document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
 
 function fmtC(n, ccy) {
-  if (ccy === 'USD') return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (ccy === 'USD') return fmtUSD(n);
   return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+function fmtUSD(n) {
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  let s = n.toFixed(5);
+  s = s.replace(/0+$/, '');
+  if (s.endsWith('.')) s += '00';
+  let [ip, dp] = s.split('.');
+  if (!dp) dp = '00';
+  else if (dp.length < 2) dp = dp.padEnd(2, '0');
+  return sign + '$' + Number(ip).toLocaleString('en-US') + '.' + dp;
 }
 function fmtQty(n) { return n.toLocaleString('ko-KR', { maximumFractionDigits: 6 }); }
 function fmtPct(n) { return n.toFixed(2) + '%'; }
@@ -667,6 +796,12 @@ const KR_STOCK_MAP = {
   '099190':'아이센스', '214150':'클래시스', '141080':'리가켐바이오', '328130':'루닛'
 };
 function lookupKrStock(code) { return KR_STOCK_MAP[code.trim()] || null; }
+function lookupKrCodeByName(name) {
+  const entry = Object.entries(KR_STOCK_MAP).find(([, n]) => n === name);
+  if (entry) return entry[0];
+  const divEntry = divKr.find(d => d.name === name && d.code);
+  return divEntry ? divEntry.code : null;
+}
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
@@ -983,6 +1118,57 @@ function renderHoldings(holdings) {
   });
 }
 
+// 종가 자동조회 — stooq.com의 CORS 개방 CSV 엔드포인트를 사용 (키 불필요).
+// 일부 종목(특히 국내 소형주)은 데이터가 없어 실패할 수 있어요 — 이 경우 수동 입력으로 대체하세요.
+async function fetchQuoteClose(symbol) {
+  const url = `https://stooq.com/q/l/?s=${encodeURIComponent(symbol)}&f=sd2t2ohlcv&h&e=csv`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('네트워크 오류');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) throw new Error('데이터 없음');
+  const cols = lines[1].split(',');
+  const close = parseFloat(cols[6]);
+  if (!close || isNaN(close)) throw new Error('종가 없음');
+  return close;
+}
+
+document.getElementById('h-fetch-prices-btn').onclick = async () => {
+  const btn = document.getElementById('h-fetch-prices-btn');
+  const holdings = computeHoldings();
+  if (holdings.length === 0) { showToast('보유 중인 종목이 없어요.', 'info'); return; }
+  btn.disabled = true;
+  btn.textContent = '조회 중...';
+  let successCount = 0, failCount = 0;
+  for (const h of holdings) {
+    try {
+      let symbol;
+      if (h.ccy === 'USD') {
+        symbol = `${h.name}.US`;
+      } else {
+        const code = lookupKrCodeByName(h.name);
+        if (!code) { failCount++; continue; }
+        symbol = `${code}.KR`;
+      }
+      const close = await fetchQuoteClose(symbol);
+      currentPrices[h.name + '|' + h.ccy] = close;
+      successCount++;
+    } catch (e) {
+      failCount++;
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = '현재가 자동조회';
+  if (successCount > 0) { await saveCurrentPrices(); renderAll(); }
+  if (successCount > 0 && failCount === 0) {
+    showToast(`${successCount}개 종목의 현재가를 불러왔어요.`, 'success');
+  } else if (successCount > 0 && failCount > 0) {
+    showToast(`${successCount}개는 성공, ${failCount}개는 실패했어요. 실패한 종목은 표에서 직접 입력해 주세요.`, 'info', 6000);
+  } else {
+    showToast('현재가를 불러오지 못했어요. 표에서 직접 입력해 주세요.', 'error', 6000);
+  }
+};
+
 function buildCountryTrend(country, ccy, holdings) {
   const list = txns.filter(t => t.country === country).sort((a,b) => a.date.localeCompare(b.date));
   if (list.length === 0) return null;
@@ -1131,16 +1317,19 @@ document.getElementById('dc-prev').onclick = () => { dcYear -= 1; renderDivChart
 document.getElementById('dc-next').onclick = () => { dcYear += 1; renderDivChart(); };
 
 function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
+  const prefix = bodyId.split('-')[0];
   const body = document.getElementById(bodyId), empty = document.getElementById(emptyId), table = document.getElementById(tableId);
   body.innerHTML = '';
   const filtered = txns.filter(t => t.country === country).sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
-  if (filtered.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  lastVisibleIds[prefix] = filtered.map(t => t.id);
+  if (filtered.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar(prefix); return; }
   empty.style.display = 'none'; table.style.display = 'table';
   const ccy = country === '미국' ? 'USD' : 'KRW';
   filtered.forEach(t => {
     const amount = t.qty * t.price;
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      ${checkboxTd(prefix, t.id)}
       <td>${t.date}</td>
       <td class="acct-tag">${t.account || '-'}</td>
       <td class="name-cell">${t.name}</td>
@@ -1157,18 +1346,21 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => onEdit(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = () => onDelete(b.dataset.id));
+  wireRowCheckboxes(prefix, bodyId);
 }
 
 function renderDivKr() {
   const body = document.getElementById('dk-body'), empty = document.getElementById('dk-empty'), table = document.getElementById('dk-table');
   body.innerHTML = '';
   const sorted = [...divKr].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
-  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  lastVisibleIds.dk = sorted.map(d => d.id);
+  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('dk'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
   sorted.forEach(d => {
     const total = d.shares * d.rate;
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      ${checkboxTd('dk', d.id)}
       <td class="acct-tag">${d.account || '-'}</td>
       <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
@@ -1184,13 +1376,15 @@ function renderDivKr() {
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDkForm(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divKr = divKr.filter(d=>d.id!==b.dataset.id); await saveDivKr(); renderAll(); });
+  wireRowCheckboxes('dk', 'dk-body');
 }
 
 function renderDivUs() {
   const body = document.getElementById('du-body'), empty = document.getElementById('du-empty'), table = document.getElementById('du-table');
   body.innerHTML = '';
   const sorted = [...divUs].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
-  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  lastVisibleIds.du = sorted.map(d => d.id);
+  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('du'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
   sorted.forEach(d => {
     const pretax = d.shares * d.rate;
@@ -1198,6 +1392,7 @@ function renderDivUs() {
     const krwTotal = posttax * (d.appliedRate || 0);
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      ${checkboxTd('du', d.id)}
       <td class="acct-tag">${d.account || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td>${d.date}</td>
@@ -1215,17 +1410,20 @@ function renderDivUs() {
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDuForm(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divUs = divUs.filter(d=>d.id!==b.dataset.id); await saveDivUs(); renderAll(); });
+  wireRowCheckboxes('du', 'du-body');
 }
 
 function renderFx() {
   const body = document.getElementById('fx-body'), empty = document.getElementById('fx-empty'), table = document.getElementById('fx-table');
   body.innerHTML = '';
   const sorted = [...fx].sort((a,b) => b.date.localeCompare(a.date) || (a.account||'').localeCompare(b.account||'', 'ko'));
-  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  lastVisibleIds.fx = sorted.map(f => f.id);
+  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('fx'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
   sorted.forEach(f => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      ${checkboxTd('fx', f.id)}
       <td>${f.date}</td>
       <td class="acct-tag">${f.account || '-'}</td>
       <td><span class="side-tag ${f.side}">${f.side==='buy'?'매수':'매도'}</span></td>
@@ -1241,6 +1439,7 @@ function renderFx() {
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openFxForm(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = async () => { fx = fx.filter(f=>f.id!==b.dataset.id); await saveFx(); renderAll(); });
+  wireRowCheckboxes('fx', 'fx-body');
 }
 
 // ---- 배당현황 (dividend status) ----
@@ -1285,11 +1484,13 @@ function renderDivStatus() {
   const body = document.getElementById('ds-body'), empty = document.getElementById('ds-empty'), table = document.getElementById('ds-table');
   body.innerHTML = '';
   const sorted = [...divStatus].sort((a,b) => b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'));
-  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
+  lastVisibleIds.ds = sorted.map(d => d.id);
+  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('ds'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
   sorted.forEach(d => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      ${checkboxTd('ds', d.id)}
       <td>${d.exDate || '-'}</td>
       <td>${d.payDate}</td>
       <td><span class="country-tag ${d.country==='미국'?'us':''}">${d.country}</span></td>
@@ -1304,6 +1505,7 @@ function renderDivStatus() {
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDsForm(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divStatus = divStatus.filter(d=>d.id!==b.dataset.id); await saveDivStatus(); renderAll(); });
+  wireRowCheckboxes('ds', 'ds-body');
 }
 
 // ---- Tabs ----
