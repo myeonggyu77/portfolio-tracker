@@ -1483,7 +1483,8 @@ function renderDivStatus() {
   renderDivStatusSummary();
   const body = document.getElementById('ds-body'), empty = document.getElementById('ds-empty'), table = document.getElementById('ds-table');
   body.innerHTML = '';
-  const sorted = [...divStatus].sort((a,b) => b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'));
+  const sortKey = (d) => d.exDate || d.payDate || '';
+  const sorted = [...divStatus].sort((a,b) => sortKey(b).localeCompare(sortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'));
   lastVisibleIds.ds = sorted.map(d => d.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('ds'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -2032,7 +2033,8 @@ document.getElementById('fx-download-btn').onclick = () => {
 };
 
 document.getElementById('ds-download-btn').onclick = () => {
-  const rows = [...divStatus].sort((a,b) => b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
+  const dsSortKey = (d) => d.exDate || d.payDate || '';
+  const rows = [...divStatus].sort((a,b) => dsSortKey(b).localeCompare(dsSortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
     .map(d => [d.exDate || '', d.payDate, d.country, d.name, d.krwAmount || 0, d.usdAmount || 0]);
   downloadCsv(`배당현황_${todayStr()}.csv`, ['배당락일','지급일','국가','종목명','배당금(원화)','배당금(달러)'], rows);
 };
