@@ -2055,8 +2055,8 @@ document.getElementById('ds-bulk-save').onclick = async () => {
 document.getElementById('h-download-btn').onclick = () => {
   const holdings = computeHoldings();
   holdings.sort((a,b) => (b.qty*b.avgCost) - (a.qty*a.avgCost) || a.name.localeCompare(b.name, 'ko'));
-  const rows = holdings.map(h => [h.name, h.country, h.ccy, h.qty, h.avgCost, h.qty*h.avgCost, h.divReceived, h.divYield.toFixed(2)+'%']);
-  downloadCsv(`보유종목_${todayStr()}.csv`, ['종목명','국가','통화','보유수량','평균매입가','매입금액','누적배당수령','누적배당수익률'], rows);
+  const rows = holdings.map(h => [h.code || '', h.name, h.country, h.ccy, h.qty, h.avgCost, h.qty*h.avgCost, h.divReceived, h.divYield.toFixed(2)+'%']);
+  downloadCsv(`보유종목_${todayStr()}.csv`, ['종목코드','종목명','국가','통화','보유수량','평균매입가','매입금액','누적배당수령','누적배당수익률'], rows);
 };
 
 document.getElementById('tk-download-btn').onclick = () => {
