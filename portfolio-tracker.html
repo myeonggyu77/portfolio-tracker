@@ -255,7 +255,7 @@
     <div class="overflow-x">
     <table id="h-table" style="display:none;">
       <thead><tr>
-        <th>종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
+        <th>종목코드</th><th>종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
       </tr></thead>
       <tbody id="h-body"></tbody>
     </table>
@@ -277,7 +277,8 @@
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tk-date" type="date" /></div>
         <div><div class="field-lbl">계좌</div><input id="tk-account" placeholder="예: 국내종합" /></div>
-        <div><div class="field-lbl">종목명</div><input id="tk-name" placeholder="예: 삼성전자" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="tk-code" placeholder="예: 005930" /></div>
+        <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="tk-name" placeholder="예: 삼성전자" /></div>
         <div><div class="field-lbl">구분</div><select id="tk-side"><option value="buy">매수</option><option value="sell">매도</option></select></div>
         <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tk-qty" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">체결가 (원)</div><input id="tk-price" type="number" min="0" step="any" /></div>
@@ -296,8 +297,8 @@
         <button class="ghost-btn" id="tk-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="tk-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목명,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-01-15,국내종합,삼성전자,매수,10,72000,원금투자&#10;투자금구분은 생략하면 원금투자로 저장돼요.</div>
-      <textarea id="tk-bulk-text" placeholder="2026-01-15,국내종합,삼성전자,매수,10,72000,원금투자"></textarea>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,종목명,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-01-15,국내종합,005930,삼성전자,매수,10,72000,원금투자&#10;투자금구분은 생략하면 원금투자로 저장돼요. 종목명을 비워두면 코드로 자동완성을 시도해요.</div>
+      <textarea id="tk-bulk-text" placeholder="2026-01-15,국내종합,005930,삼성전자,매수,10,72000,원금투자"></textarea>
       <div class="form-error" id="tk-bulk-error" style="display:none;"></div>
       <div class="form-actions">
         <button class="ghost-btn" id="tk-bulk-cancel">취소</button>
@@ -311,7 +312,7 @@
     <div class="overflow-x">
     <table id="tk-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목코드</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tk-body"></tbody>
     </table>
@@ -333,7 +334,8 @@
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tu-date" type="date" /></div>
         <div><div class="field-lbl">계좌</div><input id="tu-account" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목명</div><input id="tu-name" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">종목명</div><input id="tu-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">구분</div><select id="tu-side"><option value="buy">매수</option><option value="sell">매도</option></select></div>
         <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tu-qty" type="number" min="0" step="any" placeholder="예: 0.25" /></div>
         <div><div class="field-lbl">체결가 ($)</div><input id="tu-price" type="number" min="0" step="any" /></div>
@@ -352,8 +354,8 @@
         <button class="ghost-btn" id="tu-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="tu-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목명,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-02-03,미국주식,AAPL,매수,2.5,190.32,배당재투자&#10;투자금구분은 생략하면 원금투자로 저장돼요.</div>
-      <textarea id="tu-bulk-text" placeholder="2026-02-03,미국주식,AAPL,매수,2.5,190.32,배당재투자"></textarea>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,종목명,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-02-03,미국주식,AAPL,Apple Inc.,매수,2.5,190.32,배당재투자&#10;투자금구분은 생략하면 원금투자로 저장돼요. 종목명을 비워두면 종목코드가 그대로 들어가요.</div>
+      <textarea id="tu-bulk-text" placeholder="2026-02-03,미국주식,AAPL,Apple Inc.,매수,2.5,190.32,배당재투자"></textarea>
       <div class="form-error" id="tu-bulk-error" style="display:none;"></div>
       <div class="form-actions">
         <button class="ghost-btn" id="tu-bulk-cancel">취소</button>
@@ -367,7 +369,7 @@
     <div class="overflow-x">
     <table id="tu-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="tu-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tu-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목코드</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tu-body"></tbody>
     </table>
@@ -444,7 +446,8 @@
     <div class="form-card" id="du-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">계좌</div><input id="du-account" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목명</div><input id="du-name" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="du-code" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">종목명</div><input id="du-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">지급일</div><input id="du-date" type="date" /></div>
         <div><div class="field-lbl">주수 (소수점 가능)</div><input id="du-shares" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">배당기준액 (주당, $)</div><input id="du-rate" type="number" min="0" step="any" /></div>
@@ -464,8 +467,8 @@
         <button class="ghost-btn" id="du-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="du-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 계좌,종목명,지급일,주수,배당기준액,적용환율&#10;예) 미국주식,AAPL,2026-02-15,10,0.25,1380.5&#10;세전/세후/원화합계는 자동 계산되므로 입력하지 않아요.</div>
-      <textarea id="du-bulk-text" placeholder="미국주식,AAPL,2026-02-15,10,0.25,1380.5"></textarea>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 계좌,종목코드,종목명,지급일,주수,배당기준액,적용환율&#10;예) 미국주식,AAPL,Apple Inc.,2026-02-15,10,0.25,1380.5&#10;세전/세후/원화합계는 자동 계산되므로 입력하지 않아요. 종목명을 비워두면 종목코드가 그대로 들어가요.</div>
+      <textarea id="du-bulk-text" placeholder="미국주식,AAPL,Apple Inc.,2026-02-15,10,0.25,1380.5"></textarea>
       <div class="form-error" id="du-bulk-error" style="display:none;"></div>
       <div class="form-actions">
         <button class="ghost-btn" id="du-bulk-cancel">취소</button>
@@ -479,7 +482,7 @@
     <div class="overflow-x">
     <table id="du-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="du-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="du-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목코드</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
       </tr></thead>
       <tbody id="du-body"></tbody>
     </table>
@@ -549,7 +552,7 @@
     <div class="overflow-x">
     <table id="ds-summary-table" style="display:none;">
       <thead><tr>
-        <th>종목</th><th class="num">배당총액</th><th class="num">평균가</th><th class="num">리턴율</th>
+        <th>종목코드</th><th>종목</th><th class="num">배당총액</th><th class="num">평균가</th><th class="num">리턴율</th>
       </tr></thead>
       <tbody id="ds-summary-body"></tbody>
     </table>
@@ -573,7 +576,8 @@
         <div><div class="field-lbl">배당락일</div><input id="ds-exdate" type="date" /></div>
         <div><div class="field-lbl">지급일</div><input id="ds-paydate" type="date" /></div>
         <div><div class="field-lbl">국가</div><select id="ds-country"><option value="한국">한국</option><option value="미국">미국</option></select></div>
-        <div><div class="field-lbl">종목명</div><input id="ds-name" placeholder="예: 삼성전자, AAPL" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="ds-code" placeholder="예: 005930, AAPL" /></div>
+        <div><div class="field-lbl">종목명 (한국은 코드 입력 시 자동완성)</div><input id="ds-name" placeholder="예: 삼성전자, AAPL" /></div>
         <div><div class="field-lbl">배당금 (원화)</div><input id="ds-krw" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">배당금 (달러)</div><input id="ds-usd" type="number" min="0" step="any" /></div>
       </div>
@@ -591,8 +595,8 @@
         <button class="ghost-btn" id="ds-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="ds-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 배당락일,지급일,국가(한국/미국),종목명,배당금(원화),배당금(달러)&#10;예) 2026-01-18,2026-01-20,한국,삼성전자,3610,0&#10;해당 없는 통화 칸은 0으로 입력하세요.</div>
-      <textarea id="ds-bulk-text" placeholder="2026-01-18,2026-01-20,한국,삼성전자,3610,0&#10;2026-02-13,2026-02-15,미국,AAPL,0,1.25"></textarea>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 배당락일,지급일,국가(한국/미국),종목코드,종목명,배당금(원화),배당금(달러)&#10;예) 2026-01-18,2026-01-20,한국,005930,삼성전자,3610,0&#10;해당 없는 통화 칸은 0으로 입력하세요. 한국 종목은 종목명을 비워두면 코드로 자동완성을 시도해요.</div>
+      <textarea id="ds-bulk-text" placeholder="2026-01-18,2026-01-20,한국,005930,삼성전자,3610,0&#10;2026-02-13,2026-02-15,미국,AAPL,Apple Inc.,0,1.25"></textarea>
       <div class="form-error" id="ds-bulk-error" style="display:none;"></div>
       <div class="form-actions">
         <button class="ghost-btn" id="ds-bulk-cancel">취소</button>
@@ -606,7 +610,7 @@
     <div class="overflow-x">
     <table id="ds-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목코드</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
       </tr></thead>
       <tbody id="ds-body"></tbody>
     </table>
@@ -974,7 +978,9 @@ async function fetchAndRenderData() {
     console.error(e);
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
   }
-  txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; });
+  txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; if (t.code === undefined) { t.code = t.country === '한국' ? (lookupKrCodeByName(t.name) || '') : t.name; } });
+  divUs.forEach(d => { if (d.code === undefined) d.code = d.name; });
+  divStatus.forEach(d => { if (d.code === undefined) d.code = d.country === '한국' ? (lookupKrCodeByName(d.name) || '') : d.name; });
   fx.forEach(f => { if (f.source === undefined) f.source = '원금투자'; });
   renderAll();
 }
@@ -1020,12 +1026,18 @@ async function saveCurrentPrices() { return persist(); }
 async function saveFx() { return persist(); }
 async function saveDivStatus() { return persist(); }
 
+// 종목코드가 있으면 코드를, 없으면(과거 데이터 호환용) 정규화된 종목명을 매칭 키로 사용.
+function itemKey(obj) {
+  const code = (obj.code || '').trim();
+  return code ? code.toUpperCase() : normName(obj.name);
+}
+
 function computeHoldings() {
   const byKey = {};
   const sorted = [...txns].sort((a,b) => a.date.localeCompare(b.date));
   sorted.forEach(t => {
-    const key = t.name + '|' + t.ccy;
-    if (!byKey[key]) byKey[key] = { name: t.name, ccy: t.ccy, country: t.country, qty: 0, avgCost: 0 };
+    const key = itemKey(t) + '|' + t.ccy;
+    if (!byKey[key]) byKey[key] = { name: t.name, code: t.code || '', ccy: t.ccy, country: t.country, qty: 0, avgCost: 0 };
     const pos = byKey[key];
     if (t.side === 'buy') {
       const newQty = pos.qty + t.qty;
@@ -1039,17 +1051,17 @@ function computeHoldings() {
   });
   const divTotals = {};
   divKr.forEach(d => {
-    const key = d.name + '|KRW';
+    const key = itemKey(d) + '|KRW';
     divTotals[key] = (divTotals[key] || 0) + d.shares * d.rate;
   });
   divUs.forEach(d => {
-    const key = d.name + '|USD';
+    const key = itemKey(d) + '|USD';
     divTotals[key] = (divTotals[key] || 0) + d.shares * d.rate * 0.85;
   });
   return Object.values(byKey)
     .filter(p => p.qty > 1e-9)
     .map(p => {
-      const key = p.name + '|' + p.ccy;
+      const key = itemKey(p) + '|' + p.ccy;
       const divReceived = divTotals[key] || 0;
       const costBasis = p.qty * p.avgCost;
       return { ...p, divReceived, divYield: costBasis > 0 ? (divReceived / costBasis) * 100 : 0 };
@@ -1090,12 +1102,13 @@ function renderHoldings(holdings) {
   holdings.sort((a,b) => (b.qty*b.avgCost) - (a.qty*a.avgCost) || a.name.localeCompare(b.name, 'ko'));
   holdings.forEach(h => {
     const amount = h.qty * h.avgCost;
-    const key = h.name + '|' + h.ccy;
+    const key = itemKey(h) + '|' + h.ccy;
     const curPrice = currentPrices[key];
     const marketValue = h.qty * (curPrice !== undefined ? curPrice : h.avgCost);
     const pnl = marketValue - amount;
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td class="code-cell">${h.code || '-'}</td>
       <td class="name-cell">${h.name}<span class="ccy-badge ${h.ccy==='USD'?'usd':''}">${h.ccy}</span><span class="country-tag ${h.country==='미국'?'us':''}">${h.country}</span></td>
       <td class="num">${fmtQty(h.qty)}</td>
       <td class="num">${fmtC(h.avgCost, h.ccy)}</td>
@@ -1143,15 +1156,11 @@ document.getElementById('h-fetch-prices-btn').onclick = async () => {
   for (const h of holdings) {
     try {
       let symbol;
-      if (h.ccy === 'USD') {
-        symbol = `${h.name}.US`;
-      } else {
-        const code = lookupKrCodeByName(h.name);
-        if (!code) { failCount++; continue; }
-        symbol = `${code}.KR`;
-      }
+      const code = (h.code || '').trim() || (h.ccy === 'KRW' ? lookupKrCodeByName(h.name) : h.name);
+      if (!code) { failCount++; continue; }
+      symbol = h.ccy === 'USD' ? `${code}.US` : `${code}.KR`;
       const close = await fetchQuoteClose(symbol);
-      currentPrices[h.name + '|' + h.ccy] = close;
+      currentPrices[itemKey(h) + '|' + h.ccy] = close;
       successCount++;
     } catch (e) {
       failCount++;
@@ -1332,6 +1341,7 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
       ${checkboxTd(prefix, t.id)}
       <td>${t.date}</td>
       <td class="acct-tag">${t.account || '-'}</td>
+      <td class="code-cell">${t.code || '-'}</td>
       <td class="name-cell">${t.name}</td>
       <td><span class="side-tag ${t.side}">${t.side==='buy'?'매수':'매도'}</span></td>
       <td><span class="source-tag ${t.source==='배당재투자'?'reinvest':'principal'}">${t.source || '원금투자'}</span></td>
@@ -1394,6 +1404,7 @@ function renderDivUs() {
     tr.innerHTML = `
       ${checkboxTd('du', d.id)}
       <td class="acct-tag">${d.account || '-'}</td>
+      <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td>${d.date}</td>
       <td class="num">${fmtQty(d.shares)}</td>
@@ -1443,8 +1454,20 @@ function renderFx() {
 }
 
 // ---- 배당현황 (dividend status) ----
+function normName(s) { return (s || '').trim().toUpperCase(); }
+
 function computeAvgBuyPrice(name, country) {
-  const buys = txns.filter(t => t.name === name && t.country === country && t.side === 'buy');
+  const target = normName(name);
+  const targetCountry = (country || '').trim();
+  const buys = txns.filter(t => normName(t.name) === target && (t.country||'').trim() === targetCountry && t.side === 'buy');
+  const totalQty = buys.reduce((s,t) => s + t.qty, 0);
+  const totalAmt = buys.reduce((s,t) => s + t.qty*t.price, 0);
+  return { avgPrice: totalQty > 0 ? totalAmt/totalQty : 0, totalAmt, totalQty };
+}
+
+function computeAvgBuyPriceByKey(key, country) {
+  const targetCountry = (country || '').trim();
+  const buys = txns.filter(t => itemKey(t) === key && (t.country||'').trim() === targetCountry && t.side === 'buy');
   const totalQty = buys.reduce((s,t) => s + t.qty, 0);
   const totalAmt = buys.reduce((s,t) => s + t.qty*t.price, 0);
   return { avgPrice: totalQty > 0 ? totalAmt/totalQty : 0, totalAmt, totalQty };
@@ -1458,8 +1481,9 @@ function renderDivStatusSummary() {
 
   const groups = {};
   divStatus.forEach(d => {
-    const key = d.name + '|' + d.country;
-    if (!groups[key]) groups[key] = { name: d.name, country: d.country, total: 0 };
+    const ikey = itemKey(d);
+    const key = ikey + '|' + d.country;
+    if (!groups[key]) groups[key] = { name: d.name.trim(), code: d.code || '', country: d.country, ikey, total: 0 };
     groups[key].total += d.country === '미국' ? (d.usdAmount || 0) : (d.krwAmount || 0);
   });
 
@@ -1467,10 +1491,11 @@ function renderDivStatusSummary() {
     .sort((a,b) => b.total - a.total || a.name.localeCompare(b.name, 'ko'))
     .forEach(g => {
       const ccy = g.country === '미국' ? 'USD' : 'KRW';
-      const { avgPrice, totalAmt } = computeAvgBuyPrice(g.name, g.country);
+      const { avgPrice, totalAmt } = computeAvgBuyPriceByKey(g.ikey, g.country);
       const returnRate = totalAmt > 0 ? (g.total / totalAmt) * 100 : 0;
       const tr = document.createElement('tr');
       tr.innerHTML = `
+        <td class="code-cell">${g.code || '-'}</td>
         <td class="name-cell">${g.name}<span class="country-tag ${g.country==='미국'?'us':''}">${g.country}</span></td>
         <td class="num">${fmtC(g.total, ccy)}</td>
         <td class="num">${avgPrice > 0 ? fmtC(avgPrice, ccy) : '-'}</td>
@@ -1495,6 +1520,7 @@ function renderDivStatus() {
       <td>${d.exDate || '-'}</td>
       <td>${d.payDate}</td>
       <td><span class="country-tag ${d.country==='미국'?'us':''}">${d.country}</span></td>
+      <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td class="num">${d.krwAmount ? fmtC(d.krwAmount, 'KRW') : '-'}</td>
       <td class="num">${d.usdAmount ? fmtC(d.usdAmount, 'USD') : '-'}</td>
@@ -1533,6 +1559,7 @@ function openTkForm(id) {
     const t = txns.find(x=>x.id===id);
     document.getElementById('tk-date').value = t.date;
     document.getElementById('tk-account').value = t.account || '';
+    document.getElementById('tk-code').value = t.code || '';
     document.getElementById('tk-name').value = t.name;
     document.getElementById('tk-side').value = t.side;
     document.getElementById('tk-qty').value = t.qty;
@@ -1540,7 +1567,7 @@ function openTkForm(id) {
     document.getElementById('tk-source').value = t.source || '원금투자';
   } else {
     editTkId = null;
-    ['tk-account','tk-name','tk-qty','tk-price'].forEach(id => document.getElementById(id).value = '');
+    ['tk-account','tk-code','tk-name','tk-qty','tk-price'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('tk-date').value = new Date().toISOString().slice(0,10);
     document.getElementById('tk-side').value = 'buy';
     document.getElementById('tk-source').value = '원금투자';
@@ -1548,9 +1575,16 @@ function openTkForm(id) {
 }
 document.getElementById('tk-add-btn').onclick = () => openTkForm(null);
 document.getElementById('tk-cancel').onclick = () => document.getElementById('tk-form').style.display = 'none';
+document.getElementById('tk-code').addEventListener('input', () => {
+  const code = document.getElementById('tk-code').value.trim();
+  if (!code) return;
+  const found = lookupKrStock(code);
+  if (found) document.getElementById('tk-name').value = found;
+});
 document.getElementById('tk-save').onclick = async () => {
   const date = document.getElementById('tk-date').value;
   const account = document.getElementById('tk-account').value.trim();
+  const code = document.getElementById('tk-code').value.trim();
   const name = document.getElementById('tk-name').value.trim();
   const side = document.getElementById('tk-side').value;
   const qty = parseFloat(document.getElementById('tk-qty').value);
@@ -1558,11 +1592,12 @@ document.getElementById('tk-save').onclick = async () => {
   const source = document.getElementById('tk-source').value;
   const err = document.getElementById('tk-error');
   if (!date) { err.textContent = '일자를 선택하세요'; err.style.display='block'; return; }
+  if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (!name) { err.textContent = '종목명을 입력하세요'; err.style.display='block'; return; }
   if (isNaN(qty) || qty <= 0) { err.textContent = '수량을 올바르게 입력하세요'; err.style.display='block'; return; }
   if (isNaN(price) || price <= 0) { err.textContent = '체결가를 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (editTkId) { const t = txns.find(x=>x.id===editTkId); t.date=date; t.account=account; t.country='한국'; t.name=name; t.side=side; t.ccy='KRW'; t.qty=qty; t.price=price; t.source=source; }
-  else txns.push({ id: uid(), date, account, country:'한국', name, side, ccy:'KRW', qty, price, source });
+  if (editTkId) { const t = txns.find(x=>x.id===editTkId); t.date=date; t.account=account; t.country='한국'; t.code=code; t.name=name; t.side=side; t.ccy='KRW'; t.qty=qty; t.price=price; t.source=source; }
+  else txns.push({ id: uid(), date, account, country:'한국', code, name, side, ccy:'KRW', qty, price, source });
   await saveTxns();
   document.getElementById('tk-form').style.display = 'none';
   renderAll();
@@ -1580,18 +1615,20 @@ document.getElementById('tk-bulk-save').onclick = async () => {
   const newRecords = [];
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
-    if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목명,구분,수량,체결가,투자금구분)`); return; }
-    const [date, account, name, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
+    if (parts.length < 7) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목코드,종목명,구분,수량,체결가,투자금구분)`); return; }
+    const [date, account, code, nameRaw, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
+    const name = nameRaw || lookupKrStock(code) || '';
     const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
     const qty = parseFloat(qtyRaw);
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
-    if (!name) { errors.push(`${i+1}행: 종목명이 비어있어요`); return; }
+    if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
+    if (!name) { errors.push(`${i+1}행: 종목명이 비어있고 코드로도 찾을 수 없어요`); return; }
     if (!side) { errors.push(`${i+1}행: 구분은 매수 또는 매도만 가능해요`); return; }
     if (isNaN(qty) || qty <= 0) { errors.push(`${i+1}행: 수량이 올바르지 않아요`); return; }
     if (isNaN(price) || price <= 0) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
-    newRecords.push({ id: uid(), date, account, country:'한국', name, side, ccy:'KRW', qty, price, source });
+    newRecords.push({ id: uid(), date, account, country:'한국', code, name, side, ccy:'KRW', qty, price, source });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
   txns.push(...newRecords);
@@ -1611,6 +1648,7 @@ function openTuForm(id) {
     const t = txns.find(x=>x.id===id);
     document.getElementById('tu-date').value = t.date;
     document.getElementById('tu-account').value = t.account || '';
+    document.getElementById('tu-code').value = t.code || '';
     document.getElementById('tu-name').value = t.name;
     document.getElementById('tu-side').value = t.side;
     document.getElementById('tu-qty').value = t.qty;
@@ -1618,7 +1656,7 @@ function openTuForm(id) {
     document.getElementById('tu-source').value = t.source || '원금투자';
   } else {
     editTuId = null;
-    ['tu-account','tu-name','tu-qty','tu-price'].forEach(id => document.getElementById(id).value = '');
+    ['tu-account','tu-code','tu-name','tu-qty','tu-price'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('tu-date').value = new Date().toISOString().slice(0,10);
     document.getElementById('tu-side').value = 'buy';
     document.getElementById('tu-source').value = '원금투자';
@@ -1629,18 +1667,19 @@ document.getElementById('tu-cancel').onclick = () => document.getElementById('tu
 document.getElementById('tu-save').onclick = async () => {
   const date = document.getElementById('tu-date').value;
   const account = document.getElementById('tu-account').value.trim();
-  const name = document.getElementById('tu-name').value.trim();
+  const code = document.getElementById('tu-code').value.trim().toUpperCase();
+  const name = document.getElementById('tu-name').value.trim() || code;
   const side = document.getElementById('tu-side').value;
   const qty = parseFloat(document.getElementById('tu-qty').value);
   const price = parseFloat(document.getElementById('tu-price').value);
   const source = document.getElementById('tu-source').value;
   const err = document.getElementById('tu-error');
   if (!date) { err.textContent = '일자를 선택하세요'; err.style.display='block'; return; }
-  if (!name) { err.textContent = '종목명을 입력하세요'; err.style.display='block'; return; }
+  if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (isNaN(qty) || qty <= 0) { err.textContent = '수량을 올바르게 입력하세요'; err.style.display='block'; return; }
   if (isNaN(price) || price <= 0) { err.textContent = '체결가를 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (editTuId) { const t = txns.find(x=>x.id===editTuId); t.date=date; t.account=account; t.country='미국'; t.name=name; t.side=side; t.ccy='USD'; t.qty=qty; t.price=price; t.source=source; }
-  else txns.push({ id: uid(), date, account, country:'미국', name, side, ccy:'USD', qty, price, source });
+  if (editTuId) { const t = txns.find(x=>x.id===editTuId); t.date=date; t.account=account; t.country='미국'; t.code=code; t.name=name; t.side=side; t.ccy='USD'; t.qty=qty; t.price=price; t.source=source; }
+  else txns.push({ id: uid(), date, account, country:'미국', code, name, side, ccy:'USD', qty, price, source });
   await saveTxns();
   document.getElementById('tu-form').style.display = 'none';
   renderAll();
@@ -1658,18 +1697,20 @@ document.getElementById('tu-bulk-save').onclick = async () => {
   const newRecords = [];
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
-    if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목명,구분,수량,체결가,투자금구분)`); return; }
-    const [date, account, name, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
+    if (parts.length < 7) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목코드,종목명,구분,수량,체결가,투자금구분)`); return; }
+    const [date, account, codeRaw, nameRaw, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
+    const code = codeRaw.toUpperCase();
+    const name = nameRaw || code;
     const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
     const qty = parseFloat(qtyRaw);
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
-    if (!name) { errors.push(`${i+1}행: 종목명이 비어있어요`); return; }
+    if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
     if (!side) { errors.push(`${i+1}행: 구분은 매수 또는 매도만 가능해요`); return; }
     if (isNaN(qty) || qty <= 0) { errors.push(`${i+1}행: 수량이 올바르지 않아요`); return; }
     if (isNaN(price) || price <= 0) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
-    newRecords.push({ id: uid(), date, account, country:'미국', name, side, ccy:'USD', qty, price, source });
+    newRecords.push({ id: uid(), date, account, country:'미국', code, name, side, ccy:'USD', qty, price, source });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
   txns.push(...newRecords);
@@ -1775,6 +1816,7 @@ function openDuForm(id) {
     editDuId = id;
     const d = divUs.find(x=>x.id===id);
     document.getElementById('du-account').value = d.account || '';
+    document.getElementById('du-code').value = d.code || '';
     document.getElementById('du-name').value = d.name;
     document.getElementById('du-date').value = d.date;
     document.getElementById('du-shares').value = d.shares;
@@ -1782,7 +1824,7 @@ function openDuForm(id) {
     document.getElementById('du-applied-rate').value = d.appliedRate || '';
   } else {
     editDuId = null;
-    ['du-account','du-name','du-shares','du-rate','du-applied-rate'].forEach(id => document.getElementById(id).value = '');
+    ['du-account','du-code','du-name','du-shares','du-rate','du-applied-rate'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('du-date').value = new Date().toISOString().slice(0,10);
   }
 }
@@ -1790,19 +1832,20 @@ document.getElementById('du-add-btn').onclick = () => openDuForm(null);
 document.getElementById('du-cancel').onclick = () => document.getElementById('du-form').style.display = 'none';
 document.getElementById('du-save').onclick = async () => {
   const account = document.getElementById('du-account').value.trim();
-  const name = document.getElementById('du-name').value.trim();
+  const code = document.getElementById('du-code').value.trim().toUpperCase();
+  const name = document.getElementById('du-name').value.trim() || code;
   const date = document.getElementById('du-date').value;
   const shares = parseFloat(document.getElementById('du-shares').value);
   const rate = parseFloat(document.getElementById('du-rate').value);
   const appliedRate = parseFloat(document.getElementById('du-applied-rate').value);
   const err = document.getElementById('du-error');
-  if (!name) { err.textContent = '종목명을 입력하세요'; err.style.display='block'; return; }
+  if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (!date) { err.textContent = '지급일을 선택하세요'; err.style.display='block'; return; }
   if (isNaN(shares) || shares <= 0) { err.textContent = '주수를 올바르게 입력하세요'; err.style.display='block'; return; }
   if (isNaN(rate) || rate <= 0) { err.textContent = '배당기준액을 올바르게 입력하세요'; err.style.display='block'; return; }
   if (isNaN(appliedRate) || appliedRate <= 0) { err.textContent = '적용환율을 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (editDuId) { const d = divUs.find(x=>x.id===editDuId); d.account=account; d.name=name; d.date=date; d.shares=shares; d.rate=rate; d.appliedRate=appliedRate; }
-  else divUs.push({ id: uid(), account, name, date, shares, rate, appliedRate });
+  if (editDuId) { const d = divUs.find(x=>x.id===editDuId); d.account=account; d.code=code; d.name=name; d.date=date; d.shares=shares; d.rate=rate; d.appliedRate=appliedRate; }
+  else divUs.push({ id: uid(), account, code, name, date, shares, rate, appliedRate });
   await saveDivUs();
   document.getElementById('du-form').style.display = 'none';
   renderAll();
@@ -1820,17 +1863,19 @@ document.getElementById('du-bulk-save').onclick = async () => {
   const newRecords = [];
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
-    if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (계좌,종목명,지급일,주수,배당기준액,적용환율)`); return; }
-    const [account, name, date, sharesRaw, rateRaw, appliedRaw] = parts;
+    if (parts.length < 7) { errors.push(`${i+1}행: 항목 수가 부족해요 (계좌,종목코드,종목명,지급일,주수,배당기준액,적용환율)`); return; }
+    const [account, codeRaw, nameRaw, date, sharesRaw, rateRaw, appliedRaw] = parts;
+    const code = codeRaw.toUpperCase();
+    const name = nameRaw || code;
     const shares = parseFloat(sharesRaw);
     const rate = parseFloat(rateRaw);
     const appliedRate = parseFloat(appliedRaw);
-    if (!name) { errors.push(`${i+1}행: 종목명이 비어있어요`); return; }
+    if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 지급일 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
     if (isNaN(shares) || shares <= 0) { errors.push(`${i+1}행: 주수가 올바르지 않아요`); return; }
     if (isNaN(rate) || rate <= 0) { errors.push(`${i+1}행: 배당기준액이 올바르지 않아요`); return; }
     if (isNaN(appliedRate) || appliedRate <= 0) { errors.push(`${i+1}행: 적용환율이 올바르지 않아요`); return; }
-    newRecords.push({ id: uid(), account, name, date, shares, rate, appliedRate });
+    newRecords.push({ id: uid(), account, code, name, date, shares, rate, appliedRate });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
   divUs.push(...newRecords);
@@ -1932,31 +1977,41 @@ function openDsForm(id) {
     document.getElementById('ds-exdate').value = d.exDate || '';
     document.getElementById('ds-paydate').value = d.payDate;
     document.getElementById('ds-country').value = d.country;
+    document.getElementById('ds-code').value = d.code || '';
     document.getElementById('ds-name').value = d.name;
     document.getElementById('ds-krw').value = d.krwAmount || '';
     document.getElementById('ds-usd').value = d.usdAmount || '';
   } else {
     editDsId = null;
-    ['ds-exdate','ds-name','ds-krw','ds-usd'].forEach(id => document.getElementById(id).value = '');
+    ['ds-exdate','ds-code','ds-name','ds-krw','ds-usd'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('ds-paydate').value = new Date().toISOString().slice(0,10);
     document.getElementById('ds-country').value = '한국';
   }
 }
 document.getElementById('ds-add-btn').onclick = () => openDsForm(null);
 document.getElementById('ds-cancel').onclick = () => document.getElementById('ds-form').style.display = 'none';
+document.getElementById('ds-code').addEventListener('input', () => {
+  if (document.getElementById('ds-country').value !== '한국') return;
+  const code = document.getElementById('ds-code').value.trim();
+  if (!code) return;
+  const found = lookupKrStock(code);
+  if (found) document.getElementById('ds-name').value = found;
+});
 document.getElementById('ds-save').onclick = async () => {
   const exDate = document.getElementById('ds-exdate').value;
   const payDate = document.getElementById('ds-paydate').value;
   const country = document.getElementById('ds-country').value;
-  const name = document.getElementById('ds-name').value.trim();
+  const code = document.getElementById('ds-code').value.trim().toUpperCase();
+  const name = document.getElementById('ds-name').value.trim() || code;
   const krwAmount = parseFloat(document.getElementById('ds-krw').value) || 0;
   const usdAmount = parseFloat(document.getElementById('ds-usd').value) || 0;
   const err = document.getElementById('ds-error');
   if (!payDate) { err.textContent = '지급일을 선택하세요'; err.style.display='block'; return; }
+  if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (!name) { err.textContent = '종목명을 입력하세요'; err.style.display='block'; return; }
   if (krwAmount <= 0 && usdAmount <= 0) { err.textContent = '배당금(원화 또는 달러) 중 하나는 입력하세요'; err.style.display='block'; return; }
-  if (editDsId) { const d = divStatus.find(x=>x.id===editDsId); d.exDate=exDate; d.payDate=payDate; d.country=country; d.name=name; d.krwAmount=krwAmount; d.usdAmount=usdAmount; }
-  else divStatus.push({ id: uid(), exDate, payDate, country, name, krwAmount, usdAmount });
+  if (editDsId) { const d = divStatus.find(x=>x.id===editDsId); d.exDate=exDate; d.payDate=payDate; d.country=country; d.code=code; d.name=name; d.krwAmount=krwAmount; d.usdAmount=usdAmount; }
+  else divStatus.push({ id: uid(), exDate, payDate, country, code, name, krwAmount, usdAmount });
   await saveDivStatus();
   document.getElementById('ds-form').style.display = 'none';
   renderAll();
@@ -1975,15 +2030,18 @@ document.getElementById('ds-bulk-save').onclick = async () => {
   const newRecords = [];
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
-    if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (배당락일,지급일,국가,종목명,배당금(원화),배당금(달러))`); return; }
-    const [exDate, payDate, countryRaw, name, krwRaw, usdRaw] = parts;
+    if (parts.length < 7) { errors.push(`${i+1}행: 항목 수가 부족해요 (배당락일,지급일,국가,종목코드,종목명,배당금(원화),배당금(달러))`); return; }
+    const [exDate, payDate, countryRaw, codeRaw, nameRaw, krwRaw, usdRaw] = parts;
     const country = countryRaw === '미국' ? '미국' : '한국';
+    const code = codeRaw.toUpperCase();
+    const name = nameRaw || (country === '한국' ? (lookupKrStock(code) || '') : code);
     const krwAmount = parseFloat(krwRaw) || 0;
     const usdAmount = parseFloat(usdRaw) || 0;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(payDate)) { errors.push(`${i+1}행: 지급일 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
-    if (!name) { errors.push(`${i+1}행: 종목명이 비어있어요`); return; }
+    if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
+    if (!name) { errors.push(`${i+1}행: 종목명이 비어있고 코드로도 찾을 수 없어요`); return; }
     if (krwAmount <= 0 && usdAmount <= 0) { errors.push(`${i+1}행: 배당금(원화 또는 달러) 중 하나는 입력하세요`); return; }
-    newRecords.push({ id: uid(), exDate, payDate, country, name, krwAmount, usdAmount });
+    newRecords.push({ id: uid(), exDate, payDate, country, code, name, krwAmount, usdAmount });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
   divStatus.push(...newRecords);
@@ -2003,14 +2061,14 @@ document.getElementById('h-download-btn').onclick = () => {
 
 document.getElementById('tk-download-btn').onclick = () => {
   const rows = txns.filter(t=>t.country==='한국').sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
-    .map(t => [t.date, t.account, t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
-  downloadCsv(`한국매매내역_${todayStr()}.csv`, ['일자','계좌','종목명','구분','수량','체결가','거래금액','투자금구분'], rows);
+    .map(t => [t.date, t.account, t.code || '', t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
+  downloadCsv(`한국매매내역_${todayStr()}.csv`, ['일자','계좌','종목코드','종목명','구분','수량','체결가','거래금액','투자금구분'], rows);
 };
 
 document.getElementById('tu-download-btn').onclick = () => {
   const rows = txns.filter(t=>t.country==='미국').sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
-    .map(t => [t.date, t.account, t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
-  downloadCsv(`미국매매내역_${todayStr()}.csv`, ['일자','계좌','종목명','구분','수량','체결가($)','거래금액($)','투자금구분'], rows);
+    .map(t => [t.date, t.account, t.code || '', t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
+  downloadCsv(`미국매매내역_${todayStr()}.csv`, ['일자','계좌','종목코드','종목명','구분','수량','체결가($)','거래금액($)','투자금구분'], rows);
 };
 
 document.getElementById('dk-download-btn').onclick = () => {
@@ -2022,8 +2080,8 @@ document.getElementById('dk-download-btn').onclick = () => {
 document.getElementById('du-download-btn').onclick = () => {
   const rows = [...divUs].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
     .map(d => { const pretax = d.shares*d.rate; const posttax = pretax*0.85; const krw = posttax*(d.appliedRate||0);
-      return [d.account, d.name, d.date, d.shares, d.rate, pretax.toFixed(2), posttax.toFixed(2), d.appliedRate||0, krw.toFixed(0)]; });
-  downloadCsv(`미국배당금_${todayStr()}.csv`, ['계좌','종목명','지급일','주수','배당기준액($)','세전합계($)','세후합계($)','적용환율','원화합계'], rows);
+      return [d.account, d.code || '', d.name, d.date, d.shares, d.rate, pretax.toFixed(2), posttax.toFixed(2), d.appliedRate||0, krw.toFixed(0)]; });
+  downloadCsv(`미국배당금_${todayStr()}.csv`, ['계좌','종목코드','종목명','지급일','주수','배당기준액($)','세전합계($)','세후합계($)','적용환율','원화합계'], rows);
 };
 
 document.getElementById('fx-download-btn').onclick = () => {
@@ -2035,8 +2093,8 @@ document.getElementById('fx-download-btn').onclick = () => {
 document.getElementById('ds-download-btn').onclick = () => {
   const dsSortKey = (d) => d.exDate || d.payDate || '';
   const rows = [...divStatus].sort((a,b) => dsSortKey(b).localeCompare(dsSortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
-    .map(d => [d.exDate || '', d.payDate, d.country, d.name, d.krwAmount || 0, d.usdAmount || 0]);
-  downloadCsv(`배당현황_${todayStr()}.csv`, ['배당락일','지급일','국가','종목명','배당금(원화)','배당금(달러)'], rows);
+    .map(d => [d.exDate || '', d.payDate, d.country, d.code || '', d.name, d.krwAmount || 0, d.usdAmount || 0]);
+  downloadCsv(`배당현황_${todayStr()}.csv`, ['배당락일','지급일','국가','종목코드','종목명','배당금(원화)','배당금(달러)'], rows);
 };
 
 // ---- Login / Logout (Supabase mode only) ----
@@ -2109,7 +2167,9 @@ document.getElementById('backup-import-input').addEventListener('change', async 
     fx = Array.isArray(data.fxRecords) ? data.fxRecords : [];
     currentPrices = (data.currentPrices && typeof data.currentPrices === 'object') ? data.currentPrices : {};
     divStatus = Array.isArray(data.dividendStatus) ? data.dividendStatus : [];
-    txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; });
+    txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; if (t.code === undefined) { t.code = t.country === '한국' ? (lookupKrCodeByName(t.name) || '') : t.name; } });
+  divUs.forEach(d => { if (d.code === undefined) d.code = d.name; });
+  divStatus.forEach(d => { if (d.code === undefined) d.code = d.country === '한국' ? (lookupKrCodeByName(d.name) || '') : d.name; });
     fx.forEach(f => { if (f.source === undefined) f.source = '원금투자'; });
     await persist();
     renderAll();
