@@ -296,7 +296,7 @@
     <div class="overflow-x">
     <table id="h-table" style="display:none;">
       <thead><tr>
-        <th>종목코드</th><th>종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
+        <th>종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
       </tr></thead>
       <tbody id="h-body"></tbody>
     </table>
@@ -360,7 +360,7 @@
     <div class="overflow-x">
     <table id="tk-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목코드</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tk-body"></tbody>
     </table>
@@ -424,7 +424,7 @@
     <div class="overflow-x">
     <table id="tu-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="tu-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목코드</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tu-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tu-body"></tbody>
     </table>
@@ -480,7 +480,7 @@
     <div class="overflow-x">
     <table id="dk-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="dk-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목코드</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="dk-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
       </tr></thead>
       <tbody id="dk-body"></tbody>
     </table>
@@ -537,7 +537,7 @@
     <div class="overflow-x">
     <table id="du-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="du-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목코드</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="du-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">세전합계</th><th class="num">세후합계</th><th class="num">적용환율</th><th class="num">원화합계</th><th></th>
       </tr></thead>
       <tbody id="du-body"></tbody>
     </table>
@@ -574,7 +574,7 @@
     <div class="overflow-x">
     <table id="ds-summary-table" style="display:none;">
       <thead><tr>
-        <th>종목코드</th><th>종목</th><th class="num">배당총액</th><th class="num">평균가</th><th class="num">리턴율</th>
+        <th>종목</th><th class="num">배당총액</th><th class="num">평균가</th><th class="num">리턴율</th>
       </tr></thead>
       <tbody id="ds-summary-body"></tbody>
     </table>
@@ -632,7 +632,7 @@
     <div class="overflow-x">
     <table id="ds-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목코드</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
       </tr></thead>
       <tbody id="ds-body"></tbody>
     </table>
@@ -1355,7 +1355,6 @@ function renderHoldings(holdings) {
     const pnl = marketValue - amount;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td class="code-cell">${h.code || '-'}</td>
       <td class="name-cell">${h.name}<span class="ccy-badge ${h.ccy==='USD'?'usd':''}">${h.ccy}</span><span class="country-tag ${h.country==='미국'?'us':''}">${h.country}</span></td>
       <td class="num">${fmtQty(h.qty)}</td>
       <td class="num">${fmtC(h.avgCost, h.ccy)}</td>
@@ -1623,7 +1622,6 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
       ${checkboxTd(prefix, t.id)}
       <td>${t.date}</td>
       <td class="acct-tag">${t.account || '-'}</td>
-      <td class="code-cell">${t.code || '-'}</td>
       <td class="name-cell">${t.name}</td>
       <td><span class="side-tag ${sideBadgeClass(t.side)}">${sideLabel(t.side)}</span></td>
       <td><span class="source-tag ${t.source==='배당재투자'?'reinvest':'principal'}">${t.source || '원금투자'}</span></td>
@@ -1656,7 +1654,6 @@ function renderDivKr() {
     tr.innerHTML = `
       ${checkboxTd('dk', d.id)}
       <td class="acct-tag">${d.account || '-'}</td>
-      <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td>${d.date}</td>
       <td class="num">${fmtQty(d.shares)}</td>
@@ -1690,7 +1687,6 @@ function renderDivUs() {
     tr.innerHTML = `
       ${checkboxTd('du', d.id)}
       <td class="acct-tag">${d.account || '-'}</td>
-      <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td>${d.date}</td>
       <td class="num">${fmtQty(d.shares)}</td>
@@ -1819,7 +1815,6 @@ function renderDivStatusSummary() {
       const returnRate = totalAmt > 0 ? (g.total / totalAmt) * 100 : 0;
       const tr = document.createElement('tr');
       tr.innerHTML = `
-        <td class="code-cell">${g.code || '-'}</td>
         <td class="name-cell">${g.name}<span class="country-tag ${g.country==='미국'?'us':''}">${g.country}</span></td>
         <td class="num">${fmtCTrim(g.total, ccy)}</td>
         <td class="num">${avgPrice > 0 ? fmtCTrim(avgPrice, ccy) : '-'}</td>
@@ -1846,7 +1841,6 @@ function renderDivStatus() {
       <td>${d.exDate || '-'}</td>
       <td>${d.payDate}</td>
       <td><span class="country-tag ${d.country==='미국'?'us':''}">${d.country}</span></td>
-      <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
       <td class="num">${d.krwAmount ? fmtCTrim(d.krwAmount, 'KRW') : '-'}</td>
       <td class="num">${d.usdAmount ? fmtCTrim(d.usdAmount, 'USD') : '-'}</td>
