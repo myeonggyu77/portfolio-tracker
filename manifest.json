@@ -1,0 +1,17 @@
+{
+  "name": "포트폴리오 원장",
+  "short_name": "포트폴리오",
+  "description": "한국/미국 주식 매매·배당·환율을 한눈에 관리하는 개인 포트폴리오 트래커",
+  "start_url": "./portfolio-tracker.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbfaf7",
+  "theme_color": "#0f6e56",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

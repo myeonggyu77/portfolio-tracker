@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>포트폴리오 원장</title>
+
+<!-- PWA: 홈 화면에 설치해서 앱처럼 쓸 수 있게 해주는 설정이에요 -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0f6e56">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="포트폴리오">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -2531,6 +2542,13 @@ attachExcelImport('du', 'du-bulk-text');
 attachExcelImport('ds', 'ds-bulk-text');
 
 loadAll();
+
+// PWA: 서비스워커 등록 (홈 화면 설치, 오프라인 시 기본 화면 표시용)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((e) => console.error('서비스워커 등록 실패:', e));
+  });
+}
 </script>
 </body>
 </html>
