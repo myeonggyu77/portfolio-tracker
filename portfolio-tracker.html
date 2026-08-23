@@ -101,8 +101,8 @@
   tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line-soft); }
   tbody tr:hover { background: var(--accent-tint); }
   .name-cell { font-weight: 500; }
-  #h-table .name-cell, #tk-table .name-cell, #dk-table .name-cell,
-  #h-table th.name-th, #tk-table th.name-th, #dk-table th.name-th { width: 120px; }
+  #h-table .name-cell, #tk-table .name-cell, #dk-table .name-cell, #ds-table .name-cell,
+  #h-table th.name-th, #tk-table th.name-th, #dk-table th.name-th, #ds-table th.name-th { width: 180px; }
   .code-cell { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
   .ccy-badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; margin-left: 6px; background: var(--line-soft); color: var(--ink-soft); vertical-align: 1px; }
   .ccy-badge.usd { background: var(--accent-soft); color: var(--accent); }
@@ -634,7 +634,7 @@
     <div class="overflow-x">
     <table id="ds-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th>종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="ds-select-all" aria-label="전체 선택"></th><th>배당락일</th><th>지급일</th><th>국가</th><th class="name-th">종목명</th><th class="num">배당금(원화)</th><th class="num">배당금(달러)</th><th></th>
       </tr></thead>
       <tbody id="ds-body"></tbody>
     </table>
