@@ -164,6 +164,10 @@
 <body>
 
 <div class="toast-wrap" id="toast-wrap"></div>
+<datalist id="account-datalist"></datalist>
+<datalist id="kr-code-datalist"></datalist>
+<datalist id="us-code-datalist"></datalist>
+<datalist id="all-code-datalist"></datalist>
 <h2 class="sr-only">한국/미국 매매 내역, 한국/미국 배당금 내역, 환전 내역을 종합한 보유 종목 대시보드를 관리하는 포트폴리오 트래커</h2>
 
 <div class="login-overlay" id="login-overlay" style="display:none;">
@@ -282,8 +286,8 @@
     <div class="form-card" id="tk-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tk-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="tk-account" placeholder="예: 국내종합" /></div>
-        <div><div class="field-lbl">종목코드</div><input id="tk-code" placeholder="예: 005930" /></div>
+        <div><div class="field-lbl">계좌</div><input id="tk-account" list="account-datalist" placeholder="예: 국내종합" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="tk-code" list="kr-code-datalist" placeholder="예: 005930" /></div>
         <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="tk-name" placeholder="예: 삼성전자" /></div>
         <div><div class="field-lbl">구분</div><select id="tk-side">
           <option value="buy">매수</option>
@@ -346,8 +350,8 @@
     <div class="form-card" id="tu-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tu-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="tu-account" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">계좌</div><input id="tu-account" list="account-datalist" placeholder="예: 미국주식" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" list="us-code-datalist" placeholder="예: AAPL" /></div>
         <div><div class="field-lbl">종목명</div><input id="tu-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">구분</div><select id="tu-side">
           <option value="buy">매수</option>
@@ -409,8 +413,8 @@
     </div>
     <div class="form-card" id="dk-form" style="display:none;">
       <div class="form-grid">
-        <div><div class="field-lbl">계좌</div><input id="dk-account" placeholder="예: 국내종합" /></div>
-        <div><div class="field-lbl">종목코드</div><input id="dk-code" placeholder="예: 005930" /></div>
+        <div><div class="field-lbl">계좌</div><input id="dk-account" list="account-datalist" placeholder="예: 국내종합" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="dk-code" list="kr-code-datalist" placeholder="예: 005930" /></div>
         <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="dk-name" placeholder="예: 삼성전자" /></div>
         <div><div class="field-lbl">지급일</div><input id="dk-date" type="date" /></div>
         <div><div class="field-lbl">주수 (소수점 가능)</div><input id="dk-shares" type="number" min="0" step="any" /></div>
@@ -465,8 +469,8 @@
     </div>
     <div class="form-card" id="du-form" style="display:none;">
       <div class="form-grid">
-        <div><div class="field-lbl">계좌</div><input id="du-account" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목코드 (티커)</div><input id="du-code" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">계좌</div><input id="du-account" list="account-datalist" placeholder="예: 미국주식" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="du-code" list="us-code-datalist" placeholder="예: AAPL" /></div>
         <div><div class="field-lbl">종목명</div><input id="du-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">지급일</div><input id="du-date" type="date" /></div>
         <div><div class="field-lbl">주수 (소수점 가능)</div><input id="du-shares" type="number" min="0" step="any" /></div>
@@ -523,7 +527,7 @@
     <div class="form-card" id="fx-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="fx-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="fx-account" placeholder="예: 미국주식" /></div>
+        <div><div class="field-lbl">계좌</div><input id="fx-account" list="account-datalist" placeholder="예: 미국주식" /></div>
         <div><div class="field-lbl">환전구분</div><select id="fx-side"><option value="buy">매수 (원화→달러)</option><option value="sell">매도 (달러→원화)</option></select></div>
         <div><div class="field-lbl">환율</div><input id="fx-rate" type="number" min="0" step="any" placeholder="예: 1380.50" /></div>
         <div><div class="field-lbl">원화</div><input id="fx-krw" type="number" min="0" step="any" /></div>
@@ -596,7 +600,7 @@
         <div><div class="field-lbl">배당락일</div><input id="ds-exdate" type="date" /></div>
         <div><div class="field-lbl">지급일</div><input id="ds-paydate" type="date" /></div>
         <div><div class="field-lbl">국가</div><select id="ds-country"><option value="한국">한국</option><option value="미국">미국</option></select></div>
-        <div><div class="field-lbl">종목코드</div><input id="ds-code" placeholder="예: 005930, AAPL" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="ds-code" list="all-code-datalist" placeholder="예: 005930, AAPL" /></div>
         <div><div class="field-lbl">종목명 (한국은 코드 입력 시 자동완성)</div><input id="ds-name" placeholder="예: 삼성전자, AAPL" /></div>
         <div><div class="field-lbl">배당금 (원화)</div><input id="ds-krw" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">배당금 (달러)</div><input id="ds-usd" type="number" min="0" step="any" /></div>
@@ -1242,6 +1246,39 @@ function renderAll() {
   renderDivUs();
   renderFx();
   renderDivStatus();
+  refreshAutocompleteLists();
+}
+
+// 지금까지 입력한 계좌명/종목코드를 모아 자동완성 목록을 매번 최신 상태로 갱신해요.
+function refreshAutocompleteLists() {
+  const accounts = new Set();
+  txns.forEach(t => { if (t.account) accounts.add(t.account); });
+  divKr.forEach(d => { if (d.account) accounts.add(d.account); });
+  divUs.forEach(d => { if (d.account) accounts.add(d.account); });
+  fx.forEach(f => { if (f.account) accounts.add(f.account); });
+
+  const krCodes = new Set();
+  const usCodes = new Set();
+  txns.forEach(t => {
+    if (!t.code) return;
+    if (t.country === '한국') krCodes.add(t.code); else if (t.country === '미국') usCodes.add(t.code);
+  });
+  divKr.forEach(d => { if (d.code) krCodes.add(d.code); });
+  divUs.forEach(d => { if (d.code) usCodes.add(d.code); });
+  divStatus.forEach(d => {
+    if (!d.code) return;
+    if (d.country === '한국') krCodes.add(d.code); else if (d.country === '미국') usCodes.add(d.code);
+  });
+
+  const fillList = (id, values) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = [...values].sort((a,b) => a.localeCompare(b, 'ko')).map(v => `<option value="${v}"></option>`).join('');
+  };
+  fillList('account-datalist', accounts);
+  fillList('kr-code-datalist', krCodes);
+  fillList('us-code-datalist', usCodes);
+  fillList('all-code-datalist', new Set([...krCodes, ...usCodes]));
 }
 
 function renderKpis(holdings) {
