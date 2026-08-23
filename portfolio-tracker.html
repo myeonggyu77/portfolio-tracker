@@ -775,10 +775,20 @@ document.getElementById('ds-delete-selected-btn').onclick = async () => {
 document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
 
 function fmtC(n, ccy) {
-  if (ccy === 'USD') return fmtUSD(n);
+  if (ccy === 'USD') return fmtUSD2(n);
   return Math.round(n).toLocaleString('ko-KR') + '원';
 }
-function fmtUSD(n) {
+// 배당현황 탭 전용 — 소수점 최대 5자리, 끝자리 0은 생략.
+function fmtCTrim(n, ccy) {
+  if (ccy === 'USD') return fmtUSD5(n);
+  return Math.round(n).toLocaleString('ko-KR') + '원';
+}
+function fmtUSD2(n) {
+  const sign = n < 0 ? '-' : '';
+  n = Math.abs(n);
+  return sign + '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtUSD5(n) {
   const sign = n < 0 ? '-' : '';
   n = Math.abs(n);
   let s = n.toFixed(5);
@@ -1737,8 +1747,8 @@ function renderDivStatusSummary() {
       tr.innerHTML = `
         <td class="code-cell">${g.code || '-'}</td>
         <td class="name-cell">${g.name}<span class="country-tag ${g.country==='미국'?'us':''}">${g.country}</span></td>
-        <td class="num">${fmtC(g.total, ccy)}</td>
-        <td class="num">${avgPrice > 0 ? fmtC(avgPrice, ccy) : '-'}</td>
+        <td class="num">${fmtCTrim(g.total, ccy)}</td>
+        <td class="num">${avgPrice > 0 ? fmtCTrim(avgPrice, ccy) : '-'}</td>
         <td class="num">${totalAmt > 0 ? fmtPct(returnRate) : '-'}</td>`;
       body.appendChild(tr);
     });
@@ -1751,7 +1761,7 @@ function renderDivStatus() {
   const term = searchTerms.ds;
   const sortKey = (d) => d.exDate || d.payDate || '';
   const sorted = [...divStatus].sort((a,b) => sortKey(b).localeCompare(sortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
-    .filter(d => matchesSearch(buildSearchCorpus(d, [d.krwAmount ? fmtC(d.krwAmount,'KRW') : '', d.usdAmount ? fmtC(d.usdAmount,'USD') : '']), term));
+    .filter(d => matchesSearch(buildSearchCorpus(d, [d.krwAmount ? fmtCTrim(d.krwAmount,'KRW') : '', d.usdAmount ? fmtCTrim(d.usdAmount,'USD') : '']), term));
   lastVisibleIds.ds = sorted.map(d => d.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('ds'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1764,8 +1774,8 @@ function renderDivStatus() {
       <td><span class="country-tag ${d.country==='미국'?'us':''}">${d.country}</span></td>
       <td class="code-cell">${d.code || '-'}</td>
       <td class="name-cell">${d.name}</td>
-      <td class="num">${d.krwAmount ? fmtC(d.krwAmount, 'KRW') : '-'}</td>
-      <td class="num">${d.usdAmount ? fmtC(d.usdAmount, 'USD') : '-'}</td>
+      <td class="num">${d.krwAmount ? fmtCTrim(d.krwAmount, 'KRW') : '-'}</td>
+      <td class="num">${d.usdAmount ? fmtCTrim(d.usdAmount, 'USD') : '-'}</td>
       <td class="actions-cell">
         <button class="icon-btn edit" data-id="${d.id}">수정</button>
         <button class="icon-btn danger del" data-id="${d.id}">삭제</button>
