@@ -231,7 +231,7 @@
     <button class="tab" data-panel="txnsus">미국 매매내역</button>
     <button class="tab" data-panel="divkr">한국 배당금</button>
     <button class="tab" data-panel="divus">미국 배당금</button>
-    <button class="tab" data-panel="fx">환전 내역</button>
+    <button class="tab" data-panel="fxrate">환율정보</button>
     <button class="tab" data-panel="divstatus">배당현황</button>
   </div>
 
@@ -514,58 +514,25 @@
   </div>
 
   <!-- FX EXCHANGE -->
-  <div class="panel" id="panel-fx">
+  <div class="panel" id="panel-fxrate">
     <div class="toolbar">
-      <div class="search-wrap"><input type="text" id="fx-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
+      <div class="search-wrap"><input type="text" id="fxrate-search" class="search-input" placeholder="검색 (일자/환율)" /></div>
       <div class="btn-group">
-        <button class="ghost-btn danger-btn" id="fx-delete-selected-btn" disabled>선택 삭제</button>
-        <button class="ghost-btn" id="fx-download-btn">다운로드</button>
-        <button class="ghost-btn" id="fx-bulk-btn"><i class="ti ti-table-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>일괄 등록</button>
-        <button class="primary-btn" id="fx-add-btn"><i class="ti ti-plus" style="font-size:14px;vertical-align:-2px;margin-right:4px;" aria-hidden="true"></i>환전 추가</button>
+        <button class="ghost-btn" id="fxrate-download-btn">다운로드</button>
+        <button class="primary-btn" id="fxrate-refresh-btn">환율 불러오기</button>
       </div>
     </div>
-    <div class="form-card" id="fx-form" style="display:none;">
-      <div class="form-grid">
-        <div><div class="field-lbl">일자</div><input id="fx-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="fx-account" list="account-datalist" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">환전구분</div><select id="fx-side"><option value="buy">매수 (원화→달러)</option><option value="sell">매도 (달러→원화)</option></select></div>
-        <div><div class="field-lbl">환율</div><input id="fx-rate" type="number" min="0" step="any" placeholder="예: 1380.50" /></div>
-        <div><div class="field-lbl">원화</div><input id="fx-krw" type="number" min="0" step="any" /></div>
-        <div><div class="field-lbl">달러 (소수점 가능)</div><input id="fx-usd" type="number" min="0" step="any" /></div>
-        <div><div class="field-lbl">자금구분</div><select id="fx-source"><option value="원금투자">원금투자</option><option value="배당재투자">배당재투자</option></select></div>
-      </div>
-      <div class="form-note">원화와 달러 중 하나만 입력하면 환율로 나머지를 자동 계산해요.</div>
-      <div class="form-error" id="fx-error" style="display:none;"></div>
-      <div class="form-actions">
-        <button class="ghost-btn" id="fx-cancel">취소</button>
-        <button class="primary-btn" id="fx-save">저장</button>
-      </div>
-    </div>
-    <div class="form-card" id="fx-bulk-form" style="display:none;">
-      <h3>환전 일괄 등록</h3>
-      <div class="form-note">엑셀(.xlsx) 또는 CSV 파일을 바로 불러올 수 있어요. 첫 행이 제목이어도 자동으로 인식해 건너뛰어요.</div>
-      <div class="form-actions" style="justify-content:flex-start; margin-bottom:10px;">
-        <button class="ghost-btn" id="fx-excel-btn">엑셀/CSV 파일 불러오기</button>
-        <input type="file" id="fx-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
-      </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,구분(매수/매도),환율,원화,달러,자금구분(원금투자/배당재투자)&#10;예) 2026-01-15,미국주식,매수,1380.50,1000000,724.30,원금투자&#10;자금구분은 생략하면 원금투자로 저장돼요.</div>
-      <textarea id="fx-bulk-text" placeholder="2026-01-15,미국주식,매수,1380.50,1000000,724.30,원금투자&#10;2026-02-10,미국주식,매도,1350.00,500000,370.37,배당재투자"></textarea>
-      <div class="form-error" id="fx-bulk-error" style="display:none;"></div>
-      <div class="form-actions">
-        <button class="ghost-btn" id="fx-bulk-cancel">취소</button>
-        <button class="primary-btn" id="fx-bulk-save">일괄 저장</button>
-      </div>
-    </div>
-    <div class="empty" id="fx-empty" style="display:none;">
-      <div class="big">환전 내역이 없어요</div>
-      원화·달러 환전 내역을 추가해보세요.
+    <div class="form-note" style="margin-bottom:14px;">구글시트의 "KRW" 탭에서 2025-01-01부터의 원/달러 환율을 자동으로 불러와요. 앱 데이터로 저장하지 않고, 매번 구글시트에서 최신 값을 조회해요.</div>
+    <div class="empty" id="fxrate-empty" style="display:none;">
+      <div class="big">환율 정보가 없어요</div>
+      "환율 불러오기" 버튼을 눌러 구글시트에서 가져와보세요.
     </div>
     <div class="overflow-x">
-    <table id="fx-table" style="display:none;">
+    <table id="fxrate-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="fx-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>구분</th><th class="num">환율</th><th class="num">원화</th><th class="num">달러</th><th>자금구분</th><th></th>
+        <th>일자</th><th class="num">환율</th>
       </tr></thead>
-      <tbody id="fx-body"></tbody>
+      <tbody id="fxrate-body"></tbody>
     </table>
     </div>
   </div>
@@ -643,15 +610,16 @@
 </div>
 
 <script>
-let txns = [], divKr = [], divUs = [], fx = [], divStatus = [];
+let txns = [], divKr = [], divUs = [], divStatus = [];
+let fxRates = []; // 환율정보: 구글시트에서 매번 새로 불러오는 캐시(저장하지 않음)
 let currentPrices = {}; // key: name+"|"+ccy -> price
-let editTkId = null, editTuId = null, editDkId = null, editDuId = null, editFxId = null, editDsId = null;
+let editTkId = null, editTuId = null, editDkId = null, editDuId = null, editDsId = null;
 let dcYear = new Date().getFullYear();
 
 // ---- Row selection (checkboxes) ----
-const selection = { tk: new Set(), tu: new Set(), dk: new Set(), du: new Set(), fx: new Set(), ds: new Set() };
-const lastVisibleIds = { tk: [], tu: [], dk: [], du: [], fx: [], ds: [] };
-const searchTerms = { tk: '', tu: '', dk: '', du: '', fx: '', ds: '' };
+const selection = { tk: new Set(), tu: new Set(), dk: new Set(), du: new Set(), ds: new Set() };
+const lastVisibleIds = { tk: [], tu: [], dk: [], du: [], ds: [] };
+const searchTerms = { tk: '', tu: '', dk: '', du: '', ds: '', fxrate: '' };
 
 // 레코드의 모든 값(원본 + 화면에 보이는 라벨)을 하나의 문자열로 합쳐서 검색 대상으로 만들어요.
 function buildSearchCorpus(obj, extra) {
@@ -663,12 +631,12 @@ function matchesSearch(corpus, term) {
   if (!term) return true;
   return corpus.includes(term.trim().toLowerCase());
 }
-['tk','tu','dk','du','fx','ds'].forEach(prefix => {
+['tk','tu','dk','du','ds','fxrate'].forEach(prefix => {
   const input = document.getElementById(prefix + '-search');
   if (!input) return;
   input.addEventListener('input', () => {
     searchTerms[prefix] = input.value;
-    renderAll();
+    if (prefix === 'fxrate') renderFxRate(); else renderAll();
   });
 });
 
@@ -715,7 +683,7 @@ function bindSelectAllOnce(prefix) {
     updateSelectionBar(prefix);
   };
 }
-['tk','tu','dk','du','fx','ds'].forEach(bindSelectAllOnce);
+['tk','tu','dk','du','ds'].forEach(bindSelectAllOnce);
 
 document.getElementById('tk-delete-selected-btn').onclick = async () => {
   const set = selection.tk;
@@ -751,15 +719,6 @@ document.getElementById('du-delete-selected-btn').onclick = async () => {
   divUs = divUs.filter(d => !set.has(d.id));
   set.clear();
   await saveDivUs();
-  renderAll();
-};
-document.getElementById('fx-delete-selected-btn').onclick = async () => {
-  const set = selection.fx;
-  if (set.size === 0) return;
-  if (!window.confirm(`선택한 ${set.size}건을 삭제할까요? 되돌릴 수 없어요.`)) return;
-  fx = fx.filter(f => !set.has(f.id));
-  set.clear();
-  await saveFx();
   renderAll();
 };
 document.getElementById('ds-delete-selected-btn').onclick = async () => {
@@ -1057,7 +1016,6 @@ async function persist(retries = 2) {
           transactions: txns,
           dividends_kr: divKr,
           dividends_us: divUs,
-          fx_records: fx,
           current_prices: currentPrices,
           dividend_status: divStatus,
           updated_at: new Date().toISOString(),
@@ -1074,7 +1032,6 @@ async function persist(retries = 2) {
       storageSetRaw('transactions', txns),
       storageSetRaw('dividendsKr', divKr),
       storageSetRaw('dividendsUs', divUs),
-      storageSetRaw('fxRecords', fx),
       storageSetRaw('currentPrices', currentPrices),
       storageSetRaw('dividendStatus', divStatus),
     ]);
@@ -1112,22 +1069,19 @@ async function fetchAndRenderData() {
       txns = (data && data.transactions) || [];
       divKr = (data && data.dividends_kr) || [];
       divUs = (data && data.dividends_us) || [];
-      fx = (data && data.fx_records) || [];
       currentPrices = (data && data.current_prices) || {};
       divStatus = (data && data.dividend_status) || [];
     } else if (typeof window.storage !== 'undefined') {
-      const [txnsR, dkR, duR, fxR, cpR, dsR] = await Promise.allSettled([
+      const [txnsR, dkR, duR, cpR, dsR] = await Promise.allSettled([
         storageGetRaw('transactions', []),
         storageGetRaw('dividendsKr', []),
         storageGetRaw('dividendsUs', []),
-        storageGetRaw('fxRecords', []),
         storageGetRaw('currentPrices', {}),
         storageGetRaw('dividendStatus', []),
       ]);
       txns = txnsR.status === 'fulfilled' ? txnsR.value : [];
       divKr = dkR.status === 'fulfilled' ? dkR.value : [];
       divUs = duR.status === 'fulfilled' ? duR.value : [];
-      fx = fxR.status === 'fulfilled' ? fxR.value : [];
       currentPrices = cpR.status === 'fulfilled' ? cpR.value : {};
       divStatus = dsR.status === 'fulfilled' ? dsR.value : [];
     }
@@ -1138,8 +1092,8 @@ async function fetchAndRenderData() {
   txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; if (t.code === undefined) { t.code = t.country === '한국' ? (lookupKrCodeByName(t.name) || '') : t.name; } });
   divUs.forEach(d => { if (d.code === undefined) d.code = d.name; });
   divStatus.forEach(d => { if (d.code === undefined) d.code = d.country === '한국' ? (lookupKrCodeByName(d.name) || '') : d.name; });
-  fx.forEach(f => { if (f.source === undefined) f.source = '원금투자'; });
   renderAll();
+  loadFxRates(false);
 }
 
 async function loadAll() {
@@ -1180,7 +1134,6 @@ async function saveTxns() { return persist(); }
 async function saveDivKr() { return persist(); }
 async function saveDivUs() { return persist(); }
 async function saveCurrentPrices() { return persist(); }
-async function saveFx() { return persist(); }
 async function saveDivStatus() { return persist(); }
 
 // 종목코드가 있으면 코드를, 없으면(과거 데이터 호환용) 정규화된 종목명을 매칭 키로 사용.
@@ -1254,7 +1207,6 @@ function renderAll() {
   renderTxnTable('미국', 'tu-body', 'tu-empty', 'tu-table', openTuForm, async (id) => { if (!confirmDelete()) return; txns = txns.filter(t=>t.id!==id); await saveTxns(); renderAll(); });
   renderDivKr();
   renderDivUs();
-  renderFx();
   renderDivStatus();
   refreshAutocompleteLists();
 }
@@ -1265,7 +1217,6 @@ function refreshAutocompleteLists() {
   txns.forEach(t => { if (t.account) accounts.add(t.account); });
   divKr.forEach(d => { if (d.account) accounts.add(d.account); });
   divUs.forEach(d => { if (d.account) accounts.add(d.account); });
-  fx.forEach(f => { if (f.account) accounts.add(f.account); });
 
   const krCodes = new Set();
   const usCodes = new Set();
@@ -1672,36 +1623,72 @@ function renderDivUs() {
   wireRowCheckboxes('du', 'du-body');
 }
 
-function renderFx() {
-  const body = document.getElementById('fx-body'), empty = document.getElementById('fx-empty'), table = document.getElementById('fx-table');
+// ---- 환율정보 (구글시트 "KRW" 탭에서 매번 새로 불러옴, 앱에는 저장하지 않음) ----
+const FX_START_DATE = '2025-01-01';
+
+// gviz가 날짜 셀을 "Date(2025,0,1)" 형태의 문자열로 줄 때가 있어 이를 YYYY-MM-DD로 변환해요.
+function parseGvizDate(v) {
+  if (v === null || v === undefined) return null;
+  const s = String(v);
+  const m = s.match(/^Date\((\d+),(\d+),(\d+)\)/);
+  if (m) {
+    const y = m[1], mo = String(Number(m[2]) + 1).padStart(2, '0'), d = String(Number(m[3])).padStart(2, '0');
+    return `${y}-${mo}-${d}`;
+  }
+  const d2 = new Date(s);
+  if (!isNaN(d2.getTime())) return d2.toISOString().slice(0, 10);
+  return null;
+}
+
+async function loadFxRates(showFeedback) {
+  const btn = document.getElementById('fxrate-refresh-btn');
+  if (!GOOGLE_SHEET_ID) {
+    if (showFeedback) showToast('구글시트가 설정되어 있지 않아요. 파일 상단의 GOOGLE_SHEET_ID를 입력해 주세요.', 'error', 6000);
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+  try {
+    const rows = await fetchGoogleSheetRows(GOOGLE_SHEET_ID, 'KRW');
+    const parsed = [];
+    rows.forEach(r => {
+      const date = parseGvizDate(r[0]);
+      const rate = parseFloat(r[1]);
+      if (!date || isNaN(rate)) return;
+      if (date < FX_START_DATE) return;
+      parsed.push({ date, rate });
+    });
+    fxRates = parsed;
+    if (showFeedback) {
+      if (fxRates.length > 0) showToast(`환율 ${fxRates.length}건을 불러왔어요.`, 'success');
+      else showToast('불러온 환율 데이터가 없어요. 구글시트의 "KRW" 탭 구성을 확인해 주세요.', 'error', 6000);
+    }
+  } catch (e) {
+    console.error('환율정보 로드 실패:', e);
+    if (showFeedback) showToast('환율정보를 불러오지 못했어요. 구글시트 설정과 공유 권한을 확인해 주세요.', 'error', 6000);
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '환율 불러오기'; }
+  renderFxRate();
+}
+
+function renderFxRate() {
+  const body = document.getElementById('fxrate-body'), empty = document.getElementById('fxrate-empty'), table = document.getElementById('fxrate-table');
   body.innerHTML = '';
-  const term = searchTerms.fx;
-  const sorted = [...fx].sort((a,b) => b.date.localeCompare(a.date) || (a.account||'').localeCompare(b.account||'', 'ko'))
-    .filter(f => matchesSearch(buildSearchCorpus(f, [f.side==='buy'?'매수':'매도', fmtC(f.krw,'KRW'), fmtC(f.usd,'USD')]), term));
-  lastVisibleIds.fx = sorted.map(f => f.id);
-  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('fx'); return; }
+  const term = searchTerms.fxrate;
+  const sorted = [...fxRates].sort((a,b) => b.date.localeCompare(a.date))
+    .filter(r => matchesSearch(buildSearchCorpus(r, [r.rate.toLocaleString('ko-KR', {maximumFractionDigits:2})]), term));
+  if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
   empty.style.display = 'none'; table.style.display = 'table';
-  sorted.forEach(f => {
+  sorted.forEach(r => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      ${checkboxTd('fx', f.id)}
-      <td>${f.date}</td>
-      <td class="acct-tag">${f.account || '-'}</td>
-      <td><span class="side-tag ${f.side}">${f.side==='buy'?'매수':'매도'}</span></td>
-      <td class="num">${f.rate.toLocaleString('ko-KR', {maximumFractionDigits:4})}</td>
-      <td class="num">${fmtC(f.krw, 'KRW')}</td>
-      <td class="num">${fmtC(f.usd, 'USD')}</td>
-      <td><span class="source-tag ${f.source==='배당재투자'?'reinvest':'principal'}">${f.source}</span></td>
-      <td class="actions-cell">
-        <button class="icon-btn edit" data-id="${f.id}">수정</button>
-        <button class="icon-btn danger del" data-id="${f.id}">삭제</button>
-      </td>`;
+    tr.innerHTML = `<td>${r.date}</td><td class="num">${r.rate.toLocaleString('ko-KR', {maximumFractionDigits:2})}</td>`;
     body.appendChild(tr);
   });
-  body.querySelectorAll('.edit').forEach(b => b.onclick = () => openFxForm(b.dataset.id));
-  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; fx = fx.filter(f=>f.id!==b.dataset.id); await saveFx(); renderAll(); });
-  wireRowCheckboxes('fx', 'fx-body');
 }
+document.getElementById('fxrate-refresh-btn').onclick = () => loadFxRates(true);
+document.getElementById('fxrate-download-btn').onclick = () => {
+  const rows = [...fxRates].sort((a,b) => b.date.localeCompare(a.date)).map(r => [r.date, r.rate]);
+  downloadCsv(`환율정보_${todayStr()}.csv`, ['일자', '환율'], rows);
+};
 
 // ---- 배당현황 (dividend status) ----
 function normName(s) { return (s || '').trim().toUpperCase(); }
@@ -1798,7 +1785,7 @@ document.querySelectorAll('.tab').forEach(tab => {
 });
 
 function closeAllForms() {
-  ['tk-form','tk-bulk-form','tu-form','tu-bulk-form','dk-form','dk-bulk-form','du-form','du-bulk-form','fx-form','fx-bulk-form','ds-form','ds-bulk-form'].forEach(id => document.getElementById(id).style.display = 'none');
+  ['tk-form','tk-bulk-form','tu-form','tu-bulk-form','dk-form','dk-bulk-form','du-form','du-bulk-form','ds-form','ds-bulk-form'].forEach(id => document.getElementById(id).style.display = 'none');
 }
 
 // ---- 한국 매매 single form ----
@@ -2193,87 +2180,6 @@ document.getElementById('du-bulk-save').onclick = async () => {
   if (errors.length > 0) { err.textContent = `${newRecords.length}건 저장됨. 일부 행은 건너뜀:\n` + errors.join('\n'); err.style.display='block'; document.getElementById('du-bulk-form').style.display='block'; }
 };
 
-// ---- FX single form ----
-function openFxForm(id) {
-  closeAllForms();
-  const err = document.getElementById('fx-error'); err.style.display = 'none';
-  document.getElementById('fx-form').style.display = 'block';
-  if (id) {
-    editFxId = id;
-    const f = fx.find(x=>x.id===id);
-    document.getElementById('fx-date').value = f.date;
-    document.getElementById('fx-account').value = f.account || '';
-    document.getElementById('fx-side').value = f.side;
-    document.getElementById('fx-rate').value = f.rate;
-    document.getElementById('fx-krw').value = f.krw;
-    document.getElementById('fx-usd').value = f.usd;
-    document.getElementById('fx-source').value = f.source || '원금투자';
-  } else {
-    editFxId = null;
-    ['fx-account','fx-rate','fx-krw','fx-usd'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('fx-date').value = new Date().toISOString().slice(0,10);
-    document.getElementById('fx-side').value = 'buy';
-    document.getElementById('fx-source').value = '원금투자';
-  }
-}
-document.getElementById('fx-add-btn').onclick = () => openFxForm(null);
-document.getElementById('fx-cancel').onclick = () => document.getElementById('fx-form').style.display = 'none';
-document.getElementById('fx-save').onclick = async () => {
-  const date = document.getElementById('fx-date').value;
-  const account = document.getElementById('fx-account').value.trim();
-  const side = document.getElementById('fx-side').value;
-  const rate = parseFloat(document.getElementById('fx-rate').value);
-  let krw = parseFloat(document.getElementById('fx-krw').value);
-  let usd = parseFloat(document.getElementById('fx-usd').value);
-  const source = document.getElementById('fx-source').value;
-  const err = document.getElementById('fx-error');
-  if (!date) { err.textContent = '일자를 선택하세요'; err.style.display='block'; return; }
-  if (isNaN(rate) || rate <= 0) { err.textContent = '환율을 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (isNaN(krw) && isNaN(usd)) { err.textContent = '원화 또는 달러 중 하나는 입력하세요'; err.style.display='block'; return; }
-  if (isNaN(krw)) krw = usd * rate;
-  if (isNaN(usd)) usd = krw / rate;
-  if (krw <= 0 || usd <= 0) { err.textContent = '금액을 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (editFxId) { const f = fx.find(x=>x.id===editFxId); f.date=date; f.account=account; f.side=side; f.rate=rate; f.krw=krw; f.usd=usd; f.source=source; }
-  else fx.push({ id: uid(), date, account, side, rate, krw, usd, source });
-  await saveFx();
-  document.getElementById('fx-form').style.display = 'none';
-  renderAll();
-};
-
-document.getElementById('fx-bulk-btn').onclick = () => { closeAllForms(); document.getElementById('fx-bulk-error').style.display='none'; document.getElementById('fx-bulk-text').value=''; document.getElementById('fx-bulk-form').style.display = 'block'; };
-document.getElementById('fx-bulk-cancel').onclick = () => document.getElementById('fx-bulk-form').style.display = 'none';
-document.getElementById('fx-bulk-save').onclick = async () => {
-  const raw = document.getElementById('fx-bulk-text').value.trim();
-  const err = document.getElementById('fx-bulk-error');
-  err.style.display = 'none';
-  if (!raw) { err.textContent = '등록할 내용을 입력하세요'; err.style.display='block'; return; }
-  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const errors = [];
-  const newRecords = [];
-  lines.forEach((line, i) => {
-    const parts = line.split(',').map(p => p.trim());
-    if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,구분,환율,원화,달러,자금구분)`); return; }
-    const [date, account, sideRaw, rateRaw, krwRaw, usdRaw, sourceRaw] = parts;
-    const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
-    const rate = parseFloat(rateRaw);
-    const krw = parseFloat(krwRaw);
-    const usd = parseFloat(usdRaw);
-    const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
-    if (!side) { errors.push(`${i+1}행: 구분은 매수 또는 매도만 가능해요`); return; }
-    if (isNaN(rate) || rate <= 0) { errors.push(`${i+1}행: 환율이 올바르지 않아요`); return; }
-    if (isNaN(krw) || krw <= 0) { errors.push(`${i+1}행: 원화 금액이 올바르지 않아요`); return; }
-    if (isNaN(usd) || usd <= 0) { errors.push(`${i+1}행: 달러 금액이 올바르지 않아요`); return; }
-    newRecords.push({ id: uid(), date, account, side, rate, krw, usd, source });
-  });
-  if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
-  fx.push(...newRecords);
-  await saveFx();
-  document.getElementById('fx-bulk-form').style.display = 'none';
-  renderAll();
-  if (errors.length > 0) { err.textContent = `${newRecords.length}건 저장됨. 일부 행은 건너뜀:\n` + errors.join('\n'); err.style.display='block'; document.getElementById('fx-bulk-form').style.display='block'; }
-};
-
 // ---- 배당현황 single form ----
 function openDsForm(id) {
   closeAllForms();
@@ -2413,12 +2319,6 @@ document.getElementById('du-download-btn').onclick = () => {
   downloadCsv(`미국배당금_${todayStr()}.csv`, ['계좌','종목코드','종목명','지급일','주수','배당기준액($)','세전합계($)','세후합계($)','적용환율','원화합계'], rows);
 };
 
-document.getElementById('fx-download-btn').onclick = () => {
-  const rows = [...fx].sort((a,b) => b.date.localeCompare(a.date) || (a.account||'').localeCompare(b.account||'', 'ko'))
-    .map(f => [f.date, f.account, f.side==='buy'?'매수':'매도', f.rate, f.krw.toFixed(0), f.usd.toFixed(2), f.source]);
-  downloadCsv(`환전내역_${todayStr()}.csv`, ['일자','계좌','구분','환율','원화','달러','자금구분'], rows);
-};
-
 document.getElementById('ds-download-btn').onclick = () => {
   const dsSortKey = (d) => d.exDate || d.payDate || '';
   const rows = [...divStatus].sort((a,b) => dsSortKey(b).localeCompare(dsSortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
@@ -2461,7 +2361,6 @@ document.getElementById('backup-export-btn').onclick = () => {
     transactions: txns,
     dividendsKr: divKr,
     dividendsUs: divUs,
-    fxRecords: fx,
     currentPrices: currentPrices,
     dividendStatus: divStatus,
   };
@@ -2493,13 +2392,11 @@ document.getElementById('backup-import-input').addEventListener('change', async 
     txns = Array.isArray(data.transactions) ? data.transactions : [];
     divKr = Array.isArray(data.dividendsKr) ? data.dividendsKr : [];
     divUs = Array.isArray(data.dividendsUs) ? data.dividendsUs : [];
-    fx = Array.isArray(data.fxRecords) ? data.fxRecords : [];
     currentPrices = (data.currentPrices && typeof data.currentPrices === 'object') ? data.currentPrices : {};
     divStatus = Array.isArray(data.dividendStatus) ? data.dividendStatus : [];
     txns.forEach(t => { if (t.account === undefined) t.account = ''; if (t.source === undefined) t.source = '원금투자'; if (t.country === undefined) t.country = t.ccy === 'USD' ? '미국' : '한국'; if (t.code === undefined) { t.code = t.country === '한국' ? (lookupKrCodeByName(t.name) || '') : t.name; } });
   divUs.forEach(d => { if (d.code === undefined) d.code = d.name; });
   divStatus.forEach(d => { if (d.code === undefined) d.code = d.country === '한국' ? (lookupKrCodeByName(d.name) || '') : d.name; });
-    fx.forEach(f => { if (f.source === undefined) f.source = '원금투자'; });
     await persist();
     renderAll();
     window.alert('백업 파일을 정상적으로 불러왔어요.');
@@ -2555,7 +2452,6 @@ attachExcelImport('tk', 'tk-bulk-text');
 attachExcelImport('tu', 'tu-bulk-text');
 attachExcelImport('dk', 'dk-bulk-text');
 attachExcelImport('du', 'du-bulk-text');
-attachExcelImport('fx', 'fx-bulk-text');
 attachExcelImport('ds', 'ds-bulk-text');
 
 loadAll();
