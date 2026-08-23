@@ -948,6 +948,10 @@ function showToast(message, type = 'info', duration = 4500) {
   setTimeout(() => { el.remove(); }, duration);
 }
 
+function confirmDelete() {
+  return window.confirm('이 항목을 삭제할까요? 되돌릴 수 없어요.');
+}
+
 // ============================================================
 // BACKEND CONFIG — 셀프 호스팅(서버 운영)하려면 아래 두 줄만 채우세요.
 // 1) supabase.com 에서 무료 프로젝트 생성
@@ -1232,8 +1236,8 @@ function renderAll() {
   renderHoldings(holdings);
   renderAssetTrend(holdings);
   renderDivChart();
-  renderTxnTable('한국', 'tk-body', 'tk-empty', 'tk-table', openTkForm, async (id) => { txns = txns.filter(t=>t.id!==id); await saveTxns(); renderAll(); });
-  renderTxnTable('미국', 'tu-body', 'tu-empty', 'tu-table', openTuForm, async (id) => { txns = txns.filter(t=>t.id!==id); await saveTxns(); renderAll(); });
+  renderTxnTable('한국', 'tk-body', 'tk-empty', 'tk-table', openTkForm, async (id) => { if (!confirmDelete()) return; txns = txns.filter(t=>t.id!==id); await saveTxns(); renderAll(); });
+  renderTxnTable('미국', 'tu-body', 'tu-empty', 'tu-table', openTuForm, async (id) => { if (!confirmDelete()) return; txns = txns.filter(t=>t.id!==id); await saveTxns(); renderAll(); });
   renderDivKr();
   renderDivUs();
   renderFx();
@@ -1580,7 +1584,7 @@ function renderDivKr() {
     body.appendChild(tr);
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDkForm(b.dataset.id));
-  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divKr = divKr.filter(d=>d.id!==b.dataset.id); await saveDivKr(); renderAll(); });
+  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; divKr = divKr.filter(d=>d.id!==b.dataset.id); await saveDivKr(); renderAll(); });
   wireRowCheckboxes('dk', 'dk-body');
 }
 
@@ -1617,7 +1621,7 @@ function renderDivUs() {
     body.appendChild(tr);
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDuForm(b.dataset.id));
-  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divUs = divUs.filter(d=>d.id!==b.dataset.id); await saveDivUs(); renderAll(); });
+  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; divUs = divUs.filter(d=>d.id!==b.dataset.id); await saveDivUs(); renderAll(); });
   wireRowCheckboxes('du', 'du-body');
 }
 
@@ -1648,7 +1652,7 @@ function renderFx() {
     body.appendChild(tr);
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openFxForm(b.dataset.id));
-  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { fx = fx.filter(f=>f.id!==b.dataset.id); await saveFx(); renderAll(); });
+  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; fx = fx.filter(f=>f.id!==b.dataset.id); await saveFx(); renderAll(); });
   wireRowCheckboxes('fx', 'fx-body');
 }
 
@@ -1732,7 +1736,7 @@ function renderDivStatus() {
     body.appendChild(tr);
   });
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDsForm(b.dataset.id));
-  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { divStatus = divStatus.filter(d=>d.id!==b.dataset.id); await saveDivStatus(); renderAll(); });
+  body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; divStatus = divStatus.filter(d=>d.id!==b.dataset.id); await saveDivStatus(); renderAll(); });
   wireRowCheckboxes('ds', 'ds-body');
 }
 
