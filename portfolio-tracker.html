@@ -839,6 +839,79 @@ async function fetchKrxLookup(action, code) {
     return null;
   }
 }
+
+// ---- 구글시트 연동 (선택) ----
+// CORS 제한을 우회하기 위해 <script> 태그 기반 JSONP 방식으로 구글의 gviz 쿼리 엔드포인트를 호출해요.
+let googleSheetCache = null; // { "005930": { name, price }, "AAPL": { name, price }, ... }
+let googleSheetCachePromise = null;
+
+function fetchGoogleSheetRows(sheetId, sheetName) {
+  return new Promise((resolve, reject) => {
+    const cbName = '__gsCallback_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    const cleanup = () => { delete window[cbName]; if (script.parentNode) script.parentNode.removeChild(script); };
+    window[cbName] = (response) => {
+      cleanup();
+      try {
+        const rows = (response.table.rows || []).map(r => (r.c || []).map(c => c ? c.v : null));
+        resolve(rows);
+      } catch (e) { reject(e); }
+    };
+    const script = document.createElement('script');
+    const sheetParam = sheetName ? `&sheet=${encodeURIComponent(sheetName)}` : '';
+    script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json;responseHandler:${cbName}${sheetParam}`;
+    script.onerror = () => { cleanup(); reject(new Error('구글시트를 불러오지 못했어요.')); };
+    document.head.appendChild(script);
+    setTimeout(() => { if (window[cbName]) { cleanup(); reject(new Error('구글시트 응답 시간 초과')); } }, 8000);
+  });
+}
+
+async function loadGoogleSheetCache(force) {
+  if (!GOOGLE_SHEET_ID) return null;
+  if (googleSheetCache && !force) return googleSheetCache;
+  if (googleSheetCachePromise && !force) return googleSheetCachePromise;
+  googleSheetCachePromise = (async () => {
+    try {
+      const rows = await fetchGoogleSheetRows(GOOGLE_SHEET_ID, GOOGLE_SHEET_NAME);
+      const map = {};
+      rows.forEach(r => {
+        const code = String(r[0] || '').trim();
+        if (!code) return;
+        const name = r[1] ? String(r[1]).trim() : '';
+        const price = r[2] !== null && r[2] !== undefined && r[2] !== '' ? parseFloat(r[2]) : null;
+        map[code.toUpperCase()] = { name, price: (price && !isNaN(price)) ? price : null };
+      });
+      googleSheetCache = map;
+      return map;
+    } catch (e) {
+      console.error('구글시트 조회 실패:', e);
+      return null;
+    } finally {
+      googleSheetCachePromise = null;
+    }
+  })();
+  return googleSheetCachePromise;
+}
+
+async function fetchGoogleSheetLookup(code) {
+  const map = await loadGoogleSheetCache(false);
+  if (!map) return null;
+  return map[code.trim().toUpperCase()] || null;
+}
+
+// 종목명 온라인 조회: 구글시트 → KRX Edge Function 순서로 시도해요.
+async function resolveNameOnline(code) {
+  const gs = await fetchGoogleSheetLookup(code);
+  if (gs && gs.name) return { name: gs.name };
+  const krx = await fetchKrxLookup('name', code);
+  if (krx && krx.name) return { name: krx.name };
+  return null;
+}
+// 현재가 온라인 조회: 구글시트를 우선 시도해요.
+async function resolvePriceFromSheet(code) {
+  const gs = await fetchGoogleSheetLookup(code);
+  if (gs && gs.price) return gs.price;
+  return null;
+}
 function lookupKrCodeByName(name) {
   const entry = Object.entries(KR_STOCK_MAP).find(([, n]) => n === name);
   if (entry) return entry[0];
@@ -867,6 +940,16 @@ function showToast(message, type = 'info', duration = 4500) {
 // ============================================================
 const SUPABASE_URL = 'https://kcmqzinekvikpmlxkdxf.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_rZ6bmiQGScI6YewuRg_5aw_PijLpbkl';
+
+// ============================================================
+// (선택) 구글시트 연동 — 종목명·현재가를 구글시트의 GOOGLEFINANCE() 함수로 가져와요.
+// 1) 구글시트에 A열=종목코드, B열=종목명(GOOGLEFINANCE), C열=현재가(GOOGLEFINANCE) 준비
+// 2) 공유 설정을 "링크가 있는 모든 사용자 - 뷰어"로 변경
+// 3) 시트 URL의 /d/ 와 /edit 사이 긴 문자열(시트 ID)을 아래에 붙여넣기
+// 비워두면 이 기능은 자동으로 꺼지고 기존 방식(KRX/stooq)만 사용돼요.
+// ============================================================
+const GOOGLE_SHEET_ID = '1UZkI-A-R76rRSia01zvcril8Z7Uwu_AFR-fsFcBmcS0';
+const GOOGLE_SHEET_NAME = ''; // 특정 탭 이름을 지정하고 싶을 때만 입력 (비워두면 첫 번째 시트)
 
 let supabaseClient = null;
 let usingSupabase = false;
@@ -1191,11 +1274,17 @@ document.getElementById('h-fetch-prices-btn').onclick = async () => {
   if (holdings.length === 0) { showToast('보유 중인 종목이 없어요.', 'info'); return; }
   btn.disabled = true;
   btn.textContent = '조회 중...';
-  let successCount = 0, failCount = 0, krxCount = 0;
+  let successCount = 0, failCount = 0, krxCount = 0, sheetCount = 0;
   for (const h of holdings) {
     try {
       const code = (h.code || '').trim() || (h.ccy === 'KRW' ? lookupKrCodeByName(h.name) : h.name);
       if (!code) { failCount++; continue; }
+      const sheetPrice = await resolvePriceFromSheet(code);
+      if (sheetPrice) {
+        currentPrices[itemKey(h) + '|' + h.ccy] = sheetPrice;
+        successCount++; sheetCount++;
+        continue;
+      }
       if (h.ccy === 'KRW') {
         const krxResult = await fetchKrxLookup('price', code);
         if (krxResult && krxResult.close) {
@@ -1215,7 +1304,10 @@ document.getElementById('h-fetch-prices-btn').onclick = async () => {
   btn.disabled = false;
   btn.textContent = '현재가 자동조회';
   if (successCount > 0) { await saveCurrentPrices(); renderAll(); }
-  const krxNote = krxCount > 0 ? ` (KRX 공식 데이터 ${krxCount}건 포함)` : '';
+  const noteParts = [];
+  if (sheetCount > 0) noteParts.push(`구글시트 ${sheetCount}건`);
+  if (krxCount > 0) noteParts.push(`KRX 공식 데이터 ${krxCount}건`);
+  const krxNote = noteParts.length > 0 ? ` (${noteParts.join(', ')} 포함)` : '';
   if (successCount > 0 && failCount === 0) {
     showToast(`${successCount}개 종목의 현재가를 불러왔어요.${krxNote}`, 'success');
   } else if (successCount > 0 && failCount > 0) {
@@ -1642,7 +1734,7 @@ document.getElementById('tk-code').addEventListener('input', () => {
     clearTimeout(window.__tkKrxTimer);
     window.__tkKrxTimer = setTimeout(async () => {
       if (document.getElementById('tk-code').value.trim() !== code) return;
-      const result = await fetchKrxLookup('name', code);
+      const result = await resolveNameOnline(code);
       if (result && result.name && document.getElementById('tk-code').value.trim() === code) {
         document.getElementById('tk-name').value = result.name;
       }
@@ -1703,7 +1795,7 @@ document.getElementById('tk-bulk-save').onclick = async () => {
   const stillUnmapped = newRecords.filter(r => !r.name);
   if (stillUnmapped.length > 0 && usingSupabase) {
     await Promise.all(stillUnmapped.map(async (r) => {
-      const result = await fetchKrxLookup('name', r.code);
+      const result = await resolveNameOnline(r.code);
       if (result && result.name) r.name = result.name;
     }));
   }
@@ -1839,7 +1931,7 @@ document.getElementById('dk-code').addEventListener('input', () => {
       clearTimeout(window.__dkKrxTimer);
       window.__dkKrxTimer = setTimeout(async () => {
         if (document.getElementById('dk-code').value.trim() !== code) return;
-        const result = await fetchKrxLookup('name', code);
+        const result = await resolveNameOnline(code);
         if (document.getElementById('dk-code').value.trim() !== code) return;
         if (result && result.name) {
           nameField.value = result.name;
@@ -1901,7 +1993,7 @@ document.getElementById('dk-bulk-save').onclick = async () => {
   const stillUnmapped = newRecords.filter(r => !r.name);
   if (stillUnmapped.length > 0 && usingSupabase) {
     await Promise.all(stillUnmapped.map(async (r) => {
-      const result = await fetchKrxLookup('name', r.code);
+      const result = await resolveNameOnline(r.code);
       if (result && result.name) r.name = result.name;
     }));
   }
@@ -2110,7 +2202,7 @@ document.getElementById('ds-code').addEventListener('input', () => {
       clearTimeout(window.__dsKrxTimer);
       window.__dsKrxTimer = setTimeout(async () => {
         if (document.getElementById('ds-code').value.trim() !== code) return;
-        const result = await fetchKrxLookup('name', code);
+        const result = await resolveNameOnline(code);
         if (result && result.name && document.getElementById('ds-code').value.trim() === code) {
           document.getElementById('ds-name').value = result.name;
         }
@@ -2169,7 +2261,7 @@ document.getElementById('ds-bulk-save').onclick = async () => {
   const stillUnmapped = newRecords.filter(r => r.country === '한국' && !r.name);
   if (stillUnmapped.length > 0 && usingSupabase) {
     await Promise.all(stillUnmapped.map(async (r) => {
-      const result = await fetchKrxLookup('name', r.code);
+      const result = await resolveNameOnline(r.code);
       if (result && result.name) r.name = result.name;
     }));
   }
