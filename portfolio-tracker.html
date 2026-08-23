@@ -27,10 +27,16 @@
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
   .app { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
 
-  .masthead { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
-  .masthead h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+  .masthead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
+  .masthead h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex-shrink: 0; white-space: nowrap; }
   .masthead .sub { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); }
-  .masthead-right { display: flex; align-items: center; gap: 14px; }
+  .masthead-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .fx-quick-lookup { flex: 1 1 300px; min-width: 260px; display: flex; align-items: center; gap: 8px; margin: 0 20px; }
+  .fx-quick-lookup #fx-lookup-result { overflow: hidden; text-overflow: ellipsis; }
+  .fx-quick-lookup input[type="date"] { height: 34px; font-size: 13px; border: 1px solid var(--line); border-radius: 5px; padding: 0 10px; background: var(--paper); color: var(--ink); }
+  .fx-quick-lookup #fx-lookup-result { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+  .fx-quick-lookup #fx-lookup-result.found { color: var(--accent); font-weight: 600; }
+  .fx-quick-lookup #fx-lookup-result.notfound { color: var(--down); }
   .backup-actions { display: flex; gap: 6px; }
   .backup-actions .ghost-btn { font-size: 12px; padding: 5px 10px; }
 
@@ -194,6 +200,11 @@
 <div class="app" id="main-app">
   <div class="masthead">
     <h1>포트폴리오 원장</h1>
+    <div class="fx-quick-lookup">
+      <input type="date" id="fx-lookup-date" />
+      <button class="ghost-btn" id="fx-lookup-btn">조회</button>
+      <span id="fx-lookup-result"></span>
+    </div>
     <div class="masthead-right">
       <span class="sub" id="today-label"></span>
       <div class="backup-actions">
@@ -732,6 +743,40 @@ document.getElementById('ds-delete-selected-btn').onclick = async () => {
 };
 
 document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric' });
+
+document.getElementById('fx-lookup-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('fx-lookup-btn').onclick = async () => {
+  const dateInput = document.getElementById('fx-lookup-date');
+  const resultEl = document.getElementById('fx-lookup-result');
+  const target = dateInput.value;
+  if (!target) { resultEl.className = 'notfound'; resultEl.textContent = '날짜를 선택하세요'; return; }
+  const btn = document.getElementById('fx-lookup-btn');
+  btn.disabled = true;
+  resultEl.className = '';
+  resultEl.textContent = '조회 중...';
+  if (fxRates.length === 0) await loadFxRates(false);
+  btn.disabled = false;
+  if (fxRates.length === 0) {
+    resultEl.className = 'notfound';
+    resultEl.textContent = '환율정보를 불러올 수 없어요';
+    return;
+  }
+  const exact = fxRates.find(r => r.date === target);
+  if (exact) {
+    resultEl.className = 'found';
+    resultEl.textContent = `${target} 환율: ${exact.rate.toLocaleString('ko-KR', {maximumFractionDigits:2})}원`;
+    return;
+  }
+  // 주말/휴일 등으로 해당일 데이터가 없으면 그 이전 가장 가까운 날짜 값을 대신 보여줘요.
+  const before = [...fxRates].filter(r => r.date < target).sort((a,b) => b.date.localeCompare(a.date))[0];
+  if (before) {
+    resultEl.className = 'found';
+    resultEl.textContent = `${before.date} 환율: ${before.rate.toLocaleString('ko-KR', {maximumFractionDigits:2})}원 (해당일 휴장, 직전 영업일 기준)`;
+  } else {
+    resultEl.className = 'notfound';
+    resultEl.textContent = '해당 날짜의 환율 정보가 없어요 (2025-01-01 이전이거나 범위 밖)';
+  }
+};
 
 function fmtC(n, ccy) {
   if (ccy === 'USD') return fmtUSD2(n);
