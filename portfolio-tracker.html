@@ -155,7 +155,10 @@
   .asset-trend-svg-wrap { width: 100%; }
   .asset-trend-months { display: flex; justify-content: space-between; font-size: 9px; color: var(--ink-faint); margin-top: 2px; font-family: var(--mono); }
   .asset-trend-note { font-size: 11px; color: var(--ink-faint); margin-top: 10px; line-height: 1.5; }
-  input.price-input { width: 90px; height: 26px; font-size: 12px; text-align: right; padding: 0 6px; }
+  input.price-input { width: 100%; min-width: 90px; height: 26px; font-size: 13px; font-family: var(--mono); text-align: right; padding: 0 4px; border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 4px; }
+  input.price-input:hover { border-color: var(--line); background: var(--paper-raised); }
+  input.price-input:focus { outline: none; border-color: var(--accent); background: var(--paper-raised); box-shadow: 0 0 0 2px var(--accent-soft); text-align: right; }
+  input.price-input::placeholder { color: var(--ink-faint); font-family: var(--sans); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -1235,7 +1238,7 @@ function renderHoldings(holdings) {
       <td class="num">${fmtQty(h.qty)}</td>
       <td class="num">${fmtC(h.avgCost, h.ccy)}</td>
       <td class="num">${fmtC(amount, h.ccy)}</td>
-      <td class="num"><input type="number" class="price-input holding-price" min="0" step="any" data-key="${key}" value="${curPrice !== undefined ? curPrice : ''}" placeholder="입력" /></td>
+      <td class="num"><input type="text" inputmode="decimal" class="price-input holding-price" data-key="${key}" data-ccy="${h.ccy}" value="${curPrice !== undefined ? fmtC(curPrice, h.ccy) : ''}" placeholder="입력" /></td>
       <td class="num">${fmtC(marketValue, h.ccy)}</td>
       <td class="num" style="color:${pnl >= 0 ? '#d64545' : '#2f6fd6'}">${pnl >= 0 ? '+' : ''}${fmtC(pnl, h.ccy)}</td>
       <td class="num">${fmtC(h.divReceived, h.ccy)}</td>
@@ -1243,13 +1246,28 @@ function renderHoldings(holdings) {
     body.appendChild(tr);
   });
   body.querySelectorAll('.holding-price').forEach(inp => {
-    inp.addEventListener('change', async () => {
+    inp.addEventListener('focus', () => {
       const key = inp.dataset.key;
-      const v = parseFloat(inp.value);
-      if (isNaN(v) || v <= 0) { delete currentPrices[key]; } else { currentPrices[key] = v; }
+      const cur = currentPrices[key];
+      inp.value = cur !== undefined ? cur : '';
+      inp.select();
+    });
+    inp.addEventListener('blur', async () => {
+      const key = inp.dataset.key;
+      const ccy = inp.dataset.ccy;
+      const raw = inp.value.replace(/[^0-9.\-]/g, '');
+      const v = parseFloat(raw);
+      if (isNaN(v) || v <= 0) {
+        delete currentPrices[key];
+        inp.value = '';
+      } else {
+        currentPrices[key] = v;
+        inp.value = fmtC(v, ccy);
+      }
       await saveCurrentPrices();
       renderAll();
     });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
 }
 
