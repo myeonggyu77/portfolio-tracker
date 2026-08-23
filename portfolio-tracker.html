@@ -51,6 +51,9 @@
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
   .toolbar .hint { font-size: 12px; color: var(--ink-faint); }
   .toolbar .btn-group { display: flex; gap: 8px; }
+  .search-wrap { flex: 1; max-width: 280px; position: relative; }
+  input.search-input { width: 100%; height: 34px; padding: 0 12px 0 30px; font-size: 13px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238a958f" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 8px center; background-size: 14px; }
+  input.search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   button.primary-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 3px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
   button.primary-btn:hover { background: #000; }
   button.ghost-btn { font-family: var(--sans); font-size: 13px; background: none; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 3px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
@@ -75,7 +78,7 @@
   .field-lbl { font-size: 10px; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
 
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); font-weight: 500; padding: 0 8px 8px; border-bottom: 1px solid var(--ink); }
+  thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); font-weight: 500; padding: 8px 8px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); z-index: 4; box-shadow: 0 1px 0 var(--ink); }
   th.num, td.num { text-align: right; font-family: var(--mono); }
   tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line-soft); }
   tbody tr:hover { background: var(--accent-tint); }
@@ -265,7 +268,7 @@
   <!-- 한국 매매내역 -->
   <div class="panel" id="panel-txnskr">
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="tk-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="tk-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="tk-download-btn">다운로드</button>
@@ -322,7 +325,7 @@
   <!-- 미국 매매내역 -->
   <div class="panel" id="panel-txnsus">
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="tu-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="tu-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="tu-download-btn">다운로드</button>
@@ -379,7 +382,7 @@
   <!-- 한국 배당금 -->
   <div class="panel" id="panel-divkr">
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="dk-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="dk-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="dk-download-btn">다운로드</button>
@@ -435,7 +438,7 @@
   <!-- 미국 배당금 -->
   <div class="panel" id="panel-divus">
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="du-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="du-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="du-download-btn">다운로드</button>
@@ -492,7 +495,7 @@
   <!-- FX EXCHANGE -->
   <div class="panel" id="panel-fx">
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="fx-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="fx-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="fx-download-btn">다운로드</button>
@@ -563,7 +566,7 @@
 
     <h3 class="section-heading" style="margin-top:24px;">배당현황 내역</h3>
     <div class="toolbar">
-      <span></span>
+      <div class="search-wrap"><input type="text" id="ds-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
         <button class="ghost-btn danger-btn" id="ds-delete-selected-btn" disabled>선택 삭제</button>
         <button class="ghost-btn" id="ds-download-btn">다운로드</button>
@@ -627,6 +630,26 @@ let dcYear = new Date().getFullYear();
 // ---- Row selection (checkboxes) ----
 const selection = { tk: new Set(), tu: new Set(), dk: new Set(), du: new Set(), fx: new Set(), ds: new Set() };
 const lastVisibleIds = { tk: [], tu: [], dk: [], du: [], fx: [], ds: [] };
+const searchTerms = { tk: '', tu: '', dk: '', du: '', fx: '', ds: '' };
+
+// 레코드의 모든 값(원본 + 화면에 보이는 라벨)을 하나의 문자열로 합쳐서 검색 대상으로 만들어요.
+function buildSearchCorpus(obj, extra) {
+  const parts = Object.values(obj).map(v => v === null || v === undefined ? '' : String(v));
+  if (extra) parts.push(...extra);
+  return parts.join(' ').toLowerCase();
+}
+function matchesSearch(corpus, term) {
+  if (!term) return true;
+  return corpus.includes(term.trim().toLowerCase());
+}
+['tk','tu','dk','du','fx','ds'].forEach(prefix => {
+  const input = document.getElementById(prefix + '-search');
+  if (!input) return;
+  input.addEventListener('input', () => {
+    searchTerms[prefix] = input.value;
+    renderAll();
+  });
+});
 
 function updateSelectionBar(prefix) {
   const set = selection[prefix];
@@ -800,6 +823,22 @@ const KR_STOCK_MAP = {
   '099190':'아이센스', '214150':'클래시스', '141080':'리가켐바이오', '328130':'루닛'
 };
 function lookupKrStock(code) { return KR_STOCK_MAP[code.trim()] || null; }
+
+// (선택) KRX 공식 데이터 조회 — Supabase Edge Function "krx-lookup"이 배포되어 있을 때만 동작해요.
+// 배포하지 않았다면 조용히 실패하고 기존 방식(내장 목록/stooq)으로 자동 대체돼요.
+async function fetchKrxLookup(action, code) {
+  if (!usingSupabase || !SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  try {
+    const url = `${SUPABASE_URL}/functions/v1/krx-lookup?action=${action}&code=${encodeURIComponent(code)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.error) return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
 function lookupKrCodeByName(name) {
   const entry = Object.entries(KR_STOCK_MAP).find(([, n]) => n === name);
   if (entry) return entry[0];
@@ -1152,13 +1191,20 @@ document.getElementById('h-fetch-prices-btn').onclick = async () => {
   if (holdings.length === 0) { showToast('보유 중인 종목이 없어요.', 'info'); return; }
   btn.disabled = true;
   btn.textContent = '조회 중...';
-  let successCount = 0, failCount = 0;
+  let successCount = 0, failCount = 0, krxCount = 0;
   for (const h of holdings) {
     try {
-      let symbol;
       const code = (h.code || '').trim() || (h.ccy === 'KRW' ? lookupKrCodeByName(h.name) : h.name);
       if (!code) { failCount++; continue; }
-      symbol = h.ccy === 'USD' ? `${code}.US` : `${code}.KR`;
+      if (h.ccy === 'KRW') {
+        const krxResult = await fetchKrxLookup('price', code);
+        if (krxResult && krxResult.close) {
+          currentPrices[itemKey(h) + '|' + h.ccy] = krxResult.close;
+          successCount++; krxCount++;
+          continue;
+        }
+      }
+      const symbol = h.ccy === 'USD' ? `${code}.US` : `${code}.KR`;
       const close = await fetchQuoteClose(symbol);
       currentPrices[itemKey(h) + '|' + h.ccy] = close;
       successCount++;
@@ -1169,10 +1215,11 @@ document.getElementById('h-fetch-prices-btn').onclick = async () => {
   btn.disabled = false;
   btn.textContent = '현재가 자동조회';
   if (successCount > 0) { await saveCurrentPrices(); renderAll(); }
+  const krxNote = krxCount > 0 ? ` (KRX 공식 데이터 ${krxCount}건 포함)` : '';
   if (successCount > 0 && failCount === 0) {
-    showToast(`${successCount}개 종목의 현재가를 불러왔어요.`, 'success');
+    showToast(`${successCount}개 종목의 현재가를 불러왔어요.${krxNote}`, 'success');
   } else if (successCount > 0 && failCount > 0) {
-    showToast(`${successCount}개는 성공, ${failCount}개는 실패했어요. 실패한 종목은 표에서 직접 입력해 주세요.`, 'info', 6000);
+    showToast(`${successCount}개는 성공, ${failCount}개는 실패했어요.${krxNote} 실패한 종목은 표에서 직접 입력해 주세요.`, 'info', 6000);
   } else {
     showToast('현재가를 불러오지 못했어요. 표에서 직접 입력해 주세요.', 'error', 6000);
   }
@@ -1329,11 +1376,14 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
   const prefix = bodyId.split('-')[0];
   const body = document.getElementById(bodyId), empty = document.getElementById(emptyId), table = document.getElementById(tableId);
   body.innerHTML = '';
-  const filtered = txns.filter(t => t.country === country).sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
+  const ccy = country === '미국' ? 'USD' : 'KRW';
+  const term = searchTerms[prefix];
+  const filtered = txns.filter(t => t.country === country)
+    .sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
+    .filter(t => matchesSearch(buildSearchCorpus(t, [t.side==='buy'?'매수':'매도', fmtC(t.price, ccy), fmtC(t.qty*t.price, ccy), fmtQty(t.qty)]), term));
   lastVisibleIds[prefix] = filtered.map(t => t.id);
   if (filtered.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar(prefix); return; }
   empty.style.display = 'none'; table.style.display = 'table';
-  const ccy = country === '미국' ? 'USD' : 'KRW';
   filtered.forEach(t => {
     const amount = t.qty * t.price;
     const tr = document.createElement('tr');
@@ -1362,7 +1412,9 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
 function renderDivKr() {
   const body = document.getElementById('dk-body'), empty = document.getElementById('dk-empty'), table = document.getElementById('dk-table');
   body.innerHTML = '';
-  const sorted = [...divKr].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
+  const term = searchTerms.dk;
+  const sorted = [...divKr].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
+    .filter(d => matchesSearch(buildSearchCorpus(d, [fmtC(d.rate,'KRW'), fmtC(d.shares*d.rate,'KRW'), fmtQty(d.shares)]), term));
   lastVisibleIds.dk = sorted.map(d => d.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('dk'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1392,7 +1444,9 @@ function renderDivKr() {
 function renderDivUs() {
   const body = document.getElementById('du-body'), empty = document.getElementById('du-empty'), table = document.getElementById('du-table');
   body.innerHTML = '';
-  const sorted = [...divUs].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'));
+  const term = searchTerms.du;
+  const sorted = [...divUs].sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
+    .filter(d => matchesSearch(buildSearchCorpus(d, [fmtC(d.rate,'USD'), fmtC(d.shares*d.rate,'USD'), fmtC(d.shares*d.rate*0.85,'USD'), fmtC(d.shares*d.rate*0.85*(d.appliedRate||0),'KRW'), fmtQty(d.shares)]), term));
   lastVisibleIds.du = sorted.map(d => d.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('du'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1427,7 +1481,9 @@ function renderDivUs() {
 function renderFx() {
   const body = document.getElementById('fx-body'), empty = document.getElementById('fx-empty'), table = document.getElementById('fx-table');
   body.innerHTML = '';
-  const sorted = [...fx].sort((a,b) => b.date.localeCompare(a.date) || (a.account||'').localeCompare(b.account||'', 'ko'));
+  const term = searchTerms.fx;
+  const sorted = [...fx].sort((a,b) => b.date.localeCompare(a.date) || (a.account||'').localeCompare(b.account||'', 'ko'))
+    .filter(f => matchesSearch(buildSearchCorpus(f, [f.side==='buy'?'매수':'매도', fmtC(f.krw,'KRW'), fmtC(f.usd,'USD')]), term));
   lastVisibleIds.fx = sorted.map(f => f.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('fx'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1508,8 +1564,10 @@ function renderDivStatus() {
   renderDivStatusSummary();
   const body = document.getElementById('ds-body'), empty = document.getElementById('ds-empty'), table = document.getElementById('ds-table');
   body.innerHTML = '';
+  const term = searchTerms.ds;
   const sortKey = (d) => d.exDate || d.payDate || '';
-  const sorted = [...divStatus].sort((a,b) => sortKey(b).localeCompare(sortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'));
+  const sorted = [...divStatus].sort((a,b) => sortKey(b).localeCompare(sortKey(a)) || b.payDate.localeCompare(a.payDate) || a.name.localeCompare(b.name, 'ko'))
+    .filter(d => matchesSearch(buildSearchCorpus(d, [d.krwAmount ? fmtC(d.krwAmount,'KRW') : '', d.usdAmount ? fmtC(d.usdAmount,'USD') : '']), term));
   lastVisibleIds.ds = sorted.map(d => d.id);
   if (sorted.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar('ds'); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1579,7 +1637,17 @@ document.getElementById('tk-code').addEventListener('input', () => {
   const code = document.getElementById('tk-code').value.trim();
   if (!code) return;
   const found = lookupKrStock(code);
-  if (found) document.getElementById('tk-name').value = found;
+  if (found) { document.getElementById('tk-name').value = found; return; }
+  if (code.length === 6) {
+    clearTimeout(window.__tkKrxTimer);
+    window.__tkKrxTimer = setTimeout(async () => {
+      if (document.getElementById('tk-code').value.trim() !== code) return;
+      const result = await fetchKrxLookup('name', code);
+      if (result && result.name && document.getElementById('tk-code').value.trim() === code) {
+        document.getElementById('tk-name').value = result.name;
+      }
+    }, 400);
+  }
 });
 document.getElementById('tk-save').onclick = async () => {
   const date = document.getElementById('tk-date').value;
@@ -1613,13 +1681,11 @@ document.getElementById('tk-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
-  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (일자,계좌,종목코드,구분,수량,체결가,투자금구분)`); return; }
     const [date, account, code, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
     const foundName = lookupKrStock(code);
-    if (!foundName) unmapped++;
     const name = foundName || '';
     const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
     const qty = parseFloat(qtyRaw);
@@ -1633,6 +1699,15 @@ document.getElementById('tk-bulk-save').onclick = async () => {
     newRecords.push({ id: uid(), date, account, country:'한국', code, name, side, ccy:'KRW', qty, price, source });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
+  // 내장 목록에 없는 종목명은 KRX 조회로 마저 채워봐요 (Supabase 연동 시에만 동작).
+  const stillUnmapped = newRecords.filter(r => !r.name);
+  if (stillUnmapped.length > 0 && usingSupabase) {
+    await Promise.all(stillUnmapped.map(async (r) => {
+      const result = await fetchKrxLookup('name', r.code);
+      if (result && result.name) r.name = result.name;
+    }));
+  }
+  const unmapped = newRecords.filter(r => !r.name).length;
   txns.push(...newRecords);
   await saveTxns();
   document.getElementById('tk-bulk-form').style.display = 'none';
@@ -1759,7 +1834,23 @@ document.getElementById('dk-code').addEventListener('input', () => {
     nameField.value = found;
     hint.textContent = `"${found}" 자동완성됨 · 배당합계 = 주수 × 배당기준액 (자동 계산)`;
   } else {
-    hint.textContent = '등록된 종목코드가 아니에요. 종목명을 직접 입력해 주세요. · 배당합계 = 주수 × 배당기준액 (자동 계산)';
+    hint.textContent = '등록된 종목코드가 아니에요. KRX에서 조회 중...';
+    if (code.length === 6) {
+      clearTimeout(window.__dkKrxTimer);
+      window.__dkKrxTimer = setTimeout(async () => {
+        if (document.getElementById('dk-code').value.trim() !== code) return;
+        const result = await fetchKrxLookup('name', code);
+        if (document.getElementById('dk-code').value.trim() !== code) return;
+        if (result && result.name) {
+          nameField.value = result.name;
+          hint.textContent = `"${result.name}" KRX에서 자동완성됨 · 배당합계 = 주수 × 배당기준액 (자동 계산)`;
+        } else {
+          hint.textContent = '등록된 종목코드가 아니에요. 종목명을 직접 입력해 주세요. · 배당합계 = 주수 × 배당기준액 (자동 계산)';
+        }
+      }, 400);
+    } else {
+      hint.textContent = '등록된 종목코드가 아니에요. 종목명을 직접 입력해 주세요. · 배당합계 = 주수 × 배당기준액 (자동 계산)';
+    }
   }
 });
 
@@ -1792,13 +1883,11 @@ document.getElementById('dk-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
-  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 5) { errors.push(`${i+1}행: 항목 수가 부족해요 (계좌,종목코드,지급일,주수,배당기준액)`); return; }
     const [account, code, date, sharesRaw, rateRaw] = parts;
     const foundName = lookupKrStock(code);
-    if (!foundName) unmapped++;
     const name = foundName || '';
     const shares = parseFloat(sharesRaw);
     const rate = parseFloat(rateRaw);
@@ -1809,6 +1898,14 @@ document.getElementById('dk-bulk-save').onclick = async () => {
     newRecords.push({ id: uid(), account, code, name, date, shares, rate });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
+  const stillUnmapped = newRecords.filter(r => !r.name);
+  if (stillUnmapped.length > 0 && usingSupabase) {
+    await Promise.all(stillUnmapped.map(async (r) => {
+      const result = await fetchKrxLookup('name', r.code);
+      if (result && result.name) r.name = result.name;
+    }));
+  }
+  const unmapped = newRecords.filter(r => !r.name).length;
   divKr.push(...newRecords);
   await saveDivKr();
   document.getElementById('dk-bulk-form').style.display = 'none';
@@ -2008,7 +2105,17 @@ document.getElementById('ds-code').addEventListener('input', () => {
   if (!code) return;
   if (document.getElementById('ds-country').value === '한국') {
     const found = lookupKrStock(code);
-    if (found) document.getElementById('ds-name').value = found;
+    if (found) { document.getElementById('ds-name').value = found; return; }
+    if (code.length === 6) {
+      clearTimeout(window.__dsKrxTimer);
+      window.__dsKrxTimer = setTimeout(async () => {
+        if (document.getElementById('ds-code').value.trim() !== code) return;
+        const result = await fetchKrxLookup('name', code);
+        if (result && result.name && document.getElementById('ds-code').value.trim() === code) {
+          document.getElementById('ds-name').value = result.name;
+        }
+      }, 400);
+    }
   } else {
     document.getElementById('ds-name').value = code.toUpperCase();
   }
@@ -2044,16 +2151,13 @@ document.getElementById('ds-bulk-save').onclick = async () => {
   const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
   const errors = [];
   const newRecords = [];
-  let unmapped = 0;
   lines.forEach((line, i) => {
     const parts = line.split(',').map(p => p.trim());
     if (parts.length < 6) { errors.push(`${i+1}행: 항목 수가 부족해요 (배당락일,지급일,국가,종목코드,배당금(원화),배당금(달러))`); return; }
     const [exDate, payDate, countryRaw, codeRaw, krwRaw, usdRaw] = parts;
     const country = countryRaw === '미국' ? '미국' : '한국';
     const code = codeRaw.toUpperCase();
-    let name;
-    if (country === '한국') { const found = lookupKrStock(code); if (!found) unmapped++; name = found || ''; }
-    else { name = code; }
+    const name = country === '한국' ? (lookupKrStock(code) || '') : code;
     const krwAmount = parseFloat(krwRaw) || 0;
     const usdAmount = parseFloat(usdRaw) || 0;
     if (!/^\d{4}-\d{2}-\d{2}$/.test(payDate)) { errors.push(`${i+1}행: 지급일 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
@@ -2062,6 +2166,14 @@ document.getElementById('ds-bulk-save').onclick = async () => {
     newRecords.push({ id: uid(), exDate, payDate, country, code, name, krwAmount, usdAmount });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
+  const stillUnmapped = newRecords.filter(r => r.country === '한국' && !r.name);
+  if (stillUnmapped.length > 0 && usingSupabase) {
+    await Promise.all(stillUnmapped.map(async (r) => {
+      const result = await fetchKrxLookup('name', r.code);
+      if (result && result.name) r.name = result.name;
+    }));
+  }
+  const unmapped = newRecords.filter(r => r.country === '한국' && !r.name).length;
   divStatus.push(...newRecords);
   await saveDivStatus();
   document.getElementById('ds-bulk-form').style.display = 'none';
