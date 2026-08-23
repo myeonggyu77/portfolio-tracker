@@ -105,7 +105,7 @@
   button.ghost-btn.danger-btn { color: var(--down); border-color: #f0c7c7; }
   button.ghost-btn.danger-btn:hover:not(:disabled) { background: var(--down-soft); }
   button.ghost-btn.danger-btn:disabled { opacity: 0.4; cursor: default; }
-  .overflow-x { overflow-x: auto; }
+  .overflow-x { overflow-x: auto; overflow-y: auto; max-height: 70vh; border-radius: 4px; }
 
   .toast-wrap { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
 
@@ -285,7 +285,14 @@
         <div><div class="field-lbl">계좌</div><input id="tk-account" placeholder="예: 국내종합" /></div>
         <div><div class="field-lbl">종목코드</div><input id="tk-code" placeholder="예: 005930" /></div>
         <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="tk-name" placeholder="예: 삼성전자" /></div>
-        <div><div class="field-lbl">구분</div><select id="tk-side"><option value="buy">매수</option><option value="sell">매도</option></select></div>
+        <div><div class="field-lbl">구분</div><select id="tk-side">
+          <option value="buy">매수</option>
+          <option value="sell">매도</option>
+          <option value="split_buy">액면분할매수</option>
+          <option value="split_sell">액면분할매도</option>
+          <option value="merge_buy">액면병합매수</option>
+          <option value="merge_sell">액면병합매도</option>
+        </select></div>
         <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tk-qty" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">체결가 (원)</div><input id="tk-price" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">투자금 구분</div><select id="tk-source"><option value="원금투자">원금투자</option><option value="배당재투자">배당재투자</option></select></div>
@@ -303,7 +310,7 @@
         <button class="ghost-btn" id="tk-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="tk-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-01-15,국내종합,005930,매수,10,72000,원금투자&#10;종목명은 코드로 자동 완성돼요. 투자금구분은 생략하면 원금투자로 저장돼요.</div>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,구분,수량,체결가,투자금구분(원금투자/배당재투자)&#10;구분은 매수/매도/액면분할매수/액면분할매도/액면병합매수/액면병합매도 중 하나예요.&#10;예) 2026-01-15,국내종합,005930,매수,10,72000,원금투자&#10;종목명은 코드로 자동 완성돼요. 투자금구분은 생략하면 원금투자로 저장돼요.</div>
       <textarea id="tk-bulk-text" placeholder="2026-01-15,국내종합,005930,매수,10,72000,원금투자"></textarea>
       <div class="form-error" id="tk-bulk-error" style="display:none;"></div>
       <div class="form-actions">
@@ -342,7 +349,14 @@
         <div><div class="field-lbl">계좌</div><input id="tu-account" placeholder="예: 미국주식" /></div>
         <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" placeholder="예: AAPL" /></div>
         <div><div class="field-lbl">종목명</div><input id="tu-name" placeholder="예: Apple Inc." /></div>
-        <div><div class="field-lbl">구분</div><select id="tu-side"><option value="buy">매수</option><option value="sell">매도</option></select></div>
+        <div><div class="field-lbl">구분</div><select id="tu-side">
+          <option value="buy">매수</option>
+          <option value="sell">매도</option>
+          <option value="split_buy">액면분할매수</option>
+          <option value="split_sell">액면분할매도</option>
+          <option value="merge_buy">액면병합매수</option>
+          <option value="merge_sell">액면병합매도</option>
+        </select></div>
         <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tu-qty" type="number" min="0" step="any" placeholder="예: 0.25" /></div>
         <div><div class="field-lbl">체결가 ($)</div><input id="tu-price" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">투자금 구분</div><select id="tu-source"><option value="원금투자">원금투자</option><option value="배당재투자">배당재투자</option></select></div>
@@ -360,7 +374,7 @@
         <button class="ghost-btn" id="tu-excel-btn">엑셀/CSV 파일 불러오기</button>
         <input type="file" id="tu-excel-input" accept=".xlsx,.xls,.csv" style="display:none;" />
       </div>
-      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,구분(매수/매도),수량,체결가,투자금구분(원금투자/배당재투자)&#10;예) 2026-02-03,미국주식,AAPL,매수,2.5,190.32,배당재투자&#10;종목명은 종목코드와 동일하게 자동 입력돼요. 투자금구분은 생략하면 원금투자로 저장돼요.</div>
+      <div class="form-note">한 줄에 하나씩, 콤마로 구분: 일자,계좌,종목코드,구분,수량,체결가,투자금구분(원금투자/배당재투자)&#10;구분은 매수/매도/액면분할매수/액면분할매도/액면병합매수/액면병합매도 중 하나예요.&#10;예) 2026-02-03,미국주식,AAPL,매수,2.5,190.32,배당재투자&#10;종목명은 종목코드와 동일하게 자동 입력돼요. 투자금구분은 생략하면 원금투자로 저장돼요.</div>
       <textarea id="tu-bulk-text" placeholder="2026-02-03,미국주식,AAPL,매수,2.5,190.32,배당재투자"></textarea>
       <div class="form-error" id="tu-bulk-error" style="display:none;"></div>
       <div class="form-actions">
@@ -1157,6 +1171,25 @@ function itemKey(obj) {
   return code ? code.toUpperCase() : normName(obj.name);
 }
 
+// 매매 구분: '매수' 계열은 보유수량 증가, '매도' 계열은 감소로 동일하게 처리해요.
+const SIDE_LABELS = {
+  buy: '매수', sell: '매도',
+  split_buy: '액면분할매수', split_sell: '액면분할매도',
+  merge_buy: '액면병합매수', merge_sell: '액면병합매도',
+};
+function sideLabel(side) { return SIDE_LABELS[side] || side; }
+function isBuySide(side) { return side === 'buy' || side === 'split_buy' || side === 'merge_buy'; }
+function sideBadgeClass(side) { return isBuySide(side) ? 'buy' : 'sell'; }
+function parseSideInput(raw) {
+  const s = (raw || '').trim();
+  const entry = Object.entries(SIDE_LABELS).find(([, label]) => label === s);
+  if (entry) return entry[0];
+  const lower = s.toLowerCase();
+  if (lower === 'buy') return 'buy';
+  if (lower === 'sell') return 'sell';
+  return null;
+}
+
 function computeHoldings() {
   const byKey = {};
   const sorted = [...txns].sort((a,b) => a.date.localeCompare(b.date));
@@ -1164,7 +1197,7 @@ function computeHoldings() {
     const key = itemKey(t) + '|' + t.ccy;
     if (!byKey[key]) byKey[key] = { name: t.name, code: t.code || '', ccy: t.ccy, country: t.country, qty: 0, avgCost: 0 };
     const pos = byKey[key];
-    if (t.side === 'buy') {
+    if (isBuySide(t.side)) {
       const newQty = pos.qty + t.qty;
       const totalCost = pos.qty * pos.avgCost + t.qty * t.price;
       pos.qty = newQty;
@@ -1490,7 +1523,7 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
   const term = searchTerms[prefix];
   const filtered = txns.filter(t => t.country === country)
     .sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
-    .filter(t => matchesSearch(buildSearchCorpus(t, [t.side==='buy'?'매수':'매도', fmtC(t.price, ccy), fmtC(t.qty*t.price, ccy), fmtQty(t.qty)]), term));
+    .filter(t => matchesSearch(buildSearchCorpus(t, [sideLabel(t.side), fmtC(t.price, ccy), fmtC(t.qty*t.price, ccy), fmtQty(t.qty)]), term));
   lastVisibleIds[prefix] = filtered.map(t => t.id);
   if (filtered.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; updateSelectionBar(prefix); return; }
   empty.style.display = 'none'; table.style.display = 'table';
@@ -1503,7 +1536,7 @@ function renderTxnTable(country, bodyId, emptyId, tableId, onEdit, onDelete) {
       <td class="acct-tag">${t.account || '-'}</td>
       <td class="code-cell">${t.code || '-'}</td>
       <td class="name-cell">${t.name}</td>
-      <td><span class="side-tag ${t.side}">${t.side==='buy'?'매수':'매도'}</span></td>
+      <td><span class="side-tag ${sideBadgeClass(t.side)}">${sideLabel(t.side)}</span></td>
       <td><span class="source-tag ${t.source==='배당재투자'?'reinvest':'principal'}">${t.source || '원금투자'}</span></td>
       <td class="num">${fmtQty(t.qty)}</td>
       <td class="num">${fmtC(t.price, ccy)}</td>
@@ -1773,7 +1806,8 @@ document.getElementById('tk-save').onclick = async () => {
   if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (!name) { err.textContent = '종목명을 입력하세요'; err.style.display='block'; return; }
   if (isNaN(qty) || qty <= 0) { err.textContent = '수량을 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (isNaN(price) || price <= 0) { err.textContent = '체결가를 올바르게 입력하세요'; err.style.display='block'; return; }
+  const priceMin = (side === 'buy' || side === 'sell') ? 1e-9 : 0;
+  if (isNaN(price) || price < priceMin) { err.textContent = (side==='buy'||side==='sell') ? '체결가를 올바르게 입력하세요' : '체결가는 0 이상이어야 해요 (무상이면 0)'; err.style.display='block'; return; }
   if (editTkId) { const t = txns.find(x=>x.id===editTkId); t.date=date; t.account=account; t.country='한국'; t.code=code; t.name=name; t.side=side; t.ccy='KRW'; t.qty=qty; t.price=price; t.source=source; }
   else txns.push({ id: uid(), date, account, country:'한국', code, name, side, ccy:'KRW', qty, price, source });
   await saveTxns();
@@ -1797,15 +1831,16 @@ document.getElementById('tk-bulk-save').onclick = async () => {
     const [date, account, code, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
     const foundName = lookupKrStock(code);
     const name = foundName || '';
-    const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
+    const side = parseSideInput(sideRaw);
     const qty = parseFloat(qtyRaw);
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
     if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
-    if (!side) { errors.push(`${i+1}행: 구분은 매수 또는 매도만 가능해요`); return; }
+    if (!side) { errors.push(`${i+1}행: 구분은 매수/매도/액면분할매수/액면분할매도/액면병합매수/액면병합매도 중 하나여야 해요`); return; }
     if (isNaN(qty) || qty <= 0) { errors.push(`${i+1}행: 수량이 올바르지 않아요`); return; }
-    if (isNaN(price) || price <= 0) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
+    const bulkPriceMin = (side === 'buy' || side === 'sell') ? 1e-9 : 0;
+    if (isNaN(price) || price < bulkPriceMin) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
     newRecords.push({ id: uid(), date, account, country:'한국', code, name, side, ccy:'KRW', qty, price, source });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
@@ -1868,7 +1903,8 @@ document.getElementById('tu-save').onclick = async () => {
   if (!date) { err.textContent = '일자를 선택하세요'; err.style.display='block'; return; }
   if (!code) { err.textContent = '종목코드를 입력하세요'; err.style.display='block'; return; }
   if (isNaN(qty) || qty <= 0) { err.textContent = '수량을 올바르게 입력하세요'; err.style.display='block'; return; }
-  if (isNaN(price) || price <= 0) { err.textContent = '체결가를 올바르게 입력하세요'; err.style.display='block'; return; }
+  const priceMin = (side === 'buy' || side === 'sell') ? 1e-9 : 0;
+  if (isNaN(price) || price < priceMin) { err.textContent = (side==='buy'||side==='sell') ? '체결가를 올바르게 입력하세요' : '체결가는 0 이상이어야 해요 (무상이면 0)'; err.style.display='block'; return; }
   if (editTuId) { const t = txns.find(x=>x.id===editTuId); t.date=date; t.account=account; t.country='미국'; t.code=code; t.name=name; t.side=side; t.ccy='USD'; t.qty=qty; t.price=price; t.source=source; }
   else txns.push({ id: uid(), date, account, country:'미국', code, name, side, ccy:'USD', qty, price, source });
   await saveTxns();
@@ -1892,15 +1928,16 @@ document.getElementById('tu-bulk-save').onclick = async () => {
     const [date, account, codeRaw, sideRaw, qtyRaw, priceRaw, sourceRaw] = parts;
     const code = codeRaw.toUpperCase();
     const name = code;
-    const side = (sideRaw === '매수' || sideRaw.toLowerCase() === 'buy') ? 'buy' : (sideRaw === '매도' || sideRaw.toLowerCase() === 'sell') ? 'sell' : null;
+    const side = parseSideInput(sideRaw);
     const qty = parseFloat(qtyRaw);
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
     if (!code) { errors.push(`${i+1}행: 종목코드가 비어있어요`); return; }
-    if (!side) { errors.push(`${i+1}행: 구분은 매수 또는 매도만 가능해요`); return; }
+    if (!side) { errors.push(`${i+1}행: 구분은 매수/매도/액면분할매수/액면분할매도/액면병합매수/액면병합매도 중 하나여야 해요`); return; }
     if (isNaN(qty) || qty <= 0) { errors.push(`${i+1}행: 수량이 올바르지 않아요`); return; }
-    if (isNaN(price) || price <= 0) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
+    const bulkPriceMin = (side === 'buy' || side === 'sell') ? 1e-9 : 0;
+    if (isNaN(price) || price < bulkPriceMin) { errors.push(`${i+1}행: 체결가가 올바르지 않아요`); return; }
     newRecords.push({ id: uid(), date, account, country:'미국', code, name, side, ccy:'USD', qty, price, source });
   });
   if (newRecords.length === 0) { err.textContent = errors.join('\n') || '유효한 행이 없어요'; err.style.display='block'; return; }
@@ -2302,13 +2339,13 @@ document.getElementById('h-download-btn').onclick = () => {
 
 document.getElementById('tk-download-btn').onclick = () => {
   const rows = txns.filter(t=>t.country==='한국').sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
-    .map(t => [t.date, t.account, t.code || '', t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
+    .map(t => [t.date, t.account, t.code || '', t.name, sideLabel(t.side), t.qty, t.price, t.qty*t.price, t.source]);
   downloadCsv(`한국매매내역_${todayStr()}.csv`, ['일자','계좌','종목코드','종목명','구분','수량','체결가','거래금액','투자금구분'], rows);
 };
 
 document.getElementById('tu-download-btn').onclick = () => {
   const rows = txns.filter(t=>t.country==='미국').sort((a,b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name, 'ko'))
-    .map(t => [t.date, t.account, t.code || '', t.name, t.side==='buy'?'매수':'매도', t.qty, t.price, t.qty*t.price, t.source]);
+    .map(t => [t.date, t.account, t.code || '', t.name, sideLabel(t.side), t.qty, t.price, t.qty*t.price, t.source]);
   downloadCsv(`미국매매내역_${todayStr()}.csv`, ['일자','계좌','종목코드','종목명','구분','수량','체결가($)','거래금액($)','투자금구분'], rows);
 };
 
