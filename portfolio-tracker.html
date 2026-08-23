@@ -31,11 +31,13 @@
   .masthead h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex-shrink: 0; white-space: nowrap; }
   .masthead .sub { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); }
   .masthead-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-  .fx-quick-lookup { flex: 1 1 300px; min-width: 200px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 0 20px; }
+  .quick-lookups { flex: 1 1 300px; min-width: 200px; display: flex; flex-direction: column; gap: 6px; margin: 0 20px; }
+  .fx-quick-lookup { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
   .fx-quick-lookup input[type="date"] { width: 40%; max-width: 118px; height: 34px; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; background: var(--paper); color: var(--ink); }
-  .fx-quick-lookup #fx-lookup-result { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: normal; word-break: break-word; }
-  .fx-quick-lookup #fx-lookup-result.found { color: var(--accent); font-weight: 600; }
-  .fx-quick-lookup #fx-lookup-result.notfound { color: var(--down); }
+  .fx-quick-lookup input[type="text"] { width: 100px; height: 34px; font-size: 12px; border: 1px solid var(--line); border-radius: 5px; padding: 0 8px; background: var(--paper); color: var(--ink); }
+  .fx-quick-lookup #fx-lookup-result, .fx-quick-lookup #div-lookup-result { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); white-space: normal; word-break: break-word; }
+  .fx-quick-lookup #fx-lookup-result.found, .fx-quick-lookup #div-lookup-result.found { color: var(--accent); font-weight: 600; }
+  .fx-quick-lookup #fx-lookup-result.notfound, .fx-quick-lookup #div-lookup-result.notfound { color: var(--down); }
   .backup-actions { display: flex; gap: 6px; }
   .backup-actions .ghost-btn { font-size: 12px; padding: 5px 10px; }
 
@@ -199,10 +201,18 @@
 <div class="app" id="main-app">
   <div class="masthead">
     <h1>포트폴리오 원장</h1>
-    <div class="fx-quick-lookup">
-      <input type="date" id="fx-lookup-date" />
-      <button class="ghost-btn" id="fx-lookup-btn">조회</button>
-      <span id="fx-lookup-result"></span>
+    <div class="quick-lookups">
+      <div class="fx-quick-lookup">
+        <input type="date" id="fx-lookup-date" />
+        <button class="ghost-btn" id="fx-lookup-btn">조회</button>
+        <span id="fx-lookup-result"></span>
+      </div>
+      <div class="fx-quick-lookup">
+        <input type="text" id="div-lookup-code" list="all-code-datalist" placeholder="종목코드" />
+        <input type="date" id="div-lookup-date" />
+        <button class="ghost-btn" id="div-lookup-btn">조회</button>
+        <span id="div-lookup-result"></span>
+      </div>
     </div>
     <div class="masthead-right">
       <span class="sub" id="today-label"></span>
@@ -775,6 +785,28 @@ document.getElementById('fx-lookup-btn').onclick = async () => {
     resultEl.className = 'notfound';
     resultEl.textContent = '해당 날짜의 환율 정보가 없어요 (2025-01-01 이전이거나 범위 밖)';
   }
+};
+
+document.getElementById('div-lookup-date').value = new Date().toISOString().slice(0,10);
+document.getElementById('div-lookup-btn').onclick = () => {
+  const codeInput = document.getElementById('div-lookup-code');
+  const dateInput = document.getElementById('div-lookup-date');
+  const resultEl = document.getElementById('div-lookup-result');
+  const code = codeInput.value.trim().toUpperCase();
+  const target = dateInput.value;
+  if (!code) { resultEl.className = 'notfound'; resultEl.textContent = '종목코드를 입력하세요'; return; }
+  if (!target) { resultEl.className = 'notfound'; resultEl.textContent = '조회일자를 선택하세요'; return; }
+  const matches = divStatus.filter(d => (d.code || '').trim().toUpperCase() === code && d.exDate === target);
+  if (matches.length === 0) {
+    resultEl.className = 'notfound';
+    resultEl.textContent = `${target} 배당락일 기준 ${code} 배당 내역이 없어요`;
+    return;
+  }
+  const country = matches[0].country;
+  const total = matches.reduce((s, d) => s + (country === '미국' ? (d.usdAmount || 0) : (d.krwAmount || 0)), 0);
+  const ccy = country === '미국' ? 'USD' : 'KRW';
+  resultEl.className = 'found';
+  resultEl.textContent = `${target} ${code} 배당금: ${fmtCTrim(total, ccy)}`;
 };
 
 function fmtC(n, ccy) {
