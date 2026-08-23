@@ -101,6 +101,8 @@
   tbody td { padding: 10px 8px; border-bottom: 1px solid var(--line-soft); }
   tbody tr:hover { background: var(--accent-tint); }
   .name-cell { font-weight: 500; }
+  #h-table .name-cell, #tk-table .name-cell, #dk-table .name-cell,
+  #h-table th.name-th, #tk-table th.name-th, #dk-table th.name-th { width: 120px; }
   .code-cell { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
   .ccy-badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; margin-left: 6px; background: var(--line-soft); color: var(--ink-soft); vertical-align: 1px; }
   .ccy-badge.usd { background: var(--accent-soft); color: var(--accent); }
@@ -296,7 +298,7 @@
     <div class="overflow-x">
     <table id="h-table" style="display:none;">
       <thead><tr>
-        <th>종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
+        <th class="name-th">종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
       </tr></thead>
       <tbody id="h-body"></tbody>
     </table>
@@ -360,7 +362,7 @@
     <div class="overflow-x">
     <table id="tk-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th>종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="tk-select-all" aria-label="전체 선택"></th><th>일자</th><th>계좌</th><th class="name-th">종목명</th><th>구분</th><th>투자금</th><th class="num">수량</th><th class="num">체결가</th><th class="num">거래금액</th><th></th>
       </tr></thead>
       <tbody id="tk-body"></tbody>
     </table>
@@ -480,7 +482,7 @@
     <div class="overflow-x">
     <table id="dk-table" style="display:none;">
       <thead><tr>
-        <th class="checkbox-cell"><input type="checkbox" id="dk-select-all" aria-label="전체 선택"></th><th>계좌</th><th>종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
+        <th class="checkbox-cell"><input type="checkbox" id="dk-select-all" aria-label="전체 선택"></th><th>계좌</th><th class="name-th">종목명</th><th>지급일</th><th class="num">주수</th><th class="num">배당기준액</th><th class="num">배당합계</th><th></th>
       </tr></thead>
       <tbody id="dk-body"></tbody>
     </table>
