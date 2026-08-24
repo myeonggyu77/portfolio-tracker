@@ -2,18 +2,41 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="refresh" content="0; url=portfolio-tracker.html">
-<title>포트폴리오 원장으로 이동 중...</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 원장</title>
 <style>
-  body { font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; background: #fbfaf7; color: #1a2420; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-  .box { text-align: center; }
-  a { color: #0f6e56; font-weight: 600; }
+  :root { --ink: #1a2420; --ink-soft: #56635c; --ink-faint: #8a958f; --paper: #fbfaf7; --paper-raised: #ffffff; --line: #dcdcd2; --accent: #0f6e56; --accent-soft: #e1f0ea; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; background: var(--paper); color: var(--ink); display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 24px; }
+  .wrap { width: 100%; max-width: 460px; }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 22px; text-align: center; }
+  .card-list { display: flex; flex-direction: column; gap: 12px; }
+  a.app-card { display: flex; align-items: center; gap: 14px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; text-decoration: none; color: inherit; }
+  a.app-card:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .app-card .emoji { font-size: 26px; flex-shrink: 0; }
+  .app-card .name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .app-card .desc { font-size: 12px; color: var(--ink-faint); }
 </style>
 </head>
 <body>
-  <div class="box">
-    <p>포트폴리오 원장으로 이동 중이에요...</p>
-    <p>자동으로 이동하지 않으면 <a href="portfolio-tracker.html">여기를 눌러주세요</a>.</p>
+  <div class="wrap">
+    <h1>내 원장</h1>
+    <div class="card-list">
+      <a class="app-card" href="portfolio-tracker.html">
+        <span class="emoji">📈</span>
+        <span>
+          <div class="name">포트폴리오 원장</div>
+          <div class="desc">한국/미국 주식 매매·배당·환율 관리</div>
+        </span>
+      </a>
+      <a class="app-card" href="ledger.html">
+        <span class="emoji">🧾</span>
+        <span>
+          <div class="name">가계부</div>
+          <div class="desc">수입·지출·계좌·예산·정기거래 관리</div>
+        </span>
+      </a>
+    </div>
   </div>
 </body>
 </html>
