@@ -332,7 +332,7 @@
           <option value="merge_buy">액면병합매수</option>
           <option value="merge_sell">액면병합매도</option>
         </select></div>
-        <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tk-qty" type="number" min="0" step="any" /></div>
+        <div><div class="field-lbl">수량 (소수점 3자리까지)</div><input id="tk-qty" type="number" min="0" step="0.001" /></div>
         <div><div class="field-lbl">체결가 (원)</div><input id="tk-price" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">투자금 구분</div><select id="tk-source"><option value="원금투자">원금투자</option><option value="배당재투자">배당재투자</option></select></div>
       </div>
@@ -396,7 +396,7 @@
           <option value="merge_buy">액면병합매수</option>
           <option value="merge_sell">액면병합매도</option>
         </select></div>
-        <div><div class="field-lbl">수량 (소수점 가능)</div><input id="tu-qty" type="number" min="0" step="any" placeholder="예: 0.25" /></div>
+        <div><div class="field-lbl">수량 (소수점 3자리까지)</div><input id="tu-qty" type="number" min="0" step="0.001" placeholder="예: 0.25" /></div>
         <div><div class="field-lbl">체결가 ($)</div><input id="tu-price" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">투자금 구분</div><select id="tu-source"><option value="원금투자">원금투자</option><option value="배당재투자">배당재투자</option></select></div>
       </div>
@@ -849,8 +849,9 @@ function fmtUSD5(n) {
   else if (dp.length < 2) dp = dp.padEnd(2, '0');
   return sign + '$' + Number(ip).toLocaleString('en-US') + '.' + dp;
 }
-function fmtQty(n) { return n.toLocaleString('ko-KR', { maximumFractionDigits: 6 }); }
+function fmtQty(n) { return n.toLocaleString('ko-KR', { maximumFractionDigits: 3 }); }
 function fmtPct(n) { return n.toFixed(2) + '%'; }
+function round3(n) { return Math.round(n * 1000) / 1000; }
 function uid() { return Date.now().toString() + Math.random().toString(36).slice(2,7); }
 
 function csvEscape(v) {
@@ -1921,7 +1922,7 @@ document.getElementById('tk-save').onclick = async () => {
   const code = document.getElementById('tk-code').value.trim();
   const name = document.getElementById('tk-name').value.trim();
   const side = document.getElementById('tk-side').value;
-  const qty = parseFloat(document.getElementById('tk-qty').value);
+  const qty = round3(parseFloat(document.getElementById('tk-qty').value));
   const price = parseFloat(document.getElementById('tk-price').value);
   const source = document.getElementById('tk-source').value;
   const err = document.getElementById('tk-error');
@@ -1955,7 +1956,7 @@ document.getElementById('tk-bulk-save').onclick = async () => {
     const foundName = lookupKrStock(code);
     const name = foundName || '';
     const side = parseSideInput(sideRaw);
-    const qty = parseFloat(qtyRaw);
+    const qty = round3(parseFloat(qtyRaw));
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
@@ -2019,7 +2020,7 @@ document.getElementById('tu-save').onclick = async () => {
   const code = document.getElementById('tu-code').value.trim().toUpperCase();
   const name = document.getElementById('tu-name').value.trim() || code;
   const side = document.getElementById('tu-side').value;
-  const qty = parseFloat(document.getElementById('tu-qty').value);
+  const qty = round3(parseFloat(document.getElementById('tu-qty').value));
   const price = parseFloat(document.getElementById('tu-price').value);
   const source = document.getElementById('tu-source').value;
   const err = document.getElementById('tu-error');
@@ -2052,7 +2053,7 @@ document.getElementById('tu-bulk-save').onclick = async () => {
     const code = codeRaw.toUpperCase();
     const name = code;
     const side = parseSideInput(sideRaw);
-    const qty = parseFloat(qtyRaw);
+    const qty = round3(parseFloat(qtyRaw));
     const price = parseFloat(priceRaw);
     const source = sourceRaw === '배당재투자' ? '배당재투자' : '원금투자';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { errors.push(`${i+1}행: 일자 형식이 올바르지 않아요 (YYYY-MM-DD)`); return; }
