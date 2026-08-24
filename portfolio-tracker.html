@@ -321,8 +321,8 @@
     <div class="form-card" id="tk-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tk-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="tk-account" list="account-datalist" placeholder="예: 국내종합" /></div>
-        <div><div class="field-lbl">종목코드</div><input id="tk-code" list="kr-code-datalist" placeholder="예: 005930" /></div>
+        <div><div class="field-lbl">계좌</div><input id="tk-account" list="account-datalist" autocomplete="off" placeholder="예: 국내종합" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="tk-code" list="kr-code-datalist" autocomplete="off" placeholder="예: 005930" /></div>
         <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="tk-name" placeholder="예: 삼성전자" /></div>
         <div><div class="field-lbl">구분</div><select id="tk-side">
           <option value="buy">매수</option>
@@ -385,8 +385,8 @@
     <div class="form-card" id="tu-form" style="display:none;">
       <div class="form-grid">
         <div><div class="field-lbl">일자</div><input id="tu-date" type="date" /></div>
-        <div><div class="field-lbl">계좌</div><input id="tu-account" list="account-datalist" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" list="us-code-datalist" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">계좌</div><input id="tu-account" list="account-datalist" autocomplete="off" placeholder="예: 미국주식" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="tu-code" list="us-code-datalist" autocomplete="off" placeholder="예: AAPL" /></div>
         <div><div class="field-lbl">종목명</div><input id="tu-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">구분</div><select id="tu-side">
           <option value="buy">매수</option>
@@ -448,8 +448,8 @@
     </div>
     <div class="form-card" id="dk-form" style="display:none;">
       <div class="form-grid">
-        <div><div class="field-lbl">계좌</div><input id="dk-account" list="account-datalist" placeholder="예: 국내종합" /></div>
-        <div><div class="field-lbl">종목코드</div><input id="dk-code" list="kr-code-datalist" placeholder="예: 005930" /></div>
+        <div><div class="field-lbl">계좌</div><input id="dk-account" list="account-datalist" autocomplete="off" placeholder="예: 국내종합" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="dk-code" list="kr-code-datalist" autocomplete="off" placeholder="예: 005930" /></div>
         <div><div class="field-lbl">종목명 (코드 입력 시 자동완성)</div><input id="dk-name" placeholder="예: 삼성전자" /></div>
         <div><div class="field-lbl">지급일</div><input id="dk-date" type="date" /></div>
         <div><div class="field-lbl">주수 (소수점 가능)</div><input id="dk-shares" type="number" min="0" step="any" /></div>
@@ -504,8 +504,8 @@
     </div>
     <div class="form-card" id="du-form" style="display:none;">
       <div class="form-grid">
-        <div><div class="field-lbl">계좌</div><input id="du-account" list="account-datalist" placeholder="예: 미국주식" /></div>
-        <div><div class="field-lbl">종목코드 (티커)</div><input id="du-code" list="us-code-datalist" placeholder="예: AAPL" /></div>
+        <div><div class="field-lbl">계좌</div><input id="du-account" list="account-datalist" autocomplete="off" placeholder="예: 미국주식" /></div>
+        <div><div class="field-lbl">종목코드 (티커)</div><input id="du-code" list="us-code-datalist" autocomplete="off" placeholder="예: AAPL" /></div>
         <div><div class="field-lbl">종목명</div><input id="du-name" placeholder="예: Apple Inc." /></div>
         <div><div class="field-lbl">지급일</div><input id="du-date" type="date" /></div>
         <div><div class="field-lbl">주수 (소수점 가능)</div><input id="du-shares" type="number" min="0" step="any" /></div>
@@ -602,7 +602,7 @@
         <div><div class="field-lbl">배당락일</div><input id="ds-exdate" type="date" /></div>
         <div><div class="field-lbl">지급일</div><input id="ds-paydate" type="date" /></div>
         <div><div class="field-lbl">국가</div><select id="ds-country"><option value="한국">한국</option><option value="미국">미국</option></select></div>
-        <div><div class="field-lbl">종목코드</div><input id="ds-code" list="all-code-datalist" placeholder="예: 005930, AAPL" /></div>
+        <div><div class="field-lbl">종목코드</div><input id="ds-code" list="all-code-datalist" autocomplete="off" placeholder="예: 005930, AAPL" /></div>
         <div><div class="field-lbl">종목명 (한국은 코드 입력 시 자동완성)</div><input id="ds-name" placeholder="예: 삼성전자, AAPL" /></div>
         <div><div class="field-lbl">배당금 (원화)</div><input id="ds-krw" type="number" min="0" step="any" /></div>
         <div><div class="field-lbl">배당금 (달러)</div><input id="ds-usd" type="number" min="0" step="any" /></div>
