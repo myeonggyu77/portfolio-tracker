@@ -1588,6 +1588,7 @@ function renderDivChart() {
   barsEl.innerHTML = '';
   for (let m = 0; m < 12; m++) {
     const krw = monthKrw[m], usd = monthUsd[m];
+    const total = krw + usd;
     const krwH = krw > 0 ? Math.max((krw / maxVal) * 100, 3) : 0;
     const usdH = usd > 0 ? Math.max((usd / maxVal) * 100, 3) : 0;
     const col = document.createElement('div');
@@ -1595,8 +1596,9 @@ function renderDivChart() {
     col.innerHTML = `
       <div class="div-chart-bargroup">
         <div class="div-chart-bar-wrap stacked">
-          ${krw > 0 ? `<div class="div-chart-bar krw" style="height:${krwH}%"></div><div class="div-chart-label">${fmtManwon(krw)}</div>` : ''}
-          ${usd > 0 ? `<div class="div-chart-bar usd" style="height:${usdH}%"></div><div class="div-chart-label">${fmtManwon(usd)}</div>` : ''}
+          ${krw > 0 ? `<div class="div-chart-bar krw" style="height:${krwH}%"></div>` : ''}
+          ${usd > 0 ? `<div class="div-chart-bar usd" style="height:${usdH}%"></div>` : ''}
+          ${total > 0 ? `<div class="div-chart-label">${fmtManwon(total)}</div>` : ''}
         </div>
       </div>
       <div class="div-chart-month">${m+1}월</div>`;
