@@ -1547,7 +1547,7 @@ function renderAssetTrend(holdings) {
   });
 }
 
-function fmtManwon(n) { return (n / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 1 }) + '만원'; }
+function fmtManwon(n) { return Math.trunc(n / 10000).toLocaleString('ko-KR') + '만'; }
 function renderDivChart() {
   const card = document.getElementById('div-chart-card');
   const barsEl = document.getElementById('dc-bars');
