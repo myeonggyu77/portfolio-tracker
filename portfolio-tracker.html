@@ -1546,6 +1546,7 @@ function renderAssetTrend(holdings) {
   });
 }
 
+function fmtManwon(n) { return (n / 10000).toLocaleString('ko-KR', { maximumFractionDigits: 1 }) + '만원'; }
 function renderDivChart() {
   const card = document.getElementById('div-chart-card');
   const barsEl = document.getElementById('dc-bars');
@@ -1592,11 +1593,11 @@ function renderDivChart() {
     col.innerHTML = `
       <div class="div-chart-bargroup">
         <div class="div-chart-bar-wrap">
-          ${krw > 0 ? `<div class="div-chart-label">${Math.round(krw).toLocaleString('ko-KR')}</div>` : ''}
+          ${krw > 0 ? `<div class="div-chart-label">${fmtManwon(krw)}</div>` : ''}
           <div class="div-chart-bar krw" style="height:${krwH}%"></div>
         </div>
         <div class="div-chart-bar-wrap">
-          ${usd > 0 ? `<div class="div-chart-label">${Math.round(usd).toLocaleString('ko-KR')}</div>` : ''}
+          ${usd > 0 ? `<div class="div-chart-label">${fmtManwon(usd)}</div>` : ''}
           <div class="div-chart-bar usd" style="height:${usdH}%"></div>
         </div>
       </div>
