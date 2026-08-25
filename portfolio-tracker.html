@@ -154,6 +154,7 @@
   .div-chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
   .div-chart-bargroup { display: flex; align-items: flex-end; gap: 2px; width: 100%; justify-content: center; height: 100%; }
   .div-chart-bar-wrap { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; width: 40%; max-width: 16px; }
+  .div-chart-bar-wrap.stacked { flex-direction: column-reverse; justify-content: flex-start; width: 60%; max-width: 28px; }
   .div-chart-label { font-size: 9px; font-family: var(--mono); color: var(--ink-soft); margin-bottom: 3px; white-space: nowrap; writing-mode: horizontal-tb; }
   .div-chart-bar { width: 100%; border-radius: 2px 2px 0 0; min-height: 2px; }
   .div-chart-bar.krw { background: #d64545; }
@@ -1582,7 +1583,8 @@ function renderDivChart() {
   const yearTotal = monthKrw.reduce((a,b)=>a+b,0) + monthUsd.reduce((a,b)=>a+b,0);
   totalEl.textContent = fmtC(yearTotal, 'KRW');
 
-  const maxVal = Math.max(...monthKrw, ...monthUsd, 1);
+  const monthTotal = monthKrw.map((krw, i) => krw + monthUsd[i]);
+  const maxVal = Math.max(...monthTotal, 1);
   barsEl.innerHTML = '';
   for (let m = 0; m < 12; m++) {
     const krw = monthKrw[m], usd = monthUsd[m];
@@ -1592,13 +1594,9 @@ function renderDivChart() {
     col.className = 'div-chart-col';
     col.innerHTML = `
       <div class="div-chart-bargroup">
-        <div class="div-chart-bar-wrap">
-          ${krw > 0 ? `<div class="div-chart-label">${fmtManwon(krw)}</div>` : ''}
-          <div class="div-chart-bar krw" style="height:${krwH}%"></div>
-        </div>
-        <div class="div-chart-bar-wrap">
-          ${usd > 0 ? `<div class="div-chart-label">${fmtManwon(usd)}</div>` : ''}
-          <div class="div-chart-bar usd" style="height:${usdH}%"></div>
+        <div class="div-chart-bar-wrap stacked">
+          ${krw > 0 ? `<div class="div-chart-bar krw" style="height:${krwH}%"></div><div class="div-chart-label">${fmtManwon(krw)}</div>` : ''}
+          ${usd > 0 ? `<div class="div-chart-bar usd" style="height:${usdH}%"></div><div class="div-chart-label">${fmtManwon(usd)}</div>` : ''}
         </div>
       </div>
       <div class="div-chart-month">${m+1}월</div>`;
