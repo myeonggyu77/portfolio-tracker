@@ -1516,7 +1516,7 @@ function svgAssetTrend(data, ccy) {
   const lastX = xOf(n-1), lastY = yOf(data.marketSeries[n-1]);
 
   return `<svg class="asset-trend-svg-wrap" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:150px;">
-    <polygon points="${PAD},${H-PAD} ${investedPts} ${xOf(n-1)},${H-PAD}" fill="#dcdcd2" opacity="0.6"></polygon>
+    <polygon points="${PAD},${H-PAD} ${investedPts} ${xOf(n-1)},${H-PAD}" fill="#0f6e56" opacity="0.18"></polygon>
     <polyline points="${marketPts}" fill="none" stroke="#d64545" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></polyline>
     <circle cx="${lastX}" cy="${lastY}" r="4" fill="#d64545"></circle>
   </svg>`;
