@@ -1054,7 +1054,7 @@ async function initBackend() {
     try {
       if (!window.supabase) await loadScriptTag('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2');
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: false, autoRefreshToken: true },
+        auth: { persistSession: true, autoRefreshToken: true },
       });
       usingSupabase = true;
     } catch (e) {
