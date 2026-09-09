@@ -1,0 +1,32 @@
+name: YieldMax ULTY 일일 다운로드 → 구글 드라이브
+
+on:
+  schedule:
+    # 매일 23:00 UTC = 한국시간(KST) 08:00
+    - cron: '0 23 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  download-and-upload:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: automation/yieldmax-drive-sync
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 의존성 설치
+        run: npm install
+
+      - name: Playwright 브라우저 설치
+        run: npx playwright install --with-deps chromium
+
+      - name: 다운로드 + 구글 드라이브 업로드
+        env:
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 }}
+        run: node download-and-upload.js

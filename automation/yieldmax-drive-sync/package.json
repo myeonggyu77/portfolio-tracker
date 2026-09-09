@@ -1,0 +1,15 @@
+{
+  "name": "yieldmax-drive-sync",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Daily download of YieldMax ULTY Holdings / Intra-Day Trades files, renamed by their internal date, uploaded to Google Drive.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node download-and-upload.js"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "playwright": "^1.47.0",
+    "xlsx": "^0.18.5"
+  }
+}
