@@ -12,8 +12,8 @@ const { google } = require('googleapis');
 const ULTY_PAGE_URL = 'https://www.yieldmaxetfs.com/our-etfs/ulty/';
 
 const TARGETS = [
-  { buttonText: 'Intra-Day Trades Download', prefix: 'ULTY_IntradayTrades' },
-  { buttonText: 'Download Holdings', prefix: 'ULTY_Holdings' },
+  { buttonText: 'Intra-Day Trades Download', prefix: 'ULTY_IntradayTrades', subfolder: 'ULTY_IntradayTrades Down' },
+  { buttonText: 'Download Holdings', prefix: 'ULTY_Holdings', subfolder: 'ULTY_Holdings Down' },
 ];
 
 function pad2(n) {
@@ -85,6 +85,30 @@ async function driveClient() {
   return google.drive({ version: 'v3', auth });
 }
 
+async function findOrCreateSubfolder(drive, parentFolderId, name) {
+  const escaped = name.replace(/'/g, "\\'");
+  const list = await drive.files.list({
+    q: `'${parentFolderId}' in parents and name = '${escaped}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: 'files(id, name)',
+    spaces: 'drive',
+  });
+
+  if (list.data.files && list.data.files.length > 0) {
+    return list.data.files[0].id;
+  }
+
+  const created = await drive.files.create({
+    requestBody: {
+      name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentFolderId],
+    },
+    fields: 'id',
+  });
+  console.log(`하위 폴더 생성됨: ${name} (id=${created.data.id})`);
+  return created.data.id;
+}
+
 async function upsertDriveFile(drive, folderId, fileName, filePath, mimeType) {
   const escaped = fileName.replace(/'/g, "\\'");
   const list = await drive.files.list({
@@ -132,7 +156,8 @@ async function main() {
           ? 'text/csv'
           : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-      await upsertDriveFile(drive, folderId, finalName, tmpPath, mimeType);
+      const subfolderId = await findOrCreateSubfolder(drive, folderId, target.subfolder);
+      await upsertDriveFile(drive, subfolderId, finalName, tmpPath, mimeType);
     }
   } finally {
     await browser.close();
