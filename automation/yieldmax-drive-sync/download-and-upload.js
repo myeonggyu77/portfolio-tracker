@@ -69,18 +69,19 @@ async function downloadOne(page, buttonText, downloadDir) {
   return { tmpPath, ext };
 }
 
+// 서비스 계정은 개인 구글 드라이브에 저장용량이 없어 업로드가 거부되므로(storageQuotaExceeded),
+// 사용자 본인 계정 권한(OAuth 리프레시 토큰)으로 인증해 본인 드라이브 용량을 사용한다.
 async function driveClient() {
-  const raw = process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64
-    ? Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64, 'base64').toString('utf8')
-    : process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
-  if (!raw) throw new Error('GOOGLE_SERVICE_ACCOUNT_KEY(_BASE64) 환경변수가 없습니다.');
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error('GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET / GOOGLE_OAUTH_REFRESH_TOKEN 환경변수가 없습니다.');
+  }
 
-  const credentials = JSON.parse(raw);
-  const auth = new google.auth.GoogleAuth({
-    credentials,
-    scopes: ['https://www.googleapis.com/auth/drive'],
-  });
+  const auth = new google.auth.OAuth2(clientId, clientSecret);
+  auth.setCredentials({ refresh_token: refreshToken });
   return google.drive({ version: 'v3', auth });
 }
 

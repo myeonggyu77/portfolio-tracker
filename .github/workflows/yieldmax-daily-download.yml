@@ -28,5 +28,7 @@ jobs:
       - name: 다운로드 + 구글 드라이브 업로드
         env:
           GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-          GOOGLE_SERVICE_ACCOUNT_KEY_BASE64: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY_BASE64 }}
+          GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          GOOGLE_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_OAUTH_REFRESH_TOKEN }}
         run: node download-and-upload.js
