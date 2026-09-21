@@ -41,6 +41,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
   - **기본 탭**: A=종목코드, B=종목명(=GOOGLEFINANCE), C=현재가(=GOOGLEFINANCE)
   - **KRW 탭**: A=일자, B=환율 — `=GOOGLEFINANCE("CURRENCY:USDKRW","close",DATE(2025,1,1),TODAY())` 수식 하나로 구성. **이 탭이 실제로 만들어졌는지 반드시 재확인 필요** (사용자가 수동으로 추가하기로 했던 항목이라 완료 여부 미확인).
 - KRX Edge Function(`krx-lookup.ts`)은 **선택 사항**이에요. Supabase Edge Functions에 `krx-lookup`이라는 이름으로 배포하고, Secrets에 `DATA_GO_KR_KEY`(공공데이터포털 인증키)를 등록해야 작동해요. **배포 여부 미확인 — 확인 필요**. 배포 안 돼 있어도 앱은 정상 작동해요 (구글시트 → stooq.com 순으로 자동 대체).
+- 이 Supabase 프로젝트(`kcmqzinekvikpmlxkdxf`, organization: xohfhgerdtoqjiddlkbs)에는 이 앱의 `portfolio_data` 테이블 외에 `salary_data`(급여 계산 시스템으로 추정), `user_data` 테이블도 같이 있어요 — **다른 앱의 테이블이니 절대 건드리지 마세요**.
 
 ## 4. 데이터 모델 (Supabase `portfolio_data` 테이블, 1행짜리 JSON 저장)
 
@@ -51,6 +52,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 | `dividends_us` | 미국 배당금. `{id, account, code, name, date, shares, rate, appliedRate}` |
 | `dividend_status` | 배당현황(배당락일 기준). `{id, exDate, payDate, country, code, name, krwAmount, usdAmount}` |
 | `current_prices` | 보유종목 현재가 수동/자동 입력값. key = `종목코드(또는 정규화된 이름)+"|"+통화` |
+| `dividends_wife` | 와이프배당금(2026-09 추가, 미국배당금 탭 복제). `{id, account, code, name, date, shares, rate, appliedRate}`. **완전히 독립적인 기록** — 보유종목 KPI·배당현황 요약 등 다른 집계에는 전혀 반영되지 않아요. |
 
 **주의**: `fx_records` 컬럼이 테이블에 남아있지만 **더 이상 사용하지 않아요** (환전내역 탭 삭제됨, 아래 6번 참고). 데이터 마이그레이션 불필요, 그냥 무시하면 돼요.
 
@@ -67,10 +69,11 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 7. **환율정보**: 구글시트 "KRW" 탭에서 매번 새로 불러오는 방식(Supabase에 저장 안 함). `loadFxRates()` 참고.
 8. **환전내역 탭은 삭제됨**: 사용자 요청으로 완전히 제거하고 "환율정보" 탭(구글시트 기반, 읽기 전용)으로 대체됐어요.
 9. **일괄등록/엑셀 업로드는 종목명 칼럼**(2026-08 변경): 예전엔 종목코드만 입력받았지만 지금은 종목명을 입력받아요. 저장 시 2번과 동일하게 `resolveStockByName`으로 이름 보정 + 코드 내부 채움이 일어나요.
+10. **와이프배당금 탭(2026-09 추가)**: 배당현황 탭 다음에 위치. 미국 배당금 탭을 그대로 복제한 구조(계좌/종목명/지급일/주수/배당기준액$/적용환율, `dw-` 접두사 id, `divWife` 배열)지만, `computeHoldings()`·`renderKpis()`·배당 차트 등 어디에도 집계되지 않는 완전히 독립된 기록이에요. 종목명 자동완성(`us-name-datalist`)과 구글시트 이름 보정(`resolveStockByName`)은 미국배당금과 동일하게 공유해요.
 
 ## 6. 구현된 주요 기능 (전체 히스토리 요약)
 
-- 탭: 보유종목 / 한국·미국 매매내역 / 한국·미국 배당금 / 환율정보 / 배당현황
+- 탭: 보유종목 / 한국·미국 매매내역 / 한국·미국 배당금 / 환율정보 / 배당현황 / 와이프배당금
 - 로그인/로그아웃 (Supabase Auth)
 - 각 탭 검색(전체 텍스트), 체크박스 다중 선택 + 전체선택 + 선택삭제, 개별 삭제 시 확인창
 - 표 헤더 고정(세로 스크롤 시 상단 고정, 가로 스크롤로 좁은 화면 대응)
