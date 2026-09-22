@@ -142,12 +142,12 @@ function mapPos(raw: string): string {
   return "기타";
 }
 
-async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
+async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string; debug: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) return { pos: "", example: "", audio: "" };
+    if (!res.ok) return { pos: "", example: "", audio: "", debug: `status=${res.status}` };
     const data = await res.json();
-    if (!Array.isArray(data)) return { pos: "", example: "", audio: "" };
+    if (!Array.isArray(data)) return { pos: "", example: "", audio: "", debug: `not_array:${JSON.stringify(data).slice(0, 200)}` };
 
     let pos = "";
     let example = "";
@@ -174,9 +174,9 @@ async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example
     }
 
     if (audio && audio.startsWith("//")) audio = "https:" + audio;
-    return { pos, example, audio };
-  } catch {
-    return { pos: "", example: "", audio: "" };
+    return { pos, example, audio, debug: "ok" };
+  } catch (e) {
+    return { pos: "", example: "", audio: "", debug: `exception:${String(e)}` };
   }
 }
 
@@ -205,5 +205,6 @@ Deno.serve(async (req: Request) => {
     exampleKo,
     audio: dict.audio,
     meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "mymemory",
+    _debugDict: dict.debug, // 임시 디버그 필드 — 원인 파악 후 제거 예정
   });
 });
