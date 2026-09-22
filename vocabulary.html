@@ -575,19 +575,46 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   wordEl.focus();
 });
 
-// ---------- 사전 자동조회(품사·뜻·발음기호, 구글 번역 + dictionaryapi.dev) — 선택 기능 ----------
-// Supabase Edge Function(dict-lookup)을 통해서만 호출해요. 단어 입력 후 다른 칸으로 이동(blur)하면
-// 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
+// ---------- 사전 자동조회(품사·뜻·발음기호) — 선택 기능 ----------
+// 속도를 위해 두 소스를 따로, 동시에 호출해요: ① 뜻은 Supabase Edge Function(dict-lookup, 구글 번역
+// 비공식 API 중계) ② 품사·발음기호·발음오디오는 dictionaryapi.dev(무료, CORS 허용이라 브라우저에서
+// 바로 호출). 어느 쪽이든 먼저 도착하는 대로 그 칸을 바로 채워서 체감 속도를 높여요.
+// 단어 입력 후 다른 칸으로 이동(blur)하면 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
 let lastLookupWord = '';
 let lastLookupAudioUrl = '';
 let lookupPromise = null; // 등록 버튼이 자동조회 완료를 기다릴 수 있도록 진행 중인 조회를 추적해요.
 
-async function lookupWord(word) {
+const DICT_POS_MAP = {
+  noun: '명사', verb: '동사', adjective: '형용사', adverb: '부사',
+  pronoun: '대명사', preposition: '전치사', conjunction: '접속사',
+  interjection: '감탄사', exclamation: '감탄사',
+};
+
+async function fetchMeaning(word) {
   const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) return null;
-  return data;
+  if (!res.ok || !data.meaning) return '';
+  return data.meaning;
+}
+
+async function fetchDictionaryInfo(word) {
+  const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+  if (!res.ok) return { phonetic: '', pos: '', audio: '' };
+  const data = await res.json().catch(() => null);
+  const entry = Array.isArray(data) ? data[0] : null;
+  if (!entry) return { phonetic: '', pos: '', audio: '' };
+  let phonetic = entry.phonetic || '';
+  let audio = '';
+  if (Array.isArray(entry.phonetics)) {
+    for (const p of entry.phonetics) {
+      if (!phonetic && p.text) phonetic = p.text;
+      if (!audio && p.audio) audio = p.audio;
+    }
+  }
+  if (audio && audio.startsWith('//')) audio = 'https:' + audio;
+  const pos = (Array.isArray(entry.meanings) && entry.meanings[0]?.partOfSpeech && DICT_POS_MAP[entry.meanings[0].partOfSpeech]) || '';
+  return { phonetic, pos, audio };
 }
 
 async function autoFillFromWord(showFeedback) {
@@ -595,6 +622,7 @@ async function autoFillFromWord(showFeedback) {
   const posEl = document.getElementById('wf-pos');
   const phoneticEl = document.getElementById('wf-phonetic');
   const meaningEl = document.getElementById('wf-meaning');
+  const errEl = document.getElementById('word-form-error');
   const btn = document.getElementById('wf-dict-btn');
   const word = wordEl.value.trim();
   if (!word) {
@@ -604,16 +632,25 @@ async function autoFillFromWord(showFeedback) {
   if (!showFeedback && word === lastLookupWord) return; // 자동 조회는 같은 단어를 반복 호출하지 않아요.
   btn.disabled = true;
   try {
-    const data = await lookupWord(word);
-    if (!data || (!data.meaning && !data.pos && !data.phonetic)) {
+    const results = await Promise.allSettled([
+      fetchMeaning(word).then(meaning => {
+        if (meaning) { meaningEl.value = meaning; errEl.style.display = 'none'; }
+        return meaning;
+      }),
+      fetchDictionaryInfo(word).then(info => {
+        if (info.pos) { posEl.value = info.pos; errEl.style.display = 'none'; }
+        if (info.phonetic) phoneticEl.value = info.phonetic;
+        lastLookupAudioUrl = info.audio || '';
+        return info;
+      }),
+    ]);
+    const gotMeaning = results[0].status === 'fulfilled' && !!results[0].value;
+    const gotDict = results[1].status === 'fulfilled' && (results[1].value.pos || results[1].value.phonetic);
+    if (!gotMeaning && !gotDict) {
       if (showFeedback) showToast('사전 조회에 실패했어요. 직접 입력해 주세요.', 'error', 5000);
       return;
     }
-    if (data.meaning) meaningEl.value = data.meaning;
-    if (data.pos) posEl.value = data.pos;
-    if (data.phonetic) phoneticEl.value = data.phonetic;
     lastLookupWord = word;
-    lastLookupAudioUrl = data.audio || '';
     if (showFeedback) showToast('품사·뜻·발음기호를 자동으로 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
   } catch (e) {
     console.error(e);
