@@ -192,12 +192,12 @@
       <h3>단어 등록</h3>
       <div class="form-error" id="word-form-error" style="display:none;"></div>
       <div class="form-grid">
-        <div>
+        <div style="grid-column: span 2;">
           <div class="field-lbl">단어</div>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="wf-word" placeholder="apple" autocomplete="off" />
-            <button class="ghost-btn" id="wf-speak-btn" type="button" title="발음 듣기" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-volume"></i></button>
-            <button class="ghost-btn" id="wf-dict-btn" type="button" title="사전 다시 조회 (품사·뜻·발음기호 자동입력)" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-language"></i></button>
+          <input type="text" id="wf-word" placeholder="apple" autocomplete="off" />
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button class="ghost-btn" id="wf-speak-btn" type="button" title="발음 듣기" style="font-size:12px; padding:5px 10px; white-space:nowrap;"><i class="ti ti-volume"></i> 발음 듣기</button>
+            <button class="ghost-btn" id="wf-dict-btn" type="button" title="사전 다시 조회 (품사·뜻·발음기호 자동입력)" style="font-size:12px; padding:5px 10px; white-space:nowrap;"><i class="ti ti-language"></i> 사전 다시조회</button>
           </div>
         </div>
         <div>
@@ -550,6 +550,8 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
+  // 단어 입력 직후 바로 등록을 누르면 자동조회가 아직 끝나지 않았을 수 있어요 — 끝날 때까지 기다려요.
+  if (lookupPromise) await lookupPromise;
   const word = wordEl.value.trim();
   const pos = posEl.value;
   const phonetic = phoneticEl.value.trim();
@@ -578,6 +580,7 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
 // 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
 let lastLookupWord = '';
 let lastLookupAudioUrl = '';
+let lookupPromise = null; // 등록 버튼이 자동조회 완료를 기다릴 수 있도록 진행 중인 조회를 추적해요.
 
 async function lookupWord(word) {
   const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
@@ -620,8 +623,18 @@ async function autoFillFromWord(showFeedback) {
   }
 }
 
-document.getElementById('wf-word').addEventListener('blur', () => autoFillFromWord(false));
-document.getElementById('wf-dict-btn').addEventListener('click', () => autoFillFromWord(true));
+document.getElementById('wf-word').addEventListener('blur', () => {
+  lookupPromise = autoFillFromWord(false).finally(() => { lookupPromise = null; });
+});
+document.getElementById('wf-dict-btn').addEventListener('click', () => {
+  lookupPromise = autoFillFromWord(true).finally(() => { lookupPromise = null; });
+});
+document.getElementById('wf-word').addEventListener('input', () => {
+  document.getElementById('word-form-error').style.display = 'none';
+});
+document.getElementById('wf-meaning').addEventListener('input', () => {
+  document.getElementById('word-form-error').style.display = 'none';
+});
 document.getElementById('wf-speak-btn').addEventListener('click', () => {
   const word = document.getElementById('wf-word').value.trim();
   speak(word, word === lastLookupWord ? lastLookupAudioUrl : '');
