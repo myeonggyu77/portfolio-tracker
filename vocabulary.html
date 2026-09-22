@@ -547,8 +547,9 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
-  // 단어 입력 직후 바로 등록을 누르면 자동조회가 아직 끝나지 않았을 수 있어요 — 끝날 때까지 기다려요.
-  if (lookupPromise) await lookupPromise;
+  // 단어 입력 직후 바로 등록을 누르면 자동조회가 아직 끝나지 않았을 수 있어요 — 잠깐만 기다려요.
+  // (사전 조회 자체에 타임아웃이 있지만, 혹시 모를 지연에 대비해 등록 버튼도 최대 대기시간을 둬요.)
+  if (lookupPromise) await Promise.race([lookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
   const word = wordEl.value.trim();
   const pos = posEl.value;
   const phonetic = phoneticEl.value.trim();
@@ -587,16 +588,34 @@ const DICT_POS_MAP = {
   interjection: '감탄사', exclamation: '감탄사',
 };
 
+// 사전 조회가 느리거나 응답이 없을 때 화면(특히 등록 버튼)이 무한정 멈춰있지 않도록
+// 모든 외부 호출에 타임아웃을 걸어요. 시간 안에 응답이 없으면 실패로 간주하고 넘어가요.
+const DICT_FETCH_TIMEOUT_MS = 4000;
+function fetchWithTimeout(url, options, timeoutMs = DICT_FETCH_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 async function fetchMeaning(word) {
   const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || !data.meaning) return '';
-  return data.meaning;
+  try {
+    const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.meaning) return '';
+    return data.meaning;
+  } catch (e) {
+    return ''; // 타임아웃/네트워크 오류 — 조용히 실패, 직접 입력으로 대체 가능
+  }
 }
 
 async function fetchDictionaryInfo(word) {
-  const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+  let res;
+  try {
+    res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+  } catch (e) {
+    return { phonetic: '', pos: '', audio: '' }; // 타임아웃/네트워크 오류
+  }
   if (!res.ok) return { phonetic: '', pos: '', audio: '' };
   const data = await res.json().catch(() => null);
   const entry = Array.isArray(data) ? data[0] : null;
