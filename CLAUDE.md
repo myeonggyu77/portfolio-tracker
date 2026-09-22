@@ -103,14 +103,17 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 포트폴리오 원장과는 기능상 완전히 별개인 **영어 단어 암기 앱**이에요. 같은 저장소에 두 번째 HTML 파일로 존재하고, 실제 서비스 주소는 https://myeonggyu77.github.io/portfolio-tracker/vocabulary.html 이에요.
 
 - **백엔드**: 포트폴리오 원장과 **같은 Supabase 프로젝트**(`kcmqzinekvikpmlxkdxf`)를 그대로 써요. 로그인 계정도 동일. 데이터는 새로 만든 `vocabulary_data` 테이블(1행짜리 JSON 저장, `portfolio_data`와 동일한 패턴)에 들어가요.
-  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, meaning, memo, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}`.
-  - `pos`(품사)는 사용자가 직접 선택하는 값(명사/동사/형용사/… /기타), 자동 조회 없음.
+  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, phonetic, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
+  - `pos`(품사)·`phonetic`(발음기호)는 사전 자동조회로 채워지고, 사용자가 직접 수정도 가능해요.
+  - `audioUrl`은 dictionaryapi.dev가 제공하는 실제 발음 녹음 파일 주소(없을 수 있음, 2026-09 추가). 저장은 되지만 표시 컬럼은 없고 발음 듣기 버튼에서만 쓰여요.
   - `mastered`는 수동 토글 또는 시험에서 `correctStreak`가 `MASTER_STREAK`(기본 3)에 도달하면 자동으로 `true`가 돼요.
 - **오늘의 시험 로직**: `mastered=false`인 단어 전체가 그날의 출제 범위. 4지선다 객관식(단어 → 뜻 고르기). 오답은 같은 시험 세션 안에서 뒤로 재배치되어 다시 나오고, 정답을 맞히면 `correctStreak`가 올라가며 `MASTER_STREAK`회 연속 정답 시 자동으로 "외운 단어" 처리돼요. 오답 시 `correctStreak`는 0으로 초기화돼요.
-- **사전(뜻 자동조회, 선택 기능, 2026-09 구글 번역으로 전환)**: 단어 등록 폼의 "사전 조회" 버튼(언어 아이콘)을 누르면 `dict-lookup` Edge Function을 통해 구글 번역의 비공식(무료, 키 발급 불필요) 엔드포인트로 영어→한국어 뜻을 자동으로 채워요.
-  - **가입이나 API 키, Secrets 설정이 전혀 필요 없어요.** Edge Function이 이미 배포되어 있고(`dict-lookup`, 이 저장소의 `dict-lookup.ts`가 소스) 바로 동작해요.
-  - 원래는 네이버 Papago 번역 API(`papago-lookup` 함수)로 구현했었는데, 사용자가 키 발급 절차 없이 바로 쓸 수 있는 방식을 원해서 구글 비공식 번역으로 교체했어요. `papago-lookup`이라는 이름의 옛 Edge Function이 Supabase 프로젝트에 배포된 채로 남아있는데(삭제 API가 없어서 남겨둠) **더 이상 어디에서도 호출하지 않아요, 무시해도 돼요.**
-  - 비공식 API라서 구글 쪽 정책 변경으로 예고 없이 막히거나 실패할 수 있어요. 실패해도 뜻 직접 입력은 항상 가능해요.
+- **사전 자동조회(품사·뜻·발음기호, 선택 기능, 2026-09 확장)**: 단어 등록 폼에서 **단어 입력 후 다른 칸으로 포커스를 옮기면(blur) 자동으로** `dict-lookup` Edge Function을 호출해서 품사·뜻·발음기호를 한 번에 채워요. 언어 아이콘 버튼(`wf-dict-btn`)으로 언제든 수동 재조회도 가능해요.
+  - `dict-lookup` 내부에서 두 개의 무료·비공식 소스를 동시에 호출해서 합쳐요: ① 구글 번역(비공식)으로 한국어 뜻, ② dictionaryapi.dev(무료 영어사전 API, 키 불필요)로 발음기호·품사(영어 품사명을 한국어로 매핑)·발음 오디오 URL.
+  - **가입이나 API 키, Secrets 설정이 전혀 필요 없어요.** 이미 배포되어 있고(`dict-lookup`, 이 저장소의 `dict-lookup.ts`가 소스) 바로 동작해요.
+  - 옛 네이버 Papago 기반 `papago-lookup` Edge Function은 더 이상 호출하지 않지만 Supabase에 남아있어요(삭제 API 없음) — 무시해도 돼요.
+  - 비공식/무료 API라서 정책 변경으로 예고 없이 막히거나 일부 필드만 채워질 수 있어요. 실패해도 전부 직접 입력 가능해요.
+- **발음 듣기(스피커 버튼, 2026-09 추가)**: 단어 등록 폼과 단어장 목록 표 양쪽에 스피커 아이콘 버튼이 있어요. `speak(word, audioUrl)` 함수가 ① `audioUrl`(dictionaryapi.dev의 실제 녹음)이 있으면 그걸 재생하고, ② 없거나 재생 실패하면 브라우저 내장 Web Speech API(`speechSynthesis`, 무료·키 불필요, 인터넷 연결 없이도 되는 브라우저도 있음)로 대체해요. iOS Safari 등 일부 브라우저는 첫 재생에 사용자 제스처가 필요할 수 있어요(버튼 클릭이라 문제 없음).
 - 단어명 자동완성(`word-datalist`), 검색, 체크박스 다중선택+일괄삭제 등은 포트폴리오 원장과 같은 UI 패턴을 재사용했어요.
 
 ## 11. 확인이 필요한 미해결 항목 (단어장)
