@@ -1,23 +1,31 @@
 // Supabase Edge Function: dict-lookup
 // 단어장(vocabulary.html)의 단어 등록 폼이 호출하는 중계 서버예요.
-// 단어 하나를 넘기면 (1) 구글 번역(비공식, 무료)으로 한국어 뜻을, (2) 무료 영어사전
-// API(dictionaryapi.dev)로 발음기호·품사·발음 오디오 URL을 가져와서 합쳐서 돌려줘요.
+// 단어 하나를 넘기면 (1) 한국어 뜻을, (2) 무료 영어사전 API(dictionaryapi.dev)로
+// 발음기호·품사·발음 오디오 URL을 가져와서 합쳐서 돌려줘요.
 //
 // 배포: Supabase Edge Functions에 dict-lookup 이름으로 배포되어 있어요.
-// 가입/API 키/Secrets 설정이 전혀 필요 없어요 — 배포만 되어 있으면 바로 동작해요.
 //
-// 2026-09 말: dictionaryapi.dev를 한때 클라이언트(브라우저)에서 직접 호출해서 속도를
-// 높였었는데, 사용자 환경(모바일 인앱 브라우저 등)에서 그 직접 호출이 막혀 품사·발음기호가
-// 계속 비어있는 문제가 있었어요. 그래서 다시 이 서버(Edge Function) 안에서 두 소스를
-// 동시에(Promise.all) 호출해서 합쳐 돌려주는 방식으로 되돌렸어요 — 클라이언트는 이 함수
-// 하나만 호출하면 되니 더 안정적이에요. 각 외부 호출에는 개별 타임아웃을 둬서, 한쪽이
-// 느려도 전체 응답이 무한정 늦어지지 않게 했어요.
+// 뜻(번역) 소스 — 2026-09 말: 네이버 Papago 번역 API로 전환.
+//   - Secrets에 NAVER_PAPAGO_CLIENT_ID / NAVER_PAPAGO_CLIENT_SECRET 이 등록되어 있으면
+//     Papago(openapi.naver.com)를 사용해요.
+//   - 아직 등록 안 됐으면(비어있으면) 자동으로 구글 번역(비공식, 무료, 키 불필요)으로
+//     대체해서 계속 동작해요 — 키 등록 전에도 앱이 멈추지 않아요.
+//   - 키를 Secrets에 등록하는 순간, 재배포 없이 바로 Papago로 전환돼요.
 //
-// 주의: 둘 다 비공식이거나 무료 공개 API라서, 정책 변경으로 예고 없이 막히거나
-// 응답이 없을 수 있어요. 실패해도 단어장 앱은 직접 입력으로 정상 동작해요
-// (이 함수는 선택 기능이에요).
+// 품사·발음기호·발음 오디오는 항상 dictionaryapi.dev(무료, 키 불필요)에서 가져와요.
+//
+// 두 소스 모두 Promise.all로 서버에서 동시에 호출해서 합쳐 응답해요. 클라이언트는
+// 이 함수 하나만 호출하면 돼요(모바일 인앱 브라우저 등에서 dictionaryapi.dev 직접 호출이
+// 막히는 문제가 있어서, 서버 경유로 고정했어요 — 이 구조를 다시 클라이언트 직접 호출로
+// 바꾸지 마세요).
+//
+// 각 외부 호출에는 4초 타임아웃을 둬서, 한쪽이 느려도 전체 응답이 무한정 늦어지지 않아요.
+// 실패해도 단어장 앱은 직접 입력으로 정상 동작해요 (이 함수는 선택 기능이에요).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const NAVER_CLIENT_ID = Deno.env.get("NAVER_PAPAGO_CLIENT_ID");
+const NAVER_CLIENT_SECRET = Deno.env.get("NAVER_PAPAGO_CLIENT_SECRET");
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -46,13 +54,32 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
-function fetchWithTimeout(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
+function fetchWithTimeout(url: string, init: RequestInit = {}, timeoutMs = FETCH_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-async function fetchMeaning(word: string): Promise<string> {
+async function fetchMeaningViaPapago(word: string): Promise<string> {
+  try {
+    const res = await fetchWithTimeout("https://openapi.naver.com/v1/papago/n2mt", {
+      method: "POST",
+      headers: {
+        "X-Naver-Client-Id": NAVER_CLIENT_ID!,
+        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET!,
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+      },
+      body: new URLSearchParams({ source: "en", target: "ko", text: word }),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data?.message?.result?.translatedText || "";
+  } catch {
+    return "";
+  }
+}
+
+async function fetchMeaningViaGoogle(word: string): Promise<string> {
   try {
     const gUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(word)}`;
     const res = await fetchWithTimeout(gUrl);
@@ -63,6 +90,15 @@ async function fetchMeaning(word: string): Promise<string> {
   } catch {
     return "";
   }
+}
+
+async function fetchMeaning(word: string): Promise<string> {
+  if (NAVER_CLIENT_ID && NAVER_CLIENT_SECRET) {
+    const viaPapago = await fetchMeaningViaPapago(word);
+    if (viaPapago) return viaPapago;
+    // Papago가 키 오류 등으로 실패하면 구글 번역으로 조용히 대체해요.
+  }
+  return fetchMeaningViaGoogle(word);
 }
 
 async function fetchDictionaryInfo(word: string): Promise<{ phonetic: string; pos: string; audio: string }> {
@@ -106,5 +142,12 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "no_result" }, 502);
   }
 
-  return jsonResponse({ word, meaning, phonetic: dict.phonetic, pos: dict.pos, audio: dict.audio });
+  return jsonResponse({
+    word,
+    meaning,
+    phonetic: dict.phonetic,
+    pos: dict.pos,
+    audio: dict.audio,
+    meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "google",
+  });
 });
