@@ -125,3 +125,4 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - 이 프로젝트는 **빌드 도구가 없어요**. `portfolio-tracker.html`을 직접 수정하고 그대로 GitHub에 커밋하면 배포 끝(GitHub Pages가 자동 반영, 1~2분 소요).
 - 새 기능 추가 시 데이터 구조가 바뀌면(`setup.sql`에 새 컬럼 필요) 사용자에게 Supabase SQL Editor에서 실행할 ALTER TABLE 구문을 안내해야 해요.
 - 사용자는 코딩 경험이 없는 초보자예요. 설명은 쉽게, 단계별로, 스크린샷 요청에는 실제 화면과 최대한 비슷하게 안내해주세요.
+- **Supabase MCP 도구는 이 저장소에서 자동 허용돼요(2026-09 설정)**: `.claude/settings.json`의 `permissions.allow`에 `mcp__Supabase__*`가 등록되어 있어서, `execute_sql`·`apply_migration`·`deploy_edge_function` 등 Supabase 관련 도구 호출은 매번 승인 프롬프트 없이 바로 실행돼요. 테이블 생성/변경, Edge Function 배포처럼 되돌리기 번거로운 작업도 포함되니 신중하게 사용하고, 실행 후에는 무엇을 했는지 사용자에게 알려주세요.
