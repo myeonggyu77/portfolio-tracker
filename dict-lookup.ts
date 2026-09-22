@@ -39,6 +39,12 @@
 //
 // 각 외부 호출에는 8초(예문 번역은 5초) 타임아웃을 둬서, 한쪽이 느려도 전체 응답이 무한정
 // 늦어지지 않아요. 실패해도 단어장 앱은 직접 입력으로 정상 동작해요 (이 함수는 선택 기능이에요).
+//
+// 품사 대체(fallback) 소스: Datamuse API(2026-09 말 추가, api.datamuse.com, 가입·키 불필요).
+// dictionaryapi.dev가 예고 없이 다운되는 일이 있어서(직접 겪은 사례: Cloudflare 522 장애로
+// 몇 시간 동안 응답 자체가 안 됨), dictionaryapi.dev에서 품사를 못 가져오면 Datamuse로 한 번
+// 더 품사만 조회해요(Datamuse는 예문은 제공하지 않아서 예문은 이 경우 비어있을 수 있어요).
+// dictionaryapi.dev가 죽어도 최소한 품사는 계속 채워지도록 하는 안전장치예요.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -149,6 +155,34 @@ function mapPos(raw: string): string {
   return "기타";
 }
 
+// Datamuse가 돌려주는 품사 태그(n/v/adj/adv)를 한국어로 매핑해요.
+function mapDatamuseTag(tag: string): string {
+  switch (tag) {
+    case "n": return "명사";
+    case "v": return "동사";
+    case "adj": return "형용사";
+    case "adv": return "부사";
+    default: return "";
+  }
+}
+
+async function fetchPosViaDatamuse(word: string): Promise<string> {
+  try {
+    const dmUrl = `https://api.datamuse.com/words?sp=${encodeURIComponent(word)}&md=p&max=1`;
+    const res = await fetchWithTimeout(dmUrl);
+    if (!res.ok) return "";
+    const data = await res.json();
+    const tags: string[] = Array.isArray(data) && data[0] && Array.isArray(data[0].tags) ? data[0].tags : [];
+    for (const t of tags) {
+      const mapped = mapDatamuseTag(t);
+      if (mapped) return mapped;
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
@@ -201,6 +235,11 @@ Deno.serve(async (req: Request) => {
   // 이 부분을 다시 Promise.all(병렬)로 되돌리지 마세요 — 같은 버그가 재발해요.
   const meaning = await translate(word);
   const dict = await fetchDictionaryInfo(word);
+
+  // dictionaryapi.dev가 다운되는 등의 이유로 품사를 못 가져왔으면 Datamuse로 한 번 더 시도해요.
+  if (!dict.pos) {
+    dict.pos = await fetchPosViaDatamuse(word);
+  }
 
   // 예문을 찾았으면 그 예문도 한국어로 번역해서 메모 자동채움용으로 같이 보내요.
   const exampleKo = dict.example ? await translate(dict.example, EXAMPLE_TRANSLATE_TIMEOUT_MS) : "";
