@@ -28,9 +28,15 @@
 // 같은 번역 소스로 한 번 더 번역해서 "exampleKo" 필드로 돌려줘요. 클라이언트는 이 값을
 // 메모 칸이 비어있을 때만 자동으로 채워요(사용자가 직접 메모를 적어뒀으면 덮어쓰지 않아요).
 // 단어 뜻/사전 조회 두 가지는 병렬로 실행하고, 예문 번역은 예문을 알아야 시작할 수 있어서
-// 그 다음에 순차로 실행돼요 — 그래서 클라이언트 타임아웃을 5초 → 9초로 늘렸어요.
+// 그 다음에 순차로 실행돼요 — 그래서 클라이언트 타임아웃을 5초 → 15초로 늘렸어요.
 //
-// 각 외부 호출에는 4초(예문 번역은 3초) 타임아웃을 둬서, 한쪽이 느려도 전체 응답이 무한정
+// 품사가 계속 비어있던 두 번째 원인(2026-09 말): 진단 필드(_debugDict)로 실제 원인을 찾아보니
+// dictionaryapi.dev 자체는 정상 응답하는데, 뜻 번역(translate)과 동시에(Promise.all) 호출될 때
+// 콜드스타트 직후 등 부하 상황에서 dictionaryapi.dev 쪽 fetch가 원래 타임아웃(4초)을 넘겨서
+// AbortError로 중간에 끊겨버리는 경우가 있었어요. 그래서 외부 호출 타임아웃을 4초 → 8초로,
+// 예문 번역 타임아웃도 3초 → 5초로 늘렸어요(그만큼 클라이언트 타임아웃도 같이 늘렸어요).
+//
+// 각 외부 호출에는 8초(예문 번역은 5초) 타임아웃을 둬서, 한쪽이 느려도 전체 응답이 무한정
 // 늦어지지 않아요. 실패해도 단어장 앱은 직접 입력으로 정상 동작해요 (이 함수는 선택 기능이에요).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -44,8 +50,8 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
 
-const FETCH_TIMEOUT_MS = 4000;
-const EXAMPLE_TRANSLATE_TIMEOUT_MS = 3000;
+const FETCH_TIMEOUT_MS = 8000;
+const EXAMPLE_TRANSLATE_TIMEOUT_MS = 5000;
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -142,12 +148,12 @@ function mapPos(raw: string): string {
   return "기타";
 }
 
-async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string; debug: string }> {
+async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) return { pos: "", example: "", audio: "", debug: `status=${res.status}` };
+    if (!res.ok) return { pos: "", example: "", audio: "" };
     const data = await res.json();
-    if (!Array.isArray(data)) return { pos: "", example: "", audio: "", debug: `not_array:${JSON.stringify(data).slice(0, 200)}` };
+    if (!Array.isArray(data)) return { pos: "", example: "", audio: "" };
 
     let pos = "";
     let example = "";
@@ -174,9 +180,9 @@ async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example
     }
 
     if (audio && audio.startsWith("//")) audio = "https:" + audio;
-    return { pos, example, audio, debug: "ok" };
-  } catch (e) {
-    return { pos: "", example: "", audio: "", debug: `exception:${String(e)}` };
+    return { pos, example, audio };
+  } catch {
+    return { pos: "", example: "", audio: "" };
   }
 }
 
@@ -205,6 +211,5 @@ Deno.serve(async (req: Request) => {
     exampleKo,
     audio: dict.audio,
     meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "mymemory",
-    _debugDict: dict.debug, // 임시 디버그 필드 — 원인 파악 후 제거 예정
   });
 });
