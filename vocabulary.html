@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>단어장</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --ink: #1a2420;
+    --ink-soft: #56635c;
+    --ink-faint: #8a958f;
+    --paper: #fbfaf7;
+    --paper-raised: #ffffff;
+    --line: #dcdcd2;
+    --line-soft: #ececE4;
+    --accent: #0f6e56;
+    --accent-soft: #e1f0ea;
+    --accent-tint: #f2f8f5;
+    --down: #a32d2d;
+    --down-soft: #fcebeb;
+    --mono: 'JetBrains Mono', 'SF Mono', ui-monospace, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
+  .app { max-width: 900px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  .masthead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
+  .masthead h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex-shrink: 0; white-space: nowrap; }
+  .masthead .sub { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); }
+  .masthead-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 24px; }
+  .kpi { background: var(--paper-raised); padding: 14px 16px; }
+  .kpi .lbl { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; white-space: nowrap; }
+  .kpi .val { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .kpi .val.accent { color: var(--accent); }
+
+  .tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tab { font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--ink-faint); background: none; border: none; padding: 9px 4px; margin-right: 18px; cursor: pointer; border-bottom: 2px solid transparent; position: relative; top: 1px; white-space: nowrap; }
+  .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--ink-soft); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .toolbar .hint { font-size: 12px; color: var(--ink-faint); }
+  .toolbar .btn-group { display: flex; gap: 8px; }
+  .search-wrap { flex: 1; max-width: 280px; position: relative; }
+  input.search-input { width: 100%; height: 34px; padding: 0 12px 0 30px; font-size: 13px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238a958f" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 8px center; background-size: 14px; }
+  input.search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  button.primary-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 3px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+  button.primary-btn:hover { background: #000; }
+  button.primary-btn:disabled { opacity: 0.4; cursor: default; }
+  button.ghost-btn { font-family: var(--sans); font-size: 13px; background: none; color: var(--ink-soft); border: 1px solid var(--line); border-radius: 3px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+  button.ghost-btn:hover { background: var(--line-soft); }
+  button.ghost-btn:disabled { opacity: 0.4; cursor: default; }
+  button.icon-btn { font-family: var(--sans); font-size: 12px; background: none; border: 1px solid var(--line); border-radius: 3px; cursor: pointer; padding: 4px 9px; color: var(--ink-soft); margin-left: 4px; }
+  button.icon-btn:hover { background: var(--line-soft); color: var(--ink); }
+  button.icon-btn.danger { color: var(--down); border-color: var(--down-soft); }
+  button.icon-btn.danger:hover { background: var(--down-soft); }
+
+  .form-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 4px; padding: 16px; margin-bottom: 16px; }
+  .form-card h3 { font-size: 13px; font-weight: 600; margin: 0 0 12px; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+  input, select, textarea { font-family: var(--sans); font-size: 13px; border: 1px solid var(--line); border-radius: 3px; padding: 0 9px; background: var(--paper); color: var(--ink); width: 100%; }
+  input, select { height: 34px; }
+  textarea { padding: 9px; min-height: 60px; resize: vertical; line-height: 1.6; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .form-error { font-size: 12px; color: var(--down); margin-bottom: 8px; white-space: pre-line; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .field-lbl { font-size: 10px; color: var(--ink-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.03em; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  tbody td { white-space: nowrap; padding: 10px 8px; border-bottom: 1px solid var(--line-soft); }
+  .word-cell, .meaning-cell, .memo-cell { white-space: normal; line-height: 1.35; word-break: keep-all; overflow-wrap: break-word; }
+  .word-cell { font-weight: 600; font-family: var(--mono); width: 140px; }
+  .meaning-cell { width: 180px; }
+  thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); font-weight: 500; padding: 8px 8px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); z-index: 4; box-shadow: 0 1px 0 var(--ink); white-space: nowrap; }
+  th.num, td.num { text-align: right; font-family: var(--mono); }
+  tbody tr:hover { background: var(--accent-tint); }
+  .empty { text-align: center; padding: 40px 0; color: var(--ink-faint); font-size: 13px; }
+  .empty .big { font-size: 14px; color: var(--ink-soft); margin-bottom: 4px; }
+  .actions-cell { text-align: right; white-space: nowrap; }
+  .checkbox-cell { width: 34px; text-align: center; }
+  th.checkbox-cell input, td.checkbox-cell input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
+  button.ghost-btn.danger-btn { color: var(--down); border-color: #f0c7c7; }
+  button.ghost-btn.danger-btn:hover:not(:disabled) { background: var(--down-soft); }
+  button.ghost-btn.danger-btn:disabled { opacity: 0.4; cursor: default; }
+  .overflow-x { overflow-x: auto; overflow-y: auto; max-height: 70vh; border-radius: 4px; }
+
+  .mastered-badge { display: inline-block; font-size: 11px; font-family: var(--mono); font-weight: 600; padding: 2px 7px; border-radius: 3px; background: var(--accent-soft); color: var(--accent); cursor: pointer; border: 1px solid transparent; }
+  .mastered-badge.off { background: var(--line-soft); color: var(--ink-faint); }
+  .streak-tag { font-size: 11px; font-family: var(--mono); color: var(--ink-faint); }
+
+  .toast-wrap { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toast { font-family: var(--sans); font-size: 13px; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-width: 90vw; text-align: center; animation: toast-in 0.2s ease-out; }
+  .toast.error { background: #fcebeb; color: #a32d2d; border: 1px solid #f0c7c7; }
+  .toast.success { background: var(--accent-soft); color: var(--accent); border: 1px solid #b9dfd0; }
+  .toast.info { background: var(--paper-raised); color: var(--ink-soft); border: 1px solid var(--line); }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+
+  .login-overlay { position: fixed; inset: 0; background: var(--paper); z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { width: 100%; max-width: 340px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 28px 26px; }
+  .login-card h2 { font-size: 18px; font-weight: 700; margin: 0 0 4px; text-align: center; }
+  .login-card .login-sub { font-size: 12px; color: var(--ink-faint); text-align: center; margin: 0 0 20px; }
+  .login-card .field { margin-bottom: 14px; }
+  .login-card .login-note { font-size: 11px; color: var(--ink-faint); text-align: center; margin-top: 16px; line-height: 1.5; }
+
+  .quiz-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 28px; text-align: center; max-width: 460px; margin: 0 auto; }
+  .quiz-progress { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); margin-bottom: 18px; }
+  .quiz-word { font-size: 30px; font-weight: 700; font-family: var(--mono); margin-bottom: 4px; }
+  .quiz-sub { font-size: 12px; color: var(--ink-faint); margin-bottom: 22px; }
+  .quiz-choices { display: flex; flex-direction: column; gap: 10px; }
+  button.quiz-choice { font-family: var(--sans); font-size: 14px; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); cursor: pointer; }
+  button.quiz-choice:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-tint); }
+  button.quiz-choice.correct { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  button.quiz-choice.wrong { background: var(--down-soft); border-color: var(--down); color: var(--down); font-weight: 600; }
+  button.quiz-choice:disabled { cursor: default; }
+  .quiz-next-row { margin-top: 20px; }
+  .quiz-empty { color: var(--ink-faint); font-size: 13px; padding: 40px 0; }
+  .quiz-result { max-width: 420px; margin: 0 auto; text-align: center; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 32px; }
+  .quiz-result .big-num { font-family: var(--mono); font-size: 40px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
+  .quiz-result .row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
+  .quiz-start-wrap { text-align: center; padding: 40px 0; }
+  .quiz-start-wrap p { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+<datalist id="word-datalist"></datalist>
+
+<div class="login-overlay" id="login-overlay" style="display:none;">
+  <div class="login-card">
+    <h2>단어장</h2>
+    <p class="login-sub">로그인 후 이용해 주세요.</p>
+    <div class="field"><div class="field-lbl">이메일</div><input type="email" id="login-email" autocomplete="username" /></div>
+    <div class="field"><div class="field-lbl">비밀번호</div><input type="password" id="login-password" autocomplete="current-password" /></div>
+    <div class="form-error" id="login-error" style="display:none;"></div>
+    <button class="primary-btn" id="login-submit-btn" style="width:100%; height:38px;">로그인</button>
+    <p class="login-note">포트폴리오 원장과 같은 계정으로 로그인해요.</p>
+  </div>
+</div>
+
+<div class="login-overlay" id="backend-error" style="display:none;">
+  <div class="login-card">
+    <h2>연결할 수 없어요</h2>
+    <p class="login-sub">서버(Supabase)에 연결하지 못해서 안전하게 접속을 막았어요.</p>
+    <button class="primary-btn" id="backend-retry-btn" style="width:100%; height:38px;">다시 시도</button>
+  </div>
+</div>
+
+<div class="app" id="main-app" style="display:none;">
+  <div class="masthead">
+    <h1>단어장</h1>
+    <div class="masthead-right">
+      <span class="sub" id="today-label"></span>
+      <button class="ghost-btn" id="logout-btn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="lbl">등록 단어</div>
+      <div class="val" id="kpi-total">0</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">외운 단어</div>
+      <div class="val accent" id="kpi-mastered">0</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">학습률</div>
+      <div class="val accent" id="kpi-rate">0%</div>
+    </div>
+    <div class="kpi">
+      <div class="lbl">오늘 시험 대상</div>
+      <div class="val" id="kpi-due">0</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-panel="panel-list">단어장</button>
+    <button class="tab" data-panel="panel-quiz">오늘의 시험</button>
+  </div>
+
+  <div class="panel active" id="panel-list">
+    <div class="form-card">
+      <h3>단어 등록</h3>
+      <div class="form-error" id="word-form-error" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <div class="field-lbl">단어</div>
+          <input type="text" id="wf-word" placeholder="apple" autocomplete="off" />
+        </div>
+        <div>
+          <div class="field-lbl">품사</div>
+          <select id="wf-pos">
+            <option value="">선택 안 함</option>
+            <option value="명사">명사</option>
+            <option value="동사">동사</option>
+            <option value="형용사">형용사</option>
+            <option value="부사">부사</option>
+            <option value="전치사">전치사</option>
+            <option value="접속사">접속사</option>
+            <option value="대명사">대명사</option>
+            <option value="감탄사">감탄사</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div>
+          <div class="field-lbl">뜻</div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="wf-meaning" placeholder="사과" autocomplete="off" />
+            <button class="ghost-btn" id="wf-dict-btn" type="button" title="구글 번역으로 뜻 자동조회" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-language"></i></button>
+          </div>
+        </div>
+        <div>
+          <div class="field-lbl">메모 (선택)</div>
+          <input type="text" id="wf-memo" placeholder="예문, 발음 등" autocomplete="off" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="primary-btn" id="wf-submit-btn">등록</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap"><input type="text" class="search-input" id="list-search" placeholder="단어/뜻 검색" /></div>
+      <div class="btn-group">
+        <button class="ghost-btn danger-btn" id="list-bulk-delete-btn" disabled>선택 삭제</button>
+      </div>
+    </div>
+    <div class="overflow-x">
+      <table id="list-table">
+        <thead>
+          <tr>
+            <th class="checkbox-cell"><input type="checkbox" id="list-select-all" /></th>
+            <th class="name-th">단어</th>
+            <th>품사</th>
+            <th>뜻</th>
+            <th>메모</th>
+            <th>등록일</th>
+            <th class="num">연속정답</th>
+            <th>상태</th>
+            <th class="actions-cell">삭제</th>
+          </tr>
+        </thead>
+        <tbody id="list-body"></tbody>
+      </table>
+      <div class="empty" id="list-empty" style="display:none;">
+        <div class="big">등록된 단어가 없어요</div>
+        <div>위에서 첫 단어를 등록해 보세요.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-quiz">
+    <div id="quiz-area"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+// ============================================================
+// BACKEND CONFIG — 포트폴리오 원장과 같은 Supabase 프로젝트를 그대로 사용해요.
+// ============================================================
+const SUPABASE_URL = 'https://kcmqzinekvikpmlxkdxf.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rZ6bmiQGScI6YewuRg_5aw_PijLpbkl';
+
+const MASTER_STREAK = 3; // 연속 정답 이 횟수에 도달하면 '외운 단어'로 자동 처리
+const QUIZ_CHOICES = 4;
+
+let supabaseClient = null;
+let words = []; // {id, word, meaning, memo, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}
+let quiz = null; // 진행 중인 시험 상태
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+function showToast(message, type = 'info', duration = 4000) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(() => { el.remove(); }, duration);
+}
+function confirmDelete() { return window.confirm('이 단어를 삭제할까요? 되돌릴 수 없어요.'); }
+
+// ---------- Backend ----------
+async function initBackend() {
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false, autoRefreshToken: true },
+    });
+  } catch (e) {
+    console.error('Supabase 초기화 실패:', e);
+    showToast('서버(Supabase) 연결에 실패했어요.', 'error', 8000);
+  }
+}
+
+async function persist(retries = 2) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const { error } = await supabaseClient.from('vocabulary_data').upsert({
+        id: 'main',
+        words,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error(`Supabase 저장 실패 (시도 ${attempt+1}/${retries+1}):`, e);
+      if (attempt < retries) await sleep(500 * (attempt + 1));
+    }
+  }
+  showToast('저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.', 'error', 7000);
+  return false;
+}
+
+async function fetchAndRenderData() {
+  try {
+    const { data, error } = await supabaseClient.from('vocabulary_data').select('*').eq('id', 'main').maybeSingle();
+    if (error) throw error;
+    words = (data && data.words) || [];
+  } catch (e) {
+    console.error(e);
+    showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
+  }
+  words.forEach(w => {
+    if (w.pos === undefined) w.pos = '';
+    if (w.mastered === undefined) w.mastered = false;
+    if (w.correctStreak === undefined) w.correctStreak = 0;
+    if (w.wrongCount === undefined) w.wrongCount = 0;
+    if (w.lastTestedDate === undefined) w.lastTestedDate = null;
+  });
+  renderAll();
+}
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('backend-error').style.display = 'none';
+  document.getElementById('main-app').style.display = 'block';
+}
+function showLogin() {
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('backend-error').style.display = 'none';
+  document.getElementById('main-app').style.display = 'none';
+}
+function showBackendError() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('main-app').style.display = 'none';
+  document.getElementById('backend-error').style.display = 'flex';
+}
+
+async function loadAll() {
+  await initBackend();
+  if (!supabaseClient) { showBackendError(); return; }
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      showApp();
+      await fetchAndRenderData();
+    } else {
+      showLogin();
+    }
+    supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') showLogin();
+    });
+  } catch (e) {
+    console.error(e);
+    showToast('인증 상태를 확인하지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
+    showLogin();
+  }
+}
+
+// ---------- Rendering: KPI + list ----------
+function renderAll() {
+  renderKpis();
+  renderList();
+  refreshWordDatalist();
+  renderQuizArea();
+}
+
+function renderKpis() {
+  const total = words.length;
+  const mastered = words.filter(w => w.mastered).length;
+  const rate = total > 0 ? Math.round((mastered / total) * 100) : 0;
+  const due = words.filter(w => !w.mastered).length;
+  document.getElementById('kpi-total').textContent = total;
+  document.getElementById('kpi-mastered').textContent = mastered;
+  document.getElementById('kpi-rate').textContent = rate + '%';
+  document.getElementById('kpi-due').textContent = due;
+}
+
+function refreshWordDatalist() {
+  const dl = document.getElementById('word-datalist');
+  dl.innerHTML = '';
+  [...new Set(words.map(w => w.word))].forEach(w => {
+    const opt = document.createElement('option');
+    opt.value = w;
+    dl.appendChild(opt);
+  });
+}
+
+let listSelected = new Set();
+
+function renderList() {
+  const q = (document.getElementById('list-search').value || '').trim().toLowerCase();
+  const filtered = words
+    .filter(w => !q || w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q))
+    .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
+  const body = document.getElementById('list-body');
+  const empty = document.getElementById('list-empty');
+  const table = document.getElementById('list-table');
+  body.innerHTML = '';
+  if (filtered.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+  } else {
+    table.style.display = '';
+    empty.style.display = 'none';
+    filtered.forEach(w => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="checkbox-cell"><input type="checkbox" data-id="${w.id}" ${listSelected.has(w.id) ? 'checked' : ''} /></td>
+        <td class="word-cell">${escapeHtml(w.word)}</td>
+        <td>${escapeHtml(w.pos || '')}</td>
+        <td class="meaning-cell">${escapeHtml(w.meaning)}</td>
+        <td class="memo-cell">${escapeHtml(w.memo || '')}</td>
+        <td>${escapeHtml(w.dateAdded)}</td>
+        <td class="num"><span class="streak-tag">${w.correctStreak}/${MASTER_STREAK}</span></td>
+        <td><span class="mastered-badge ${w.mastered ? '' : 'off'}" data-id="${w.id}" data-action="toggle-mastered">${w.mastered ? '외움' : '학습중'}</span></td>
+        <td class="actions-cell"><button class="icon-btn danger" data-id="${w.id}" data-action="delete"><i class="ti ti-trash"></i></button></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+  updateBulkDeleteBtn();
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function updateBulkDeleteBtn() {
+  document.getElementById('list-bulk-delete-btn').disabled = listSelected.size === 0;
+}
+
+document.getElementById('list-body').addEventListener('click', async (e) => {
+  const toggleEl = e.target.closest('[data-action="toggle-mastered"]');
+  const delEl = e.target.closest('[data-action="delete"]');
+  if (toggleEl) {
+    const id = toggleEl.getAttribute('data-id');
+    const w = words.find(x => x.id === id);
+    if (!w) return;
+    w.mastered = !w.mastered;
+    if (!w.mastered) w.correctStreak = 0;
+    else w.correctStreak = MASTER_STREAK;
+    await persist();
+    renderAll();
+  } else if (delEl) {
+    if (!confirmDelete()) return;
+    const id = delEl.getAttribute('data-id');
+    words = words.filter(w => w.id !== id);
+    listSelected.delete(id);
+    await persist();
+    renderAll();
+  }
+});
+
+document.getElementById('list-body').addEventListener('change', (e) => {
+  const cb = e.target.closest('input[type="checkbox"][data-id]');
+  if (!cb) return;
+  const id = cb.getAttribute('data-id');
+  if (cb.checked) listSelected.add(id); else listSelected.delete(id);
+  updateBulkDeleteBtn();
+});
+
+document.getElementById('list-select-all').addEventListener('change', (e) => {
+  const boxes = document.querySelectorAll('#list-body input[type="checkbox"][data-id]');
+  boxes.forEach(cb => {
+    cb.checked = e.target.checked;
+    const id = cb.getAttribute('data-id');
+    if (e.target.checked) listSelected.add(id); else listSelected.delete(id);
+  });
+  updateBulkDeleteBtn();
+});
+
+document.getElementById('list-bulk-delete-btn').addEventListener('click', async () => {
+  if (listSelected.size === 0) return;
+  if (!confirmDelete()) return;
+  words = words.filter(w => !listSelected.has(w.id));
+  listSelected.clear();
+  await persist();
+  renderAll();
+});
+
+document.getElementById('list-search').addEventListener('input', renderList);
+
+document.getElementById('wf-submit-btn').addEventListener('click', async () => {
+  const wordEl = document.getElementById('wf-word');
+  const posEl = document.getElementById('wf-pos');
+  const meaningEl = document.getElementById('wf-meaning');
+  const memoEl = document.getElementById('wf-memo');
+  const errEl = document.getElementById('word-form-error');
+  const word = wordEl.value.trim();
+  const pos = posEl.value;
+  const meaning = meaningEl.value.trim();
+  const memo = memoEl.value.trim();
+  if (!word || !meaning) {
+    errEl.textContent = '단어와 뜻을 모두 입력해 주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  words.push({
+    id: uid(), word, pos, meaning, memo, dateAdded: todayStr(),
+    mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
+  });
+  wordEl.value = ''; posEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  await persist();
+  renderAll();
+  wordEl.focus();
+});
+
+// ---------- 사전(뜻 자동조회, 구글 번역 기반) — 선택 기능, Supabase Edge Function을 통해서만 호출해요 ----------
+document.getElementById('wf-dict-btn').addEventListener('click', async () => {
+  const wordEl = document.getElementById('wf-word');
+  const meaningEl = document.getElementById('wf-meaning');
+  const btn = document.getElementById('wf-dict-btn');
+  const word = wordEl.value.trim();
+  if (!word) {
+    showToast('먼저 단어를 입력해 주세요.', 'info', 3000);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.meaning) {
+      showToast('사전 조회에 실패했어요. 뜻을 직접 입력해 주세요.', 'error', 5000);
+      return;
+    }
+    meaningEl.value = data.meaning;
+    showToast('번역 결과를 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
+  } catch (e) {
+    console.error(e);
+    showToast('사전 조회 중 오류가 발생했어요.', 'error', 5000);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+// ---------- Tabs ----------
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.getAttribute('data-panel')).classList.add('active');
+    if (tab.getAttribute('data-panel') === 'panel-quiz') renderQuizArea();
+  });
+});
+
+// ---------- Quiz ----------
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuizQueue() {
+  return shuffle(words.filter(w => !w.mastered)).map(w => w.id);
+}
+
+function buildChoices(correctWord) {
+  const pool = words.filter(w => w.id !== correctWord.id && w.meaning !== correctWord.meaning);
+  const distractors = shuffle(pool).slice(0, QUIZ_CHOICES - 1).map(w => w.meaning);
+  const choices = shuffle([correctWord.meaning, ...distractors]);
+  return choices;
+}
+
+function renderQuizArea() {
+  const area = document.getElementById('quiz-area');
+  if (!quiz) {
+    const dueCount = words.filter(w => !w.mastered).length;
+    if (dueCount === 0) {
+      area.innerHTML = `<div class="quiz-empty">시험 볼 단어가 없어요. 모든 단어를 외웠거나, 아직 등록된 단어가 없어요.<br>단어장 탭에서 단어를 등록해 보세요.</div>`;
+      return;
+    }
+    area.innerHTML = `
+      <div class="quiz-start-wrap">
+        <p>오늘 시험 대상 단어: <b>${dueCount}개</b> (아직 외우지 못한 단어 전체)</p>
+        <button class="primary-btn" id="quiz-start-btn">오늘의 시험 시작</button>
+      </div>
+    `;
+    document.getElementById('quiz-start-btn').addEventListener('click', startQuiz);
+    return;
+  }
+  if (quiz.finished) {
+    renderQuizResult(area);
+    return;
+  }
+  renderQuizQuestion(area);
+}
+
+function startQuiz() {
+  if (words.filter(w => !w.mastered).length < 2) {
+    showToast('객관식 문제를 내려면 학습 중인 단어가 2개 이상 필요해요.', 'info', 5000);
+  }
+  quiz = {
+    queue: buildQuizQueue(),
+    totalCount: words.filter(w => !w.mastered).length,
+    askedCount: 0,
+    correctCount: 0,
+    wrongCount: 0,
+    newlyMastered: 0,
+    answered: false,
+    finished: false,
+  };
+  renderQuizArea();
+}
+
+function renderQuizQuestion(area) {
+  if (quiz.queue.length === 0) {
+    quiz.finished = true;
+    renderQuizArea();
+    return;
+  }
+  const wordId = quiz.queue[0];
+  const w = words.find(x => x.id === wordId);
+  if (!w || w.mastered) {
+    quiz.queue.shift();
+    renderQuizQuestion(area);
+    return;
+  }
+  const choices = buildChoices(w);
+  quiz.answered = false;
+  area.innerHTML = `
+    <div class="quiz-card">
+      <div class="quiz-progress">진행 ${quiz.askedCount + 1} · 남은 문제 ${quiz.queue.length} · 정답 ${quiz.correctCount} / 오답 ${quiz.wrongCount}</div>
+      <div class="quiz-word">${escapeHtml(w.word)}</div>
+      <div class="quiz-sub">이 단어의 뜻은?</div>
+      <div class="quiz-choices" id="quiz-choices"></div>
+      <div class="quiz-next-row" id="quiz-next-row" style="display:none;">
+        <button class="primary-btn" id="quiz-next-btn">다음</button>
+      </div>
+    </div>
+  `;
+  const choicesEl = document.getElementById('quiz-choices');
+  choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-choice';
+    btn.textContent = choice;
+    btn.addEventListener('click', () => answerQuiz(w, choice, choice === w.meaning));
+    choicesEl.appendChild(btn);
+  });
+}
+
+async function answerQuiz(w, chosen, isCorrect) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+  quiz.askedCount += 1;
+  quiz.queue.shift();
+
+  document.querySelectorAll('.quiz-choice').forEach(btn => {
+    btn.disabled = true;
+    if (btn.textContent === w.meaning) btn.classList.add('correct');
+    else if (btn.textContent === chosen && !isCorrect) btn.classList.add('wrong');
+  });
+
+  w.lastTestedDate = todayStr();
+  if (isCorrect) {
+    quiz.correctCount += 1;
+    w.correctStreak += 1;
+    if (w.correctStreak >= MASTER_STREAK) {
+      w.mastered = true;
+      quiz.newlyMastered += 1;
+    }
+  } else {
+    quiz.wrongCount += 1;
+    w.wrongCount += 1;
+    w.correctStreak = 0;
+    // 오답은 이번 시험 안에서 다시 나오도록 뒤쪽에 재등록해요.
+    quiz.queue.push(w.id);
+  }
+  renderKpis();
+  await persist();
+
+  document.getElementById('quiz-next-row').style.display = 'block';
+  document.getElementById('quiz-next-btn').addEventListener('click', () => {
+    renderQuizArea();
+  });
+}
+
+function renderQuizResult(area) {
+  area.innerHTML = `
+    <div class="quiz-result">
+      <div class="big-num">${quiz.correctCount} / ${quiz.askedCount}</div>
+      <div style="color: var(--ink-faint); font-size: 12px; margin-bottom: 16px;">오늘의 시험 결과 (오답 재출제 포함 총 문제 수)</div>
+      <div class="row"><span>새로 외운 단어</span><span>${quiz.newlyMastered}개</span></div>
+      <div class="row"><span>오답 횟수</span><span>${quiz.wrongCount}회</span></div>
+      <div class="form-actions" style="justify-content:center; margin-top:20px;">
+        <button class="ghost-btn" id="quiz-restart-btn">단어장으로</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('quiz-restart-btn').addEventListener('click', () => {
+    quiz = null;
+    renderAll();
+  });
+}
+
+// ---------- Auth ----------
+document.getElementById('login-submit-btn').addEventListener('click', doLogin);
+document.getElementById('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!email || !password) {
+    errEl.textContent = '이메일과 비밀번호를 입력해 주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = '로그인에 실패했어요: ' + error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  showApp();
+  await fetchAndRenderData();
+}
+
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  showLogin();
+});
+
+document.getElementById('backend-retry-btn').addEventListener('click', () => { loadAll(); });
+
+document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+loadAll();
+</script>
+</body>
+</html>
