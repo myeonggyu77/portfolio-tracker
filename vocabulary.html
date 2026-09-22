@@ -197,8 +197,26 @@
           <input type="text" id="wf-word" placeholder="apple" autocomplete="off" />
         </div>
         <div>
+          <div class="field-lbl">품사</div>
+          <select id="wf-pos">
+            <option value="">선택 안 함</option>
+            <option value="명사">명사</option>
+            <option value="동사">동사</option>
+            <option value="형용사">형용사</option>
+            <option value="부사">부사</option>
+            <option value="전치사">전치사</option>
+            <option value="접속사">접속사</option>
+            <option value="대명사">대명사</option>
+            <option value="감탄사">감탄사</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+        <div>
           <div class="field-lbl">뜻</div>
-          <input type="text" id="wf-meaning" placeholder="사과" autocomplete="off" />
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="wf-meaning" placeholder="사과" autocomplete="off" />
+            <button class="ghost-btn" id="wf-dict-btn" type="button" title="파파고로 뜻 자동조회" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-language"></i></button>
+          </div>
         </div>
         <div>
           <div class="field-lbl">메모 (선택)</div>
@@ -222,6 +240,7 @@
           <tr>
             <th class="checkbox-cell"><input type="checkbox" id="list-select-all" /></th>
             <th class="name-th">단어</th>
+            <th>품사</th>
             <th>뜻</th>
             <th>메모</th>
             <th>등록일</th>
@@ -316,6 +335,7 @@ async function fetchAndRenderData() {
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
   }
   words.forEach(w => {
+    if (w.pos === undefined) w.pos = '';
     if (w.mastered === undefined) w.mastered = false;
     if (w.correctStreak === undefined) w.correctStreak = 0;
     if (w.wrongCount === undefined) w.wrongCount = 0;
@@ -412,6 +432,7 @@ function renderList() {
       tr.innerHTML = `
         <td class="checkbox-cell"><input type="checkbox" data-id="${w.id}" ${listSelected.has(w.id) ? 'checked' : ''} /></td>
         <td class="word-cell">${escapeHtml(w.word)}</td>
+        <td>${escapeHtml(w.pos || '')}</td>
         <td class="meaning-cell">${escapeHtml(w.meaning)}</td>
         <td class="memo-cell">${escapeHtml(w.memo || '')}</td>
         <td>${escapeHtml(w.dateAdded)}</td>
@@ -486,10 +507,12 @@ document.getElementById('list-search').addEventListener('input', renderList);
 
 document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const wordEl = document.getElementById('wf-word');
+  const posEl = document.getElementById('wf-pos');
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
   const word = wordEl.value.trim();
+  const pos = posEl.value;
   const meaning = meaningEl.value.trim();
   const memo = memoEl.value.trim();
   if (!word || !meaning) {
@@ -499,13 +522,46 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   }
   errEl.style.display = 'none';
   words.push({
-    id: uid(), word, meaning, memo, dateAdded: todayStr(),
+    id: uid(), word, pos, meaning, memo, dateAdded: todayStr(),
     mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
   });
-  wordEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  wordEl.value = ''; posEl.value = ''; meaningEl.value = ''; memoEl.value = '';
   await persist();
   renderAll();
   wordEl.focus();
+});
+
+// ---------- 파파고 사전(뜻 자동조회) — 선택 기능, Supabase Edge Function을 통해서만 호출해요 ----------
+document.getElementById('wf-dict-btn').addEventListener('click', async () => {
+  const wordEl = document.getElementById('wf-word');
+  const meaningEl = document.getElementById('wf-meaning');
+  const btn = document.getElementById('wf-dict-btn');
+  const word = wordEl.value.trim();
+  if (!word) {
+    showToast('먼저 단어를 입력해 주세요.', 'info', 3000);
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const url = `${SUPABASE_URL}/functions/v1/papago-lookup?word=${encodeURIComponent(word)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.meaning) {
+      if (data.error === 'papago_not_configured') {
+        showToast('파파고 사전 연동이 아직 설정되지 않았어요. CLAUDE.md의 안내를 참고해 등록해 주세요.', 'info', 6000);
+      } else {
+        showToast('사전 조회에 실패했어요. 뜻을 직접 입력해 주세요.', 'error', 5000);
+      }
+      return;
+    }
+    meaningEl.value = data.meaning;
+    showToast('파파고 번역 결과를 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
+  } catch (e) {
+    console.error(e);
+    showToast('사전 조회 중 오류가 발생했어요.', 'error', 5000);
+  } finally {
+    btn.disabled = false;
+  }
 });
 
 // ---------- Tabs ----------
