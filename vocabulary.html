@@ -574,63 +574,34 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
 });
 
 // ---------- 사전 자동조회(품사·뜻·발음기호) — 선택 기능 ----------
-// 속도를 위해 두 소스를 따로, 동시에 호출해요: ① 뜻은 Supabase Edge Function(dict-lookup, 구글 번역
-// 비공식 API 중계) ② 품사·발음기호·발음오디오는 dictionaryapi.dev(무료, CORS 허용이라 브라우저에서
-// 바로 호출). 어느 쪽이든 먼저 도착하는 대로 그 칸을 바로 채워서 체감 속도를 높여요.
+// Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 구글 번역(뜻)과
+// dictionaryapi.dev(품사·발음기호·발음오디오)를 서버에서 동시에 호출해서 합쳐 돌려줘요.
+// (모바일 인앱 브라우저 등에서 dictionaryapi.dev로의 직접 클라이언트 호출이 막혀 품사/발음기호가
+// 계속 비어있는 문제가 있어서, 클라이언트는 항상 이 서버 함수 하나만 부르도록 되돌렸어요.)
 // 단어 입력 후 다른 칸으로 이동(blur)하면 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
 let lastLookupWord = '';
 let lastLookupAudioUrl = '';
 let lookupPromise = null; // 등록 버튼이 자동조회 완료를 기다릴 수 있도록 진행 중인 조회를 추적해요.
 
-const DICT_POS_MAP = {
-  noun: '명사', verb: '동사', adjective: '형용사', adverb: '부사',
-  pronoun: '대명사', preposition: '전치사', conjunction: '접속사',
-  interjection: '감탄사', exclamation: '감탄사',
-};
-
 // 사전 조회가 느리거나 응답이 없을 때 화면(특히 등록 버튼)이 무한정 멈춰있지 않도록
-// 모든 외부 호출에 타임아웃을 걸어요. 시간 안에 응답이 없으면 실패로 간주하고 넘어가요.
-const DICT_FETCH_TIMEOUT_MS = 4000;
+// 타임아웃을 걸어요. 시간 안에 응답이 없으면 실패로 간주하고 넘어가요.
+const DICT_FETCH_TIMEOUT_MS = 5000;
 function fetchWithTimeout(url, options, timeoutMs = DICT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-async function fetchMeaning(word) {
+async function lookupWord(word) {
   const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
   try {
     const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.meaning) return '';
-    return data.meaning;
+    if (!res.ok) return null;
+    return data;
   } catch (e) {
-    return ''; // 타임아웃/네트워크 오류 — 조용히 실패, 직접 입력으로 대체 가능
+    return null; // 타임아웃/네트워크 오류 — 조용히 실패, 직접 입력으로 대체 가능
   }
-}
-
-async function fetchDictionaryInfo(word) {
-  let res;
-  try {
-    res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-  } catch (e) {
-    return { phonetic: '', pos: '', audio: '' }; // 타임아웃/네트워크 오류
-  }
-  if (!res.ok) return { phonetic: '', pos: '', audio: '' };
-  const data = await res.json().catch(() => null);
-  const entry = Array.isArray(data) ? data[0] : null;
-  if (!entry) return { phonetic: '', pos: '', audio: '' };
-  let phonetic = entry.phonetic || '';
-  let audio = '';
-  if (Array.isArray(entry.phonetics)) {
-    for (const p of entry.phonetics) {
-      if (!phonetic && p.text) phonetic = p.text;
-      if (!audio && p.audio) audio = p.audio;
-    }
-  }
-  if (audio && audio.startsWith('//')) audio = 'https:' + audio;
-  const pos = (Array.isArray(entry.meanings) && entry.meanings[0]?.partOfSpeech && DICT_POS_MAP[entry.meanings[0].partOfSpeech]) || '';
-  return { phonetic, pos, audio };
 }
 
 async function autoFillFromWord(showFeedback) {
@@ -648,25 +619,17 @@ async function autoFillFromWord(showFeedback) {
   if (!showFeedback && word === lastLookupWord) return; // 자동 조회는 같은 단어를 반복 호출하지 않아요.
   btn.disabled = true;
   try {
-    const results = await Promise.allSettled([
-      fetchMeaning(word).then(meaning => {
-        if (meaning) { meaningEl.value = meaning; errEl.style.display = 'none'; }
-        return meaning;
-      }),
-      fetchDictionaryInfo(word).then(info => {
-        if (info.pos) { posEl.value = info.pos; errEl.style.display = 'none'; }
-        if (info.phonetic) phoneticEl.value = info.phonetic;
-        lastLookupAudioUrl = info.audio || '';
-        return info;
-      }),
-    ]);
-    const gotMeaning = results[0].status === 'fulfilled' && !!results[0].value;
-    const gotDict = results[1].status === 'fulfilled' && (results[1].value.pos || results[1].value.phonetic);
-    if (!gotMeaning && !gotDict) {
+    const data = await lookupWord(word);
+    if (!data || (!data.meaning && !data.pos && !data.phonetic)) {
       if (showFeedback) showToast('사전 조회에 실패했어요. 직접 입력해 주세요.', 'error', 5000);
       return;
     }
+    if (data.meaning) meaningEl.value = data.meaning;
+    if (data.pos) posEl.value = data.pos;
+    if (data.phonetic) phoneticEl.value = data.phonetic;
     lastLookupWord = word;
+    lastLookupAudioUrl = data.audio || '';
+    errEl.style.display = 'none';
     if (showFeedback) showToast('품사·뜻·발음기호를 자동으로 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
   } catch (e) {
     console.error(e);
