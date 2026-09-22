@@ -1,7 +1,7 @@
 // Supabase Edge Function: dict-lookup
 // 단어장(vocabulary.html)의 단어 등록 폼이 호출하는 중계 서버예요.
 // 단어 하나를 넘기면 (1) 한국어 뜻을, (2) 무료 영어사전 API(dictionaryapi.dev)로
-// 발음기호·품사·발음 오디오 URL을 가져와서 합쳐서 돌려줘요.
+// 품사·예문·발음 오디오 URL을 가져와서 합쳐서 돌려줘요.
 //
 // 배포: Supabase Edge Functions에 dict-lookup 이름으로 배포되어 있어요.
 //
@@ -12,7 +12,14 @@
 //     대체해서 계속 동작해요 — 키 등록 전에도 앱이 멈추지 않아요.
 //   - 키를 Secrets에 등록하는 순간, 재배포 없이 바로 Papago로 전환돼요.
 //
-// 품사·발음기호·발음 오디오는 항상 dictionaryapi.dev(무료, 키 불필요)에서 가져와요.
+// 품사·예문·발음 오디오는 항상 dictionaryapi.dev(무료, 키 불필요)에서 가져와요.
+// (발음기호는 2026-09 말 요청으로 더 이상 조회/표시하지 않아요. 그 대신 예문을 보여줘요.)
+//
+// 품사 매칭(2026-09 말 수정): dictionaryapi.dev가 돌려주는 partOfSpeech 값이
+// "transitive verb", "article", "numeral" 처럼 미리 정해둔 몇 종류와 정확히 일치하지
+// 않는 경우가 많아서, 매번 품사 칸이 비어있는 문제가 있었어요. 정확히 일치하는지 보는 대신
+// 문자열에 "verb"/"noun" 등이 "포함"되는지로 넓게 매칭하고, 첫 번째 의미(entry.meanings[0])만
+// 보지 않고 모든 entry·모든 meaning을 돌면서 값을 찾은 첫 품사/예문을 쓰도록 고쳤어요.
 //
 // 두 소스 모두 Promise.all로 서버에서 동시에 호출해서 합쳐 응답해요. 클라이언트는
 // 이 함수 하나만 호출하면 돼요(모바일 인앱 브라우저 등에서 dictionaryapi.dev 직접 호출이
@@ -31,18 +38,6 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
-};
-
-const POS_MAP: Record<string, string> = {
-  noun: "명사",
-  verb: "동사",
-  adjective: "형용사",
-  adverb: "부사",
-  pronoun: "대명사",
-  preposition: "전치사",
-  conjunction: "접속사",
-  interjection: "감탄사",
-  exclamation: "감탄사",
 };
 
 const FETCH_TIMEOUT_MS = 4000;
@@ -101,31 +96,57 @@ async function fetchMeaning(word: string): Promise<string> {
   return fetchMeaningViaGoogle(word);
 }
 
-async function fetchDictionaryInfo(word: string): Promise<{ phonetic: string; pos: string; audio: string }> {
+// dictionaryapi.dev가 돌려주는 partOfSpeech 문자열(예: "noun", "transitive verb",
+// "definite article")을 우리 select의 한국어 옵션 중 하나로 넓게 매칭해요.
+function mapPos(raw: string): string {
+  if (!raw) return "";
+  const s = raw.toLowerCase();
+  if (s.includes("noun")) return "명사";
+  if (s.includes("verb")) return "동사";
+  if (s.includes("adjective")) return "형용사";
+  if (s.includes("adverb")) return "부사";
+  if (s.includes("pronoun")) return "대명사";
+  if (s.includes("preposition")) return "전치사";
+  if (s.includes("conjunction")) return "접속사";
+  if (s.includes("interjection") || s.includes("exclamation")) return "감탄사";
+  return "기타";
+}
+
+async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) return { phonetic: "", pos: "", audio: "" };
+    if (!res.ok) return { pos: "", example: "", audio: "" };
     const data = await res.json();
-    const entry = Array.isArray(data) ? data[0] : null;
-    if (!entry) return { phonetic: "", pos: "", audio: "" };
-
-    let phonetic = entry.phonetic || "";
-    let audio = "";
-    if (Array.isArray(entry.phonetics)) {
-      for (const p of entry.phonetics) {
-        if (!phonetic && p.text) phonetic = p.text;
-        if (!audio && p.audio) audio = p.audio;
-      }
-    }
-    if (audio && audio.startsWith("//")) audio = "https:" + audio;
+    if (!Array.isArray(data)) return { pos: "", example: "", audio: "" };
 
     let pos = "";
-    if (Array.isArray(entry.meanings) && entry.meanings[0]?.partOfSpeech) {
-      pos = POS_MAP[entry.meanings[0].partOfSpeech] || "";
+    let example = "";
+    let audio = "";
+
+    for (const entry of data) {
+      if (!audio && Array.isArray(entry.phonetics)) {
+        for (const p of entry.phonetics) {
+          if (!audio && p.audio) audio = p.audio;
+        }
+      }
+      if (Array.isArray(entry.meanings)) {
+        for (const m of entry.meanings) {
+          if (!pos && m.partOfSpeech) pos = mapPos(m.partOfSpeech);
+          if (!example && Array.isArray(m.definitions)) {
+            for (const d of m.definitions) {
+              if (!example && d.example) example = d.example;
+            }
+          }
+          if (pos && example && audio) break;
+        }
+      }
+      if (pos && example && audio) break;
     }
-    return { phonetic, pos, audio };
+
+    if (audio && audio.startsWith("//")) audio = "https:" + audio;
+    return { pos, example, audio };
   } catch {
-    return { phonetic: "", pos: "", audio: "" };
+    return { pos: "", example: "", audio: "" };
   }
 }
 
@@ -138,15 +159,15 @@ Deno.serve(async (req: Request) => {
 
   const [meaning, dict] = await Promise.all([fetchMeaning(word), fetchDictionaryInfo(word)]);
 
-  if (!meaning && !dict.phonetic && !dict.pos) {
+  if (!meaning && !dict.pos && !dict.example) {
     return jsonResponse({ error: "no_result" }, 502);
   }
 
   return jsonResponse({
     word,
     meaning,
-    phonetic: dict.phonetic,
     pos: dict.pos,
+    example: dict.example,
     audio: dict.audio,
     meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "google",
   });

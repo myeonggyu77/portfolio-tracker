@@ -195,7 +195,7 @@
         <div>
           <div class="field-lbl">단어</div>
           <input type="text" id="wf-word" placeholder="apple" autocomplete="off" />
-          <button class="ghost-btn" id="wf-dict-btn" type="button" title="사전 다시 조회 (품사·뜻·발음기호 자동입력)" style="font-size:12px; padding:5px 10px; white-space:nowrap; margin-top:6px;">사전 다시조회</button>
+          <button class="ghost-btn" id="wf-dict-btn" type="button" title="사전 다시 조회 (품사·뜻·예문 자동입력)" style="font-size:12px; padding:5px 10px; white-space:nowrap; margin-top:6px;">사전 다시조회</button>
         </div>
         <div>
           <div class="field-lbl">품사</div>
@@ -213,8 +213,8 @@
           </select>
         </div>
         <div>
-          <div class="field-lbl">발음기호</div>
-          <input type="text" id="wf-phonetic" placeholder="/ˈæp.əl/" autocomplete="off" />
+          <div class="field-lbl">예문</div>
+          <input type="text" id="wf-example" placeholder="I ate an apple this morning." autocomplete="off" />
         </div>
         <div>
           <div class="field-lbl">뜻</div>
@@ -225,7 +225,7 @@
           <input type="text" id="wf-memo" placeholder="예문, 발음 등" autocomplete="off" />
         </div>
       </div>
-      <div class="form-note">단어를 입력하고 다른 칸으로 이동하면 품사·뜻·발음기호가 자동으로 채워져요 (확인 후 필요하면 수정하세요).</div>
+      <div class="form-note">단어를 입력하고 다른 칸으로 이동하면 품사·뜻·예문이 자동으로 채워져요 (확인 후 필요하면 수정하세요).</div>
       <div class="form-actions">
         <button class="primary-btn" id="wf-submit-btn">등록</button>
       </div>
@@ -244,7 +244,7 @@
             <th class="checkbox-cell"><input type="checkbox" id="list-select-all" /></th>
             <th></th>
             <th class="name-th">단어</th>
-            <th>발음기호</th>
+            <th>예문</th>
             <th>품사</th>
             <th>뜻</th>
             <th>메모</th>
@@ -362,7 +362,7 @@ async function fetchAndRenderData() {
   }
   words.forEach(w => {
     if (w.pos === undefined) w.pos = '';
-    if (w.phonetic === undefined) w.phonetic = '';
+    if (w.example === undefined) w.example = '';
     if (w.audioUrl === undefined) w.audioUrl = '';
     if (w.mastered === undefined) w.mastered = false;
     if (w.correctStreak === undefined) w.correctStreak = 0;
@@ -461,7 +461,7 @@ function renderList() {
         <td class="checkbox-cell"><input type="checkbox" data-id="${w.id}" ${listSelected.has(w.id) ? 'checked' : ''} /></td>
         <td class="actions-cell"><button class="icon-btn" data-id="${w.id}" data-action="speak" title="발음 듣기">🔊 듣기</button></td>
         <td class="word-cell">${escapeHtml(w.word)}</td>
-        <td class="code-cell">${escapeHtml(w.phonetic || '')}</td>
+        <td class="code-cell">${escapeHtml(w.example || '')}</td>
         <td>${escapeHtml(w.pos || '')}</td>
         <td class="meaning-cell">${escapeHtml(w.meaning)}</td>
         <td class="memo-cell">${escapeHtml(w.memo || '')}</td>
@@ -543,7 +543,7 @@ document.getElementById('list-search').addEventListener('input', renderList);
 document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const wordEl = document.getElementById('wf-word');
   const posEl = document.getElementById('wf-pos');
-  const phoneticEl = document.getElementById('wf-phonetic');
+  const exampleEl = document.getElementById('wf-example');
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
@@ -552,7 +552,7 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   if (lookupPromise) await Promise.race([lookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
   const word = wordEl.value.trim();
   const pos = posEl.value;
-  const phonetic = phoneticEl.value.trim();
+  const example = exampleEl.value.trim();
   const meaning = meaningEl.value.trim();
   const memo = memoEl.value.trim();
   if (!word || !meaning) {
@@ -562,21 +562,21 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   }
   errEl.style.display = 'none';
   words.push({
-    id: uid(), word, pos, phonetic, meaning, memo, dateAdded: todayStr(),
+    id: uid(), word, pos, example, meaning, memo, dateAdded: todayStr(),
     audioUrl: word === lastLookupWord ? lastLookupAudioUrl : '',
     mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
   });
-  wordEl.value = ''; posEl.value = ''; phoneticEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  wordEl.value = ''; posEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
   lastLookupWord = ''; lastLookupAudioUrl = '';
   await persist();
   renderAll();
   wordEl.focus();
 });
 
-// ---------- 사전 자동조회(품사·뜻·발음기호) — 선택 기능 ----------
+// ---------- 사전 자동조회(품사·뜻·예문) — 선택 기능 ----------
 // Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 구글 번역(뜻)과
-// dictionaryapi.dev(품사·발음기호·발음오디오)를 서버에서 동시에 호출해서 합쳐 돌려줘요.
-// (모바일 인앱 브라우저 등에서 dictionaryapi.dev로의 직접 클라이언트 호출이 막혀 품사/발음기호가
+// dictionaryapi.dev(품사·예문·발음오디오)를 서버에서 동시에 호출해서 합쳐 돌려줘요.
+// (모바일 인앱 브라우저 등에서 dictionaryapi.dev로의 직접 클라이언트 호출이 막혀 품사가
 // 계속 비어있는 문제가 있어서, 클라이언트는 항상 이 서버 함수 하나만 부르도록 되돌렸어요.)
 // 단어 입력 후 다른 칸으로 이동(blur)하면 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
 let lastLookupWord = '';
@@ -607,7 +607,7 @@ async function lookupWord(word) {
 async function autoFillFromWord(showFeedback) {
   const wordEl = document.getElementById('wf-word');
   const posEl = document.getElementById('wf-pos');
-  const phoneticEl = document.getElementById('wf-phonetic');
+  const exampleEl = document.getElementById('wf-example');
   const meaningEl = document.getElementById('wf-meaning');
   const errEl = document.getElementById('word-form-error');
   const btn = document.getElementById('wf-dict-btn');
@@ -620,17 +620,17 @@ async function autoFillFromWord(showFeedback) {
   btn.disabled = true;
   try {
     const data = await lookupWord(word);
-    if (!data || (!data.meaning && !data.pos && !data.phonetic)) {
+    if (!data || (!data.meaning && !data.pos && !data.example)) {
       if (showFeedback) showToast('사전 조회에 실패했어요. 직접 입력해 주세요.', 'error', 5000);
       return;
     }
     if (data.meaning) meaningEl.value = data.meaning;
     if (data.pos) posEl.value = data.pos;
-    if (data.phonetic) phoneticEl.value = data.phonetic;
+    if (data.example) exampleEl.value = data.example;
     lastLookupWord = word;
     lastLookupAudioUrl = data.audio || '';
     errEl.style.display = 'none';
-    if (showFeedback) showToast('품사·뜻·발음기호를 자동으로 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
+    if (showFeedback) showToast('품사·뜻·예문을 자동으로 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
   } catch (e) {
     console.error(e);
     if (showFeedback) showToast('사전 조회 중 오류가 발생했어요.', 'error', 5000);
