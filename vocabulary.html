@@ -587,8 +587,10 @@ let lookupPromise = null; // 등록 버튼이 자동조회 완료를 기다릴 �
 // 사전 조회가 느리거나 응답이 없을 때 화면(특히 등록 버튼)이 무한정 멈춰있지 않도록
 // 타임아웃을 걸어요. 시간 안에 응답이 없으면 실패로 간주하고 넘어가요.
 // (2026-09 말: 서버가 예문 번역까지 순차로 추가 조회하면서 응답이 조금 더 걸릴 수 있어
-// 5초 → 9초로 늘렸어요.)
-const DICT_FETCH_TIMEOUT_MS = 9000;
+// 5초 → 9초로 늘렸다가, 서버 쪽 외부 호출 타임아웃도 4초 → 8초로 늘리면서 15초로 재조정했어요.
+// dictionaryapi.dev가 뜻 번역과 동시에 호출될 때 콜드스타트 등으로 4초를 넘겨 중간에
+// 끊기면서 품사가 계속 비어있던 버그가 있었어요 — 그 타임아웃을 늘린 만큼 여기도 같이 늘렸어요.)
+const DICT_FETCH_TIMEOUT_MS = 15000;
 function fetchWithTimeout(url, options, timeoutMs = DICT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
