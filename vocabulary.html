@@ -215,7 +215,7 @@
           <div class="field-lbl">뜻</div>
           <div style="display:flex; gap:6px;">
             <input type="text" id="wf-meaning" placeholder="사과" autocomplete="off" />
-            <button class="ghost-btn" id="wf-dict-btn" type="button" title="파파고로 뜻 자동조회" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-language"></i></button>
+            <button class="ghost-btn" id="wf-dict-btn" type="button" title="구글 번역으로 뜻 자동조회" style="flex-shrink:0; padding:0 10px;"><i class="ti ti-language"></i></button>
           </div>
         </div>
         <div>
@@ -531,7 +531,7 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   wordEl.focus();
 });
 
-// ---------- 파파고 사전(뜻 자동조회) — 선택 기능, Supabase Edge Function을 통해서만 호출해요 ----------
+// ---------- 사전(뜻 자동조회, 구글 번역 기반) — 선택 기능, Supabase Edge Function을 통해서만 호출해요 ----------
 document.getElementById('wf-dict-btn').addEventListener('click', async () => {
   const wordEl = document.getElementById('wf-word');
   const meaningEl = document.getElementById('wf-meaning');
@@ -543,19 +543,15 @@ document.getElementById('wf-dict-btn').addEventListener('click', async () => {
   }
   btn.disabled = true;
   try {
-    const url = `${SUPABASE_URL}/functions/v1/papago-lookup?word=${encodeURIComponent(word)}`;
+    const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.meaning) {
-      if (data.error === 'papago_not_configured') {
-        showToast('파파고 사전 연동이 아직 설정되지 않았어요. CLAUDE.md의 안내를 참고해 등록해 주세요.', 'info', 6000);
-      } else {
-        showToast('사전 조회에 실패했어요. 뜻을 직접 입력해 주세요.', 'error', 5000);
-      }
+      showToast('사전 조회에 실패했어요. 뜻을 직접 입력해 주세요.', 'error', 5000);
       return;
     }
     meaningEl.value = data.meaning;
-    showToast('파파고 번역 결과를 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
+    showToast('번역 결과를 채웠어요. 확인 후 필요하면 수정해 주세요.', 'success', 4000);
   } catch (e) {
     console.error(e);
     showToast('사전 조회 중 오류가 발생했어요.', 'error', 5000);

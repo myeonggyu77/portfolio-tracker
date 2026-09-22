@@ -24,8 +24,8 @@
 | `manifest.json` | PWA 매니페스트 |
 | `sw.js` | PWA 서비스워커 (앱 셸 캐싱) |
 | `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png` | PWA 아이콘 |
-| `vocabulary.html` | (2026-09 추가) **영어 단어장** 앱 본체. 포트폴리오 원장과 완전히 독립된 별도 앱이지만 같은 저장소·같은 Supabase 프로젝트·같은 로그인 계정을 공유해요. 자세한 내용은 12번 항목 참고. |
-| `papago-lookup.ts` | (선택) 단어장의 "뜻 자동조회" 기능용 Supabase Edge Function 소스. 네이버 Papago 번역 API 중계 서버. |
+| `vocabulary.html` | (2026-09 추가) **영어 단어장** 앱 본체. 포트폴리오 원장과 완전히 독립된 별도 앱이지만 같은 저장소·같은 Supabase 프로젝트·같은 로그인 계정을 공유해요. 자세한 내용은 10번 항목 참고. |
+| `dict-lookup.ts` | (선택) 단어장의 "뜻 자동조회" 기능용 Supabase Edge Function 소스. 구글 번역(비공식) 중계 서버, 키 발급 불필요. |
 
 ## 3. 백엔드/외부 연동 설정값
 
@@ -107,15 +107,15 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
   - `pos`(품사)는 사용자가 직접 선택하는 값(명사/동사/형용사/… /기타), 자동 조회 없음.
   - `mastered`는 수동 토글 또는 시험에서 `correctStreak`가 `MASTER_STREAK`(기본 3)에 도달하면 자동으로 `true`가 돼요.
 - **오늘의 시험 로직**: `mastered=false`인 단어 전체가 그날의 출제 범위. 4지선다 객관식(단어 → 뜻 고르기). 오답은 같은 시험 세션 안에서 뒤로 재배치되어 다시 나오고, 정답을 맞히면 `correctStreak`가 올라가며 `MASTER_STREAK`회 연속 정답 시 자동으로 "외운 단어" 처리돼요. 오답 시 `correctStreak`는 0으로 초기화돼요.
-- **파파고 사전(뜻 자동조회, 선택 기능)**: 단어 등록 폼의 "사전 조회" 버튼(파파고 아이콘)을 누르면 `papago-lookup` Edge Function을 통해 네이버 Papago 번역 API로 뜻을 자동으로 채워요. **아직 API 키가 등록되지 않았어요** — 등록 전까지는 버튼을 눌러도 "아직 설정되지 않았어요" 안내만 뜨고, 뜻 직접 입력은 항상 가능해요.
-  - 설정 방법: developers.naver.com(네이버 개발자센터, NCP 아님) 에서 애플리케이션 등록 → "Papago 번역" API 사용 설정 → Client ID / Client Secret 발급.
-  - 발급받은 값을 Supabase 대시보드 → Edge Functions → `papago-lookup` → Secrets에 `NAVER_PAPAGO_CLIENT_ID`, `NAVER_PAPAGO_CLIENT_SECRET`로 등록.
-  - Edge Function 자체는 이미 배포되어 있어요 (`papago-lookup`, 이 저장소의 `papago-lookup.ts`가 소스). 키만 등록하면 바로 동작해요.
+- **사전(뜻 자동조회, 선택 기능, 2026-09 구글 번역으로 전환)**: 단어 등록 폼의 "사전 조회" 버튼(언어 아이콘)을 누르면 `dict-lookup` Edge Function을 통해 구글 번역의 비공식(무료, 키 발급 불필요) 엔드포인트로 영어→한국어 뜻을 자동으로 채워요.
+  - **가입이나 API 키, Secrets 설정이 전혀 필요 없어요.** Edge Function이 이미 배포되어 있고(`dict-lookup`, 이 저장소의 `dict-lookup.ts`가 소스) 바로 동작해요.
+  - 원래는 네이버 Papago 번역 API(`papago-lookup` 함수)로 구현했었는데, 사용자가 키 발급 절차 없이 바로 쓸 수 있는 방식을 원해서 구글 비공식 번역으로 교체했어요. `papago-lookup`이라는 이름의 옛 Edge Function이 Supabase 프로젝트에 배포된 채로 남아있는데(삭제 API가 없어서 남겨둠) **더 이상 어디에서도 호출하지 않아요, 무시해도 돼요.**
+  - 비공식 API라서 구글 쪽 정책 변경으로 예고 없이 막히거나 실패할 수 있어요. 실패해도 뜻 직접 입력은 항상 가능해요.
 - 단어명 자동완성(`word-datalist`), 검색, 체크박스 다중선택+일괄삭제 등은 포트폴리오 원장과 같은 UI 패턴을 재사용했어요.
 
 ## 11. 확인이 필요한 미해결 항목 (단어장)
 
-- [ ] 네이버 개발자센터 Papago 번역 API 키 발급 및 Supabase Secrets 등록 (안 해도 뜻 직접 입력으로 앱은 정상 동작)
+- [x] ~~네이버 개발자센터 Papago 번역 API 키 발급~~ — 구글 번역(비공식) 방식으로 전환하면서 더 이상 필요 없음
 
 ## 9. 작업 시 유의사항
 
