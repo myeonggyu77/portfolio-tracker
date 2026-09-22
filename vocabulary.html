@@ -234,6 +234,7 @@
     <div class="toolbar">
       <div class="search-wrap"><input type="text" class="search-input" id="list-search" placeholder="단어/뜻 검색" /></div>
       <div class="btn-group">
+        <button class="ghost-btn" id="fill-examples-btn" style="display:none;">예문 없는 단어 채우기</button>
         <button class="ghost-btn danger-btn" id="list-bulk-delete-btn" disabled>선택 삭제</button>
       </div>
     </div>
@@ -474,6 +475,7 @@ function renderList() {
     });
   }
   updateBulkDeleteBtn();
+  updateFillExamplesBtn();
 }
 
 function escapeHtml(s) {
@@ -482,6 +484,20 @@ function escapeHtml(s) {
 
 function updateBulkDeleteBtn() {
   document.getElementById('list-bulk-delete-btn').disabled = listSelected.size === 0;
+}
+
+// 예문이 비어있는 단어가 있으면 "예문 없는 단어 채우기" 버튼을 보여줘요.
+// dictionaryapi.dev가 다운돼 있던 동안 등록된 단어는 예문이 비어있을 수 있는데,
+// 그 사이트가 복구된 뒤 이 버튼으로 한 번에 다시 조회해서 채울 수 있어요.
+function updateFillExamplesBtn() {
+  const btn = document.getElementById('fill-examples-btn');
+  const count = words.filter(w => !w.example).length;
+  if (count > 0) {
+    btn.style.display = '';
+    btn.textContent = `예문 없는 단어 채우기 (${count})`;
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 document.getElementById('list-body').addEventListener('click', async (e) => {
@@ -536,6 +552,34 @@ document.getElementById('list-bulk-delete-btn').addEventListener('click', async 
   listSelected.clear();
   await persist();
   renderAll();
+});
+
+// 예문이 비어있는 단어들만 골라서 dict-lookup을 다시 호출해요. dictionaryapi.dev가
+// 다운돼 있던 동안 등록된 단어들의 예문을 그 사이트 복구 후 한 번에 채워 넣을 때 써요.
+// 무료 API에 한꺼번에 너무 많이 요청하지 않도록 단어 사이에 짧은 간격을 둬요.
+document.getElementById('fill-examples-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('fill-examples-btn');
+  const targets = words.filter(w => !w.example);
+  if (targets.length === 0) return;
+  btn.disabled = true;
+  let filled = 0;
+  for (let i = 0; i < targets.length; i++) {
+    const w = targets[i];
+    btn.textContent = `채우는 중... (${i + 1}/${targets.length})`;
+    const data = await lookupWord(w.word);
+    if (data && data.example) {
+      w.example = data.example;
+      if (data.exampleKo && !w.memo) w.memo = data.exampleKo;
+      filled++;
+    }
+    if (i < targets.length - 1) await sleep(300);
+  }
+  btn.disabled = false;
+  if (filled > 0) {
+    await persist();
+  }
+  renderAll();
+  showToast(`${targets.length}개 중 ${filled}개 단어에 예문을 채웠어요.`, filled > 0 ? 'success' : 'info', 5000);
 });
 
 document.getElementById('list-search').addEventListener('input', renderList);
