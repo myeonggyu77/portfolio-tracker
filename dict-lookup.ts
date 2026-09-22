@@ -148,12 +148,13 @@ function mapPos(raw: string): string {
   return "기타";
 }
 
-async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
+async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string; debug: string }> {
+  const t0 = Date.now();
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) return { pos: "", example: "", audio: "" };
+    if (!res.ok) return { pos: "", example: "", audio: "", debug: `status=${res.status} ms=${Date.now() - t0}` };
     const data = await res.json();
-    if (!Array.isArray(data)) return { pos: "", example: "", audio: "" };
+    if (!Array.isArray(data)) return { pos: "", example: "", audio: "", debug: `not_array ms=${Date.now() - t0}:${JSON.stringify(data).slice(0, 200)}` };
 
     let pos = "";
     let example = "";
@@ -180,9 +181,9 @@ async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example
     }
 
     if (audio && audio.startsWith("//")) audio = "https:" + audio;
-    return { pos, example, audio };
-  } catch {
-    return { pos: "", example: "", audio: "" };
+    return { pos, example, audio, debug: `ok ms=${Date.now() - t0}` };
+  } catch (e) {
+    return { pos: "", example: "", audio: "", debug: `exception ms=${Date.now() - t0}:${String(e)}` };
   }
 }
 
@@ -193,7 +194,9 @@ Deno.serve(async (req: Request) => {
   const word = (url.searchParams.get("word") || "").trim();
   if (!word) return jsonResponse({ error: "missing_word" }, 400);
 
+  const tStart = Date.now();
   const [meaning, dict] = await Promise.all([translate(word), fetchDictionaryInfo(word)]);
+  const tAfterParallel = Date.now() - tStart;
 
   // 예문을 찾았으면 그 예문도 한국어로 번역해서 메모 자동채움용으로 같이 보내요.
   // (예문이 있어야 번역할 수 있어서 위 두 조회가 끝난 뒤 순차로 실행돼요.)
@@ -211,5 +214,7 @@ Deno.serve(async (req: Request) => {
     exampleKo,
     audio: dict.audio,
     meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "mymemory",
+    _debugDict: dict.debug,
+    _debugParallelMs: tAfterParallel,
   });
 });
