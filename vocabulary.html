@@ -225,7 +225,7 @@
           <input type="text" id="wf-memo" placeholder="예문, 발음 등" autocomplete="off" />
         </div>
       </div>
-      <div class="form-note">단어를 입력하고 다른 칸으로 이동하면 품사·뜻·예문이 자동으로 채워져요 (확인 후 필요하면 수정하세요).</div>
+      <div class="form-note">단어를 입력하고 다른 칸으로 이동하면 품사·뜻·예문이 자동으로 채워지고, 예문의 한국어 해설이 메모 칸(비어있을 때만)에 채워져요 (확인 후 필요하면 수정하세요).</div>
       <div class="form-actions">
         <button class="primary-btn" id="wf-submit-btn">등록</button>
       </div>
@@ -573,9 +573,10 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   wordEl.focus();
 });
 
-// ---------- 사전 자동조회(품사·뜻·예문) — 선택 기능 ----------
-// Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 구글 번역(뜻)과
+// ---------- 사전 자동조회(품사·뜻·예문, 예문 해설→메모) — 선택 기능 ----------
+// Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 번역(뜻)과
 // dictionaryapi.dev(품사·예문·발음오디오)를 서버에서 동시에 호출해서 합쳐 돌려줘요.
+// 예문의 한국어 해설(exampleKo)은 메모 칸이 비어있을 때만 자동으로 채워요.
 // (모바일 인앱 브라우저 등에서 dictionaryapi.dev로의 직접 클라이언트 호출이 막혀 품사가
 // 계속 비어있는 문제가 있어서, 클라이언트는 항상 이 서버 함수 하나만 부르도록 되돌렸어요.)
 // 단어 입력 후 다른 칸으로 이동(blur)하면 자동으로 조회하고, 언어 아이콘 버튼으로 언제든 다시 조회할 수 있어요.
@@ -585,7 +586,9 @@ let lookupPromise = null; // 등록 버튼이 자동조회 완료를 기다릴 �
 
 // 사전 조회가 느리거나 응답이 없을 때 화면(특히 등록 버튼)이 무한정 멈춰있지 않도록
 // 타임아웃을 걸어요. 시간 안에 응답이 없으면 실패로 간주하고 넘어가요.
-const DICT_FETCH_TIMEOUT_MS = 5000;
+// (2026-09 말: 서버가 예문 번역까지 순차로 추가 조회하면서 응답이 조금 더 걸릴 수 있어
+// 5초 → 9초로 늘렸어요.)
+const DICT_FETCH_TIMEOUT_MS = 9000;
 function fetchWithTimeout(url, options, timeoutMs = DICT_FETCH_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -609,6 +612,7 @@ async function autoFillFromWord(showFeedback) {
   const posEl = document.getElementById('wf-pos');
   const exampleEl = document.getElementById('wf-example');
   const meaningEl = document.getElementById('wf-meaning');
+  const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
   const btn = document.getElementById('wf-dict-btn');
   const word = wordEl.value.trim();
@@ -627,6 +631,8 @@ async function autoFillFromWord(showFeedback) {
     if (data.meaning) meaningEl.value = data.meaning;
     if (data.pos) posEl.value = data.pos;
     if (data.example) exampleEl.value = data.example;
+    // 예문의 한국어 해설은 메모 칸에 자동으로 넣어요 — 사용자가 이미 메모를 적어뒀으면 덮어쓰지 않아요.
+    if (data.exampleKo && !memoEl.value.trim()) memoEl.value = data.exampleKo;
     lastLookupWord = word;
     lastLookupAudioUrl = data.audio || '';
     errEl.style.display = 'none';
