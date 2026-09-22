@@ -27,14 +27,15 @@
 // 예문 번역(memo 자동채움, 2026-09 말 추가): dictionaryapi.dev에서 예문을 찾으면, 그 예문을
 // 같은 번역 소스로 한 번 더 번역해서 "exampleKo" 필드로 돌려줘요. 클라이언트는 이 값을
 // 메모 칸이 비어있을 때만 자동으로 채워요(사용자가 직접 메모를 적어뒀으면 덮어쓰지 않아요).
-// 단어 뜻/사전 조회 두 가지는 병렬로 실행하고, 예문 번역은 예문을 알아야 시작할 수 있어서
-// 그 다음에 순차로 실행돼요 — 그래서 클라이언트 타임아웃을 5초 → 15초로 늘렸어요.
 //
-// 품사가 계속 비어있던 두 번째 원인(2026-09 말): 진단 필드(_debugDict)로 실제 원인을 찾아보니
-// dictionaryapi.dev 자체는 정상 응답하는데, 뜻 번역(translate)과 동시에(Promise.all) 호출될 때
-// 콜드스타트 직후 등 부하 상황에서 dictionaryapi.dev 쪽 fetch가 원래 타임아웃(4초)을 넘겨서
-// AbortError로 중간에 끊겨버리는 경우가 있었어요. 그래서 외부 호출 타임아웃을 4초 → 8초로,
-// 예문 번역 타임아웃도 3초 → 5초로 늘렸어요(그만큼 클라이언트 타임아웃도 같이 늘렸어요).
+// 품사·예문이 계속 비어있던 진짜 원인(2026-09 말): 뜻 번역(translate)과 사전 조회
+// (fetchDictionaryInfo)를 Promise.all로 "동시에" 호출했더니, Supabase 서버에서 외부로
+// 두 호스트에 동시에 연결이 나갈 때 dictionaryapi.dev 쪽이 거의 매번 타임아웃까지 끌려가다
+// AbortError로 끊기는 걸 타이밍 디버그 로그로 확인했어요(단순히 타임아웃을 늘리는 걸로는
+// 안 고쳐졌어요 — 늘린 값 그대로 다시 걸렸어요). 그래서 두 호출을 병렬이 아니라 순서대로
+// (하나씩) 부르도록 구조를 바꿨어요. **이 부분을 다시 Promise.all(병렬)로 되돌리지 마세요**
+// — 같은 버그가 재발해요. 세 번의 순차 호출(뜻 번역 → 사전 조회 → 예문 번역)이 이어져서
+// 응답이 병렬일 때보다 조금 느려질 수 있어 클라이언트 타임아웃을 5초 → 15초로 늘렸어요.
 //
 // 각 외부 호출에는 8초(예문 번역은 5초) 타임아웃을 둬서, 한쪽이 느려도 전체 응답이 무한정
 // 늦어지지 않아요. 실패해도 단어장 앱은 직접 입력으로 정상 동작해요 (이 함수는 선택 기능이에요).
@@ -148,13 +149,12 @@ function mapPos(raw: string): string {
   return "기타";
 }
 
-async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string; debug: string }> {
-  const t0 = Date.now();
+async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) return { pos: "", example: "", audio: "", debug: `status=${res.status} ms=${Date.now() - t0}` };
+    if (!res.ok) return { pos: "", example: "", audio: "" };
     const data = await res.json();
-    if (!Array.isArray(data)) return { pos: "", example: "", audio: "", debug: `not_array ms=${Date.now() - t0}:${JSON.stringify(data).slice(0, 200)}` };
+    if (!Array.isArray(data)) return { pos: "", example: "", audio: "" };
 
     let pos = "";
     let example = "";
@@ -181,9 +181,9 @@ async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example
     }
 
     if (audio && audio.startsWith("//")) audio = "https:" + audio;
-    return { pos, example, audio, debug: `ok ms=${Date.now() - t0}` };
-  } catch (e) {
-    return { pos: "", example: "", audio: "", debug: `exception ms=${Date.now() - t0}:${String(e)}` };
+    return { pos, example, audio };
+  } catch {
+    return { pos: "", example: "", audio: "" };
   }
 }
 
@@ -194,12 +194,15 @@ Deno.serve(async (req: Request) => {
   const word = (url.searchParams.get("word") || "").trim();
   if (!word) return jsonResponse({ error: "missing_word" }, 400);
 
-  const tStart = Date.now();
-  const [meaning, dict] = await Promise.all([translate(word), fetchDictionaryInfo(word)]);
-  const tAfterParallel = Date.now() - tStart;
+  // 뜻 번역과 사전 조회(dictionaryapi.dev)를 Promise.all로 "동시에" 부르면 Supabase
+  // 서버에서 두 외부 호스트로 동시에 나가는 연결이 서로 지연시켜서 dictionaryapi.dev 쪽이
+  // 거의 매번 타임아웃(8초)에 걸려 품사·예문이 비어버리는 문제가 있었어요(2026-09 말, 타이밍
+  // 디버그 로그로 확인). 그래서 동시 호출을 버리고 하나씩 순서대로(순차) 호출하도록 고쳤어요.
+  // 이 부분을 다시 Promise.all(병렬)로 되돌리지 마세요 — 같은 버그가 재발해요.
+  const meaning = await translate(word);
+  const dict = await fetchDictionaryInfo(word);
 
   // 예문을 찾았으면 그 예문도 한국어로 번역해서 메모 자동채움용으로 같이 보내요.
-  // (예문이 있어야 번역할 수 있어서 위 두 조회가 끝난 뒤 순차로 실행돼요.)
   const exampleKo = dict.example ? await translate(dict.example, EXAMPLE_TRANSLATE_TIMEOUT_MS) : "";
 
   if (!meaning && !dict.pos && !dict.example) {
@@ -214,7 +217,5 @@ Deno.serve(async (req: Request) => {
     exampleKo,
     audio: dict.audio,
     meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "mymemory",
-    _debugDict: dict.debug,
-    _debugParallelMs: tAfterParallel,
   });
 });
