@@ -103,13 +103,16 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 포트폴리오 원장과는 기능상 완전히 별개인 **영어 단어 암기 앱**이에요. 같은 저장소에 두 번째 HTML 파일로 존재하고, 실제 서비스 주소는 https://myeonggyu77.github.io/portfolio-tracker/vocabulary.html 이에요.
 
 - **백엔드**: 포트폴리오 원장과 **같은 Supabase 프로젝트**(`kcmqzinekvikpmlxkdxf`)를 그대로 써요. 로그인 계정도 동일. 데이터는 새로 만든 `vocabulary_data` 테이블(1행짜리 JSON 저장, `portfolio_data`와 동일한 패턴)에 들어가요.
-  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, phonetic, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
-  - `pos`(품사)·`phonetic`(발음기호)는 사전 자동조회로 채워지고, 사용자가 직접 수정도 가능해요.
+  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, example, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
+  - `pos`(품사)·`example`(예문)는 사전 자동조회로 채워지고, 사용자가 직접 수정도 가능해요.
+  - **(2026-09 말 변경) 발음기호(`phonetic`) 필드는 제거됐어요.** 대신 그 자리에 예문(`example`)을 넣었어요. 기존에 저장돼 있던 `phonetic` 값은 그냥 무시돼요(마이그레이션 불필요).
   - `audioUrl`은 dictionaryapi.dev가 제공하는 실제 발음 녹음 파일 주소(없을 수 있음, 2026-09 추가). 저장은 되지만 표시 컬럼은 없고 발음 듣기 버튼에서만 쓰여요.
   - `mastered`는 수동 토글 또는 시험에서 `correctStreak`가 `MASTER_STREAK`(기본 3)에 도달하면 자동으로 `true`가 돼요.
 - **오늘의 시험 로직**: `mastered=false`인 단어 전체가 그날의 출제 범위. 4지선다 객관식(단어 → 뜻 고르기). 오답은 같은 시험 세션 안에서 뒤로 재배치되어 다시 나오고, 정답을 맞히면 `correctStreak`가 올라가며 `MASTER_STREAK`회 연속 정답 시 자동으로 "외운 단어" 처리돼요. 오답 시 `correctStreak`는 0으로 초기화돼요.
-- **사전 자동조회(품사·뜻·발음기호, 선택 기능, 2026-09 확장, 2026-09 말 속도 개선)**: 단어 등록 폼에서 **단어 입력 후 다른 칸으로 포커스를 옮기면(blur) 자동으로** 품사·뜻·발음기호를 채워요. 언어 아이콘 버튼(`wf-dict-btn`)으로 언제든 수동 재조회도 가능해요.
-  - **클라이언트는 `dict-lookup` Edge Function 하나만 호출**해요. 그 안에서 서버가 뜻(번역)과 dictionaryapi.dev(품사·발음기호·발음 오디오 URL)를 `Promise.all`로 동시에 호출해서 합쳐 응답해요.
+- **사전 자동조회(품사·뜻·예문, 선택 기능, 2026-09 확장, 2026-09 말 속도 개선·필드 개편)**: 단어 등록 폼에서 **단어 입력 후 다른 칸으로 포커스를 옮기면(blur) 자동으로** 품사·뜻·예문을 채워요. 언어 아이콘 버튼(`wf-dict-btn`)으로 언제든 수동 재조회도 가능해요.
+  - **(2026-09 말) 발음기호 필드는 없앴고, 그 자리에 예문 필드를 넣었어요.** 예문은 dictionaryapi.dev의 정의(definition)에 달린 실제 예문 문장을 그대로 가져와요.
+  - **품사가 자주 비어있던 버그 수정(2026-09 말)**: dictionaryapi.dev가 돌려주는 영어 품사 문자열(`transitive verb`, `article`, `numeral` 등)이 서버의 `POS_MAP`에 정확히 일치하는 몇 종류(`noun`/`verb`/`adjective`...)하고만 매칭되던 게 원인이었어요. `mapPos()`가 문자열에 `"verb"`/`"noun"` 등이 **포함**되는지로 넓게 매칭하도록 고쳤고, `entry.meanings[0]`만 보던 것도 모든 entry·모든 meaning을 돌면서 값을 찾도록 바꿨어요(`dict-lookup.ts`).
+  - **클라이언트는 `dict-lookup` Edge Function 하나만 호출**해요. 그 안에서 서버가 뜻(번역)과 dictionaryapi.dev(품사·예문·발음 오디오 URL)를 `Promise.all`로 동시에 호출해서 합쳐 응답해요.
     - (히스토리) 한때 속도를 위해 dictionaryapi.dev를 **브라우저에서 직접** 호출하도록 분리했었는데, 모바일 인앱 브라우저 등 일부 클라이언트 환경에서 그 직접 호출이 막혀 품사·발음기호가 계속 비어있는 문제가 발생해서(2026-09 말) 다시 서버(Edge Function) 경유로 되돌렸어요. **다시 "클라이언트에서 두 소스를 병렬 호출"하는 방식으로 바꾸지 마세요** — 안정성보다 속도를 우선한 시도가 이미 한 번 실패한 케이스예요.
   - **뜻(번역) 소스는 구글 번역(비공식) → 네이버 Papago 자동 전환 구조(2026-09 말 추가)**: `fetchMeaning()`이 Supabase Secrets에 `NAVER_PAPAGO_CLIENT_ID`/`NAVER_PAPAGO_CLIENT_SECRET`이 등록돼 있으면 Papago를 쓰고, 없으면(지금 상태) 자동으로 구글 번역으로 대체해요. **현재는 Papago 키가 등록되어 있지 않아 구글 번역으로 동작 중이에요.**
     - **주의**: 예전에 안내했던 개인 개발자용 Papago 번역 API(developers.naver.com)는 **서비스가 종료**됐어요. 지금 파파고를 쓰려면 네이버 클라우드 플랫폼(NCP)의 유료 API로 가입해야 하는데, 사업자 등록이나 결제 카드가 필요해서 복잡해요. 그래서 사용자와 상의 후 **구글 번역을 그대로 유지하기로 결정**했어요(2026-09 말). 나중에 Papago 키를 구하게 되면 코드 수정 없이 Secrets에 키만 등록하면 자동으로 전환돼요.
