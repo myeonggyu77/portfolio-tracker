@@ -14,6 +14,12 @@
 //   서버 IP를 "429 Too Many Requests"로 차단하기 시작해서(전세계 Supabase 사용자가 같은 IP
 //   대역을 공유해서 생긴 문제로 추정) 뜻 조회가 계속 실패했어요. 진단 함수로 확인해보니
 //   MyMemory는 정상 응답(200)해서 이걸 기본 소스로 바꿨어요. 구글은 혹시 몰라 최후 수단으로만 남겨둬요.
+//   (2026-09 말 재추가) 사용자가 네이버 클라우드 플랫폼(NCP)에 가입해서 Papago Translation
+//   API를 새로 발급받았어요. NCP의 신규 Papago API는 예전 개인 개발자용 API와 주소·인증
+//   헤더가 달라요(papago.apigw.ntruss.com, X-NCP-APIGW-API-KEY-ID/X-NCP-APIGW-API-KEY
+//   헤더, JSON 바디) — translateViaPapago()가 이 새 방식으로 호출해요. Secrets 이름
+//   (NAVER_PAPAGO_CLIENT_ID/SECRET)은 그대로 유지하되 값은 NCP에서 발급받은 Client ID/
+//   Client Secret을 넣어요.
 //
 // 품사·예문·발음 오디오는 항상 dictionaryapi.dev(무료, 키 불필요)에서 가져와요.
 // (발음기호는 2026-09 말 요청으로 더 이상 조회/표시하지 않아요. 그 대신 예문을 보여줘요.)
@@ -84,14 +90,18 @@ function decodeHtmlEntities(s: string): string {
 
 async function translateViaPapago(text: string): Promise<string> {
   try {
-    const res = await fetchWithTimeout("https://openapi.naver.com/v1/papago/n2mt", {
+    // 2026-09 말: 네이버 클라우드 플랫폼(NCP)의 신규 Papago Translation API로 전환.
+    // (예전 개인 개발자용 openapi.naver.com/v1/papago/n2mt 엔드포인트는 서비스 종료됨.
+    // 새 NCP API는 주소·인증 헤더·요청 형식이 다름 — 응답 형태는 예전과 동일해서
+    // 아래 파싱 코드는 그대로 재사용 가능.)
+    const res = await fetchWithTimeout("https://papago.apigw.ntruss.com/nmt/v1/translation", {
       method: "POST",
       headers: {
-        "X-Naver-Client-Id": NAVER_CLIENT_ID!,
-        "X-Naver-Client-Secret": NAVER_CLIENT_SECRET!,
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "X-NCP-APIGW-API-KEY-ID": NAVER_CLIENT_ID!,
+        "X-NCP-APIGW-API-KEY": NAVER_CLIENT_SECRET!,
+        "Content-Type": "application/json",
       },
-      body: new URLSearchParams({ source: "en", target: "ko", text }),
+      body: JSON.stringify({ source: "en", target: "ko", text }),
     });
     if (!res.ok) return "";
     const data = await res.json();
