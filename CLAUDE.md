@@ -103,8 +103,9 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 포트폴리오 원장과는 기능상 완전히 별개인 **영어 단어 암기 앱**이에요. 같은 저장소에 두 번째 HTML 파일로 존재하고, 실제 서비스 주소는 https://myeonggyu77.github.io/portfolio-tracker/vocabulary.html 이에요.
 
 - **백엔드**: 포트폴리오 원장과 **같은 Supabase 프로젝트**(`kcmqzinekvikpmlxkdxf`)를 그대로 써요. 로그인 계정도 동일. 데이터는 새로 만든 `vocabulary_data` 테이블(1행짜리 JSON 저장, `portfolio_data`와 동일한 패턴)에 들어가요.
-  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, example, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
+  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, participle, example, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
   - `pos`(품사)·`example`(예문)는 사전 자동조회로 채워지고, 사용자가 직접 수정도 가능해요.
+  - `participle`(분사, 2026-09 말 추가): 품사가 "동사"일 때 "현재분사 / 과거분사" 형태(예: "running / run")로 자동 채워짐. 자세한 내용은 아래 사전 자동조회 항목 참고.
   - **(2026-09 말 변경) 발음기호(`phonetic`) 필드는 제거됐어요.** 대신 그 자리에 예문(`example`)을 넣었어요. 기존에 저장돼 있던 `phonetic` 값은 그냥 무시돼요(마이그레이션 불필요).
   - `audioUrl`은 dictionaryapi.dev가 제공하는 실제 발음 녹음 파일 주소(없을 수 있음, 2026-09 추가). 저장은 되지만 표시 컬럼은 없고 발음 듣기 버튼에서만 쓰여요.
   - `mastered`는 수동 토글 또는 시험에서 `correctStreak`가 `MASTER_STREAK`(기본 3)에 도달하면 자동으로 `true`가 돼요.
@@ -130,6 +131,11 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
   - **등록 버튼과의 경쟁 상태 주의**: 자동조회가 끝나기 전에 "등록" 버튼을 누르면 검증에 실패해 오류가 뜰 수 있어서, 진행 중인 조회를 `lookupPromise`로 추적해 등록 버튼 클릭 시 그 조회가 끝날 때까지 기다리도록(`await`) 처리해뒀어요. 또한 자동조회로 뜻/품사가 채워질 때마다 남아있던 오류 메시지를 즉시 숨겨서, 필드가 채워졌는데 오류 문구만 남아있는 것처럼 보이는 문제도 막아뒀어요. 이 로직을 건드릴 땐 두 가지(대기, 오류 숨김) 모두 유지해야 해요.
   - **타임아웃 필수**: 처음엔 등록 버튼이 `lookupPromise`가 끝날 때까지 무조건 기다렸는데, 사전 조회 API가 응답을 안 주면 등록 버튼이 무한정 멈춰있는 문제가 있었어요(사용자가 영상으로 재현해서 알려줌). 그래서 ① 클라이언트(`fetchWithTimeout`)와 Edge Function 내부(`fetchWithTimeout`, 각 외부 호출마다) 양쪽에 `AbortController` 기반 타임아웃을 걸고, ② 등록 버튼도 `lookupPromise`를 최대 `DICT_FETCH_TIMEOUT_MS + 500ms`까지만 기다리도록(`Promise.race`) 이중 안전장치를 뒀어요. 사전 조회 관련 코드를 고칠 땐 이 타임아웃들을 절대 없애지 마세요 — 없으면 외부 API가 느리거나 응답이 없을 때 등록이 멈춰요.
   - **"예문 없는 단어 채우기" 버튼(2026-09 말 추가)**: dictionaryapi.dev 장애 중에 등록돼서 예문이 비어있는 단어들을, 사이트 복구 후 한 번에 다시 조회해서 채울 수 있는 일괄 재조회 버튼이에요(`fill-examples-btn`). 단어장 목록 위 툴바에 있고, 예문 없는 단어가 있을 때만 보이며 개수를 표시해요(`updateFillExamplesBtn()`). 클릭하면 예문이 비어있는 단어만 골라 `dict-lookup`을 순서대로(무료 API 과부하 방지로 단어 사이 300ms 간격) 재호출해서 예문과(메모가 비어있으면) 예문 해설을 채운 뒤 한 번에 저장해요.
+  - **분사(현재분사/과거분사) 자동 계산(2026-09 말 추가)**: 품사가 "동사"일 때 "분사" 필드(`wf-participle`, 등록 폼에서 품사 바로 뒤)에 "running / run"처럼 현재분사·과거분사 형태를 자동으로 채워요. **외부 API를 전혀 호출하지 않고 클라이언트(`computeParticiple()`)에서 문법 규칙 + 내장 불규칙 동사표로 직접 계산**해요 — 이번 세션에서 외부 사전 API(dictionaryapi.dev)가 하루 넘게 다운되는 걸 겪은 뒤라, 분사는 아예 네트워크 의존성 없이 만든 거예요.
+    - 규칙 동사는 철자 규칙으로 계산: 자음 중복(run→running), 묵음 e 제거(love→loving), y→ied(study→studied), ie→ying(die→dying) 등. `needsDoubling()`이 "자음+모음+자음으로 끝나고 w/x/y가 아님" 여부로 중복을 판단하는데, 완벽하지 않아요 — 강세가 첫 음절에 오는 다음절 동사(예: 원래 open→openning처럼 오판했던 사례)를 일부러 예외 처리했지만(`-en`으로 끝나는 4글자 이상 단어는 중복 안 함) 그 외의 비슷한 케이스는 여전히 틀릴 수 있어요. 사용자가 확인 후 직접 수정하면 돼요.
+    - 불규칙 동사(be/been, go/gone, run/run 등 약 90개)는 `IRREGULAR_PAST_PARTICIPLES` 표에 있고, ing형 예외(be→being, see→seeing, agree→agreeing 등)는 `ING_EXCEPTIONS`에 있어요. 새 불규칙 동사를 추가하고 싶으면 이 표에 항목만 추가하면 돼요.
+    - 품사가 사전 자동조회로 "동사"가 되면 자동 계산되고, 사용자가 품사 드롭다운을 수동으로 "동사"로 바꿔도(분사 칸이 비어있을 때만) 자동 계산돼요.
+    - 데이터 모델에 `participle` 필드가 추가됐고, 목록 표에도 "분사" 칼럼이 추가됐어요.
 - **발음 듣기(스피커 버튼, 2026-09 추가, 2026-09 말 위치 조정)**: **단어장 목록 표에만** 있어요(등록 폼에는 없음 — 등록 전 단어까지 들을 필요는 적다는 사용자 피드백으로 폼에서는 제거). `speak(word, audioUrl)` 함수가 ① `audioUrl`(dictionaryapi.dev의 실제 녹음)이 있으면 그걸 재생하고, ② 없거나 재생 실패하면 브라우저 내장 Web Speech API(`speechSynthesis`, 무료·키 불필요, 인터넷 연결 없이도 되는 브라우저도 있음)로 대체해요. iOS Safari 등 일부 브라우저는 첫 재생에 사용자 제스처가 필요할 수 있어요(버튼 클릭이라 문제 없음).
 - **아이콘 폰트 의존 지양(2026-09 말 변경)**: tabler-icons 웹폰트가 사용자 환경에 따라 로드되지 않아 버튼이 빈 상자로 보이는 문제가 반복돼서, 단어장의 핵심 버튼(발음 듣기·삭제·사전 다시조회)은 아이콘 대신 **눈에 보이는 텍스트(또는 이모지)**로 표시해요 — 폰트 로드 여부와 무관하게 항상 보여요. 새 버튼을 추가할 때도 이 원칙을 따라주세요.
 - 단어명 자동완성(`word-datalist`), 검색, 체크박스 다중선택+일괄삭제 등은 포트폴리오 원장과 같은 UI 패턴을 재사용했어요.
