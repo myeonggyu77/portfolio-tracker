@@ -213,6 +213,10 @@
           </select>
         </div>
         <div>
+          <div class="field-lbl">분사 (현재분사/과거분사)</div>
+          <input type="text" id="wf-participle" placeholder="running / run" autocomplete="off" />
+        </div>
+        <div>
           <div class="field-lbl">예문</div>
           <input type="text" id="wf-example" placeholder="I ate an apple this morning." autocomplete="off" />
         </div>
@@ -247,6 +251,7 @@
             <th class="name-th">단어</th>
             <th>예문</th>
             <th>품사</th>
+            <th>분사</th>
             <th>뜻</th>
             <th>메모</th>
             <th>등록일</th>
@@ -364,6 +369,7 @@ async function fetchAndRenderData() {
   words.forEach(w => {
     if (w.pos === undefined) w.pos = '';
     if (w.example === undefined) w.example = '';
+    if (w.participle === undefined) w.participle = '';
     if (w.audioUrl === undefined) w.audioUrl = '';
     if (w.mastered === undefined) w.mastered = false;
     if (w.correctStreak === undefined) w.correctStreak = 0;
@@ -464,6 +470,7 @@ function renderList() {
         <td class="word-cell">${escapeHtml(w.word)}</td>
         <td class="code-cell">${escapeHtml(w.example || '')}</td>
         <td>${escapeHtml(w.pos || '')}</td>
+        <td class="code-cell">${escapeHtml(w.participle || '')}</td>
         <td class="meaning-cell">${escapeHtml(w.meaning)}</td>
         <td class="memo-cell">${escapeHtml(w.memo || '')}</td>
         <td>${escapeHtml(w.dateAdded)}</td>
@@ -587,6 +594,7 @@ document.getElementById('list-search').addEventListener('input', renderList);
 document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const wordEl = document.getElementById('wf-word');
   const posEl = document.getElementById('wf-pos');
+  const participleEl = document.getElementById('wf-participle');
   const exampleEl = document.getElementById('wf-example');
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
@@ -596,6 +604,7 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   if (lookupPromise) await Promise.race([lookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
   const word = wordEl.value.trim();
   const pos = posEl.value;
+  const participle = participleEl.value.trim();
   const example = exampleEl.value.trim();
   const meaning = meaningEl.value.trim();
   const memo = memoEl.value.trim();
@@ -606,11 +615,11 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   }
   errEl.style.display = 'none';
   words.push({
-    id: uid(), word, pos, example, meaning, memo, dateAdded: todayStr(),
+    id: uid(), word, pos, participle, example, meaning, memo, dateAdded: todayStr(),
     audioUrl: word === lastLookupWord ? lastLookupAudioUrl : '',
     mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
   });
-  wordEl.value = ''; posEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  wordEl.value = ''; posEl.value = ''; participleEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
   lastLookupWord = ''; lastLookupAudioUrl = '';
   await persist();
   renderAll();
@@ -653,9 +662,83 @@ async function lookupWord(word) {
   }
 }
 
+// ---------- 분사(현재분사/과거분사) 자동 계산 — 외부 API 없이 문법 규칙 + 불규칙 동사표로 계산해요 ----------
+// dictionaryapi.dev 등 외부 사전 API는 분사 형태를 안 주기도 하고, 이번 세션에서 겪었듯 외부
+// API는 예고 없이 막히거나 다운될 수 있어서, 분사는 아예 외부 호출 없이 클라이언트에서 직접
+// 계산해요(불규칙 동사는 표로, 규칙 동사는 철자 규칙으로). 완벽하진 않을 수 있어요(특히 강세가
+// 첫 음절에 오는 다음절 동사의 자음 중복 규칙 등) — 틀리면 사용자가 직접 수정하면 돼요.
+const IRREGULAR_PAST_PARTICIPLES = {
+  be: 'been', have: 'had', do: 'done', go: 'gone', see: 'seen', get: 'gotten',
+  take: 'taken', make: 'made', know: 'known', think: 'thought', come: 'come',
+  give: 'given', find: 'found', tell: 'told', become: 'become', show: 'shown',
+  leave: 'left', feel: 'felt', put: 'put', bring: 'brought', begin: 'begun',
+  write: 'written', keep: 'kept', hold: 'held', stand: 'stood', hear: 'heard',
+  let: 'let', mean: 'meant', set: 'set', meet: 'met', run: 'run', pay: 'paid',
+  sit: 'sat', speak: 'spoken', lie: 'lain', lead: 'led', read: 'read',
+  grow: 'grown', lose: 'lost', fall: 'fallen', send: 'sent', build: 'built',
+  break: 'broken', spend: 'spent', cut: 'cut', rise: 'risen', drive: 'driven',
+  buy: 'bought', wear: 'worn', choose: 'chosen', seek: 'sought', throw: 'thrown',
+  catch: 'caught', draw: 'drawn', understand: 'understood', win: 'won',
+  teach: 'taught', sell: 'sold', fight: 'fought', eat: 'eaten', forget: 'forgotten',
+  hide: 'hidden', bind: 'bound', shake: 'shaken', sing: 'sung', drink: 'drunk',
+  swim: 'swum', ring: 'rung', fly: 'flown', hang: 'hung', dig: 'dug',
+  blow: 'blown', strike: 'struck', swear: 'sworn', tear: 'torn', wake: 'woken',
+  steal: 'stolen', freeze: 'frozen', sleep: 'slept', feed: 'fed', deal: 'dealt',
+  lend: 'lent', bend: 'bent', shoot: 'shot', weep: 'wept', sweep: 'swept',
+  creep: 'crept', burn: 'burnt', learn: 'learnt', dream: 'dreamt', smell: 'smelt',
+  spell: 'spelt', spill: 'spilt', leap: 'leapt', light: 'lit', spit: 'spat',
+  split: 'split', cost: 'cost', hurt: 'hurt', hit: 'hit', quit: 'quit',
+  shut: 'shut', cast: 'cast', thrust: 'thrust', bet: 'bet', broadcast: 'broadcast',
+  forecast: 'forecast', upset: 'upset', burst: 'burst', input: 'input', slit: 'slit',
+};
+const ING_EXCEPTIONS = {
+  be: 'being', see: 'seeing', agree: 'agreeing', flee: 'fleeing', free: 'freeing',
+  dye: 'dyeing', singe: 'singeing', tinge: 'tingeing', canoe: 'canoeing', shoe: 'shoeing',
+};
+const VOWELS = 'aeiou';
+function isVowel(ch) { return VOWELS.includes(ch); }
+// 마지막 자음을 중복해야 하는지(예: run→running, stop→stopping) 판단하는 간단한 규칙이에요.
+// 마지막 세 글자가 "자음+모음+자음"이고 w/x/y로 끝나지 않을 때 중복해요. 완벽하진 않아요
+// (강세가 앞음절에 오는 다음절 동사는 중복하면 안 되는데 이 규칙만으론 구분이 어려워요 —
+// 그런 경우는 사용자가 직접 수정하면 돼요). "-en"으로 끝나는 다음절 동사(open, happen, listen 등)는
+// 거의 항상 강세가 앞에 있어서 중복하지 않는다는 흔한 예외만 따로 처리해요.
+function needsDoubling(w) {
+  if (w.length < 3) return false;
+  const last = w[w.length - 1];
+  const mid = w[w.length - 2];
+  const before = w[w.length - 3];
+  if ('wxy'.includes(last)) return false;
+  if (w.length >= 4 && w.endsWith('en')) return false; // open, happen, listen, fasten, threaten...
+  return !isVowel(last) && isVowel(mid) && !isVowel(before);
+}
+function toIngForm(w) {
+  if (ING_EXCEPTIONS[w]) return ING_EXCEPTIONS[w];
+  if (w.endsWith('ie')) return w.slice(0, -2) + 'ying';
+  if (w.endsWith('ee') || w.endsWith('oe') || w.endsWith('ye')) return w + 'ing';
+  if (w.endsWith('e') && !w.endsWith('ee')) return w.slice(0, -1) + 'ing';
+  if (needsDoubling(w)) return w + w[w.length - 1] + 'ing';
+  return w + 'ing';
+}
+function toEdForm(w) {
+  if (w.endsWith('e')) return w + 'd';
+  if (w.length >= 2 && w.endsWith('y') && !isVowel(w[w.length - 2])) return w.slice(0, -1) + 'ied';
+  if (needsDoubling(w)) return w + w[w.length - 1] + 'ed';
+  return w + 'ed';
+}
+// 단어를 넣으면 "현재분사 / 과거분사" 형태의 문자열을 돌려줘요. 알파벳(하이픈·어퍼스트로피 포함)
+// 단어가 아니면 null을 돌려줘서 자동 채움을 건너뛰게 해요.
+function computeParticiple(word) {
+  const w = word.trim().toLowerCase();
+  if (!w || /[^a-z'-]/i.test(w)) return null;
+  const ing = toIngForm(w);
+  const pp = IRREGULAR_PAST_PARTICIPLES[w] || toEdForm(w);
+  return `${ing} / ${pp}`;
+}
+
 async function autoFillFromWord(showFeedback) {
   const wordEl = document.getElementById('wf-word');
   const posEl = document.getElementById('wf-pos');
+  const participleEl = document.getElementById('wf-participle');
   const exampleEl = document.getElementById('wf-example');
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
@@ -677,6 +760,13 @@ async function autoFillFromWord(showFeedback) {
     if (data.meaning) meaningEl.value = data.meaning;
     if (data.pos) posEl.value = data.pos;
     if (data.example) exampleEl.value = data.example;
+    // 품사가 동사면 분사(현재분사/과거분사)도 계산해서 채워요(외부 API 호출 없이 로컬 계산).
+    if (posEl.value === '동사') {
+      const p = computeParticiple(word);
+      if (p) participleEl.value = p;
+    } else {
+      participleEl.value = '';
+    }
     // 예문의 한국어 해설은 메모 칸에 자동으로 넣어요 — 사용자가 이미 메모를 적어뒀으면 덮어쓰지 않아요.
     if (data.exampleKo && !memoEl.value.trim()) memoEl.value = data.exampleKo;
     lastLookupWord = word;
@@ -702,6 +792,17 @@ document.getElementById('wf-word').addEventListener('input', () => {
 });
 document.getElementById('wf-meaning').addEventListener('input', () => {
   document.getElementById('word-form-error').style.display = 'none';
+});
+// 품사를 수동으로 "동사"로 바꾸면 분사 칸이 비어있을 때만 자동으로 채워줘요(사용자가
+// 이미 분사를 직접 입력했으면 덮어쓰지 않아요).
+document.getElementById('wf-pos').addEventListener('change', () => {
+  const posEl = document.getElementById('wf-pos');
+  const participleEl = document.getElementById('wf-participle');
+  const wordEl = document.getElementById('wf-word');
+  if (posEl.value === '동사' && !participleEl.value.trim()) {
+    const p = computeParticiple(wordEl.value);
+    if (p) participleEl.value = p;
+  }
 });
 
 // ---------- Tabs ----------
