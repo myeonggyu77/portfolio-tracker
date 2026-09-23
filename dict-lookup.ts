@@ -48,9 +48,13 @@
 //
 // 품사 대체(fallback) 소스: Datamuse API(2026-09 말 추가, api.datamuse.com, 가입·키 불필요).
 // dictionaryapi.dev가 예고 없이 다운되는 일이 있어서(직접 겪은 사례: Cloudflare 522 장애로
-// 몇 시간 동안 응답 자체가 안 됨), dictionaryapi.dev에서 품사를 못 가져오면 Datamuse로 한 번
-// 더 품사만 조회해요(Datamuse는 예문은 제공하지 않아서 예문은 이 경우 비어있을 수 있어요).
-// dictionaryapi.dev가 죽어도 최소한 품사는 계속 채워지도록 하는 안전장치예요.
+// 하루 넘게 응답 자체가 안 됨), dictionaryapi.dev에서 품사를 못 가져오면 Datamuse로 한 번
+// 더 품사만 조회해요.
+//
+// 예문 대체(fallback) 소스: Tatoeba(2026-09 말 추가, tatoeba.org, 가입·키 불필요). dictionaryapi.dev
+// 장애가 하루 넘게 이어지는 걸 직접 겪고 나서 추가했어요. 예문을 못 가져오면 Tatoeba의
+// 예문 문장 데이터베이스에서 그 단어가 쓰인 문장을 검색해서 대신 써요.
+// dictionaryapi.dev가 죽어도 최소한 품사·예문은 계속 채워지도록 하는 안전장치예요.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -193,6 +197,26 @@ async function fetchPosViaDatamuse(word: string): Promise<string> {
   }
 }
 
+// 예문 대체(fallback) 소스: Tatoeba(2026-09 말 추가, tatoeba.org, 가입·키 불필요).
+// dictionaryapi.dev가 하루 넘게 복구되지 않는 장애가 실제로 있었어요. Tatoeba는 실제
+// 사람들이 작성한 예문 문장 데이터베이스라서 이 단어가 쓰인 문장을 검색해서 첫 번째
+// 결과를 예문으로 써요.
+async function fetchExampleViaTatoeba(word: string): Promise<string> {
+  try {
+    const tUrl = `https://tatoeba.org/eng/api_v0/search?from=eng&query=${encodeURIComponent(word)}&orphans=no&unapproved=no`;
+    const res = await fetchWithTimeout(tUrl);
+    if (!res.ok) return "";
+    const data = await res.json();
+    const results = Array.isArray(data?.results) ? data.results : [];
+    for (const r of results) {
+      if (r && typeof r.text === "string" && r.text.trim()) return r.text.trim();
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 async function fetchDictionaryInfo(word: string): Promise<{ pos: string; example: string; audio: string }> {
   try {
     const res = await fetchWithTimeout(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
@@ -249,6 +273,11 @@ Deno.serve(async (req: Request) => {
   // dictionaryapi.dev가 다운되는 등의 이유로 품사를 못 가져왔으면 Datamuse로 한 번 더 시도해요.
   if (!dict.pos) {
     dict.pos = await fetchPosViaDatamuse(word);
+  }
+
+  // 예문도 마찬가지로 못 가져왔으면 Tatoeba로 한 번 더 시도해요.
+  if (!dict.example) {
+    dict.example = await fetchExampleViaTatoeba(word);
   }
 
   // 예문을 찾았으면 그 예문도 한국어로 번역해서 메모 자동채움용으로 같이 보내요.
