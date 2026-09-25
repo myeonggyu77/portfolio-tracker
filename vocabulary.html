@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>단어장</title>
 
+<!-- PWA(홈 화면에 추가) 설정 — portfolio-tracker.html의 manifest.json/sw.js와 같은 구조,
+     단어장 전용 파일(vocabulary-manifest.json/vocabulary-sw.js)을 따로 써요. -->
+<link rel="manifest" href="./vocabulary-manifest.json">
+<meta name="theme-color" content="#0f6e56">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <style>
   :root {
@@ -999,6 +1005,13 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 document.getElementById('backend-retry-btn').addEventListener('click', () => { loadAll(); });
 
 document.getElementById('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+// PWA 서비스워커 등록 — portfolio-tracker.html과 같은 방식, 단어장 전용 sw 파일을 써요.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./vocabulary-sw.js').catch((e) => console.error('서비스워커 등록 실패:', e));
+  });
+}
 
 loadAll();
 </script>

@@ -1,0 +1,17 @@
+{
+  "name": "영어 단어장",
+  "short_name": "단어장",
+  "description": "사전 자동조회·시험 기능이 있는 개인용 영어 단어 암기 앱",
+  "start_url": "./vocabulary.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fbfaf7",
+  "theme_color": "#0f6e56",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
