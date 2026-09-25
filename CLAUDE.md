@@ -26,6 +26,8 @@
 | `icon-192.png`, `icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png` | PWA 아이콘 |
 | `vocabulary.html` | (2026-09 추가) **영어 단어장** 앱 본체. 포트폴리오 원장과 완전히 독립된 별도 앱이지만 같은 저장소·같은 Supabase 프로젝트·같은 로그인 계정을 공유해요. 자세한 내용은 10번 항목 참고. |
 | `dict-lookup.ts` | (선택) 단어장의 "뜻 자동조회" 기능용 Supabase Edge Function 소스. 구글 번역(비공식) 중계 서버, 키 발급 불필요. |
+| `vocabulary-manifest.json` | (2026-09 말 추가) 단어장 전용 PWA 매니페스트. `manifest.json`(포트폴리오 원장용)과 별개 파일 — 아이콘은 기존 4종을 그대로 재사용해요. |
+| `vocabulary-sw.js` | (2026-09 말 추가) 단어장 전용 PWA 서비스워커 (앱 셸 캐싱). `sw.js`(포트폴리오 원장용)와 같은 구조, 파일만 분리. |
 
 ## 3. 백엔드/외부 연동 설정값
 
@@ -145,6 +147,8 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - [x] ~~네이버 개발자센터 Papago 번역 API 키 발급~~ — 해당 개인 개발자용 API는 서비스 종료됨. **2026-09 말: 사용자가 NCP(네이버 클라우드 플랫폼)에 가입해서 신규 Papago Translation API 키를 발급받아 Secrets에 등록 완료.** 코드도 새 NCP 엔드포인트/인증 방식으로 맞춰 수정·배포함(`dict-lookup.ts` 버전 13). 현재 뜻 조회는 Papago로 정상 동작 중(`meaningSource: "papago"` 확인함). Papago는 순수 번역 API라 품사·예문은 제공하지 않음 — 그건 계속 dictionaryapi.dev(+Datamuse 대체)가 담당.
 - [x] ~~국립국어원 KRDICT 오픈 API로 뜻 조회 대체~~ — 검토해봤지만 영어 단어로 검색해서 한국어 뜻을 역으로 찾는 기능 자체가 없음(한국어 표제어 → 외국어 뜻 방향만 지원). 이 용도에는 부적합, 채택 안 함(2026-09 말)
 - Supabase에 테스트용으로만 배포하고 git에는 커밋하지 않은 임시 진단 Edge Function들이 남아있어요(삭제 API 없음, 무시해도 됨): `krdict-test`(KRDICT 검색 파라미터 테스트용), `dict-diag`(구글 번역 429 차단 여부 확인용). 둘 다 더 이상 앱에서 호출하지 않아요.
+
+**PWA(홈 화면에 추가) 지원(2026-09 말 추가)**: 포트폴리오 원장과 같은 방식으로 단어장도 PWA를 지원해요. `vocabulary-manifest.json`·`vocabulary-sw.js`를 추가하고, `vocabulary.html` `<head>`에 manifest 링크·`theme-color`(`#0f6e56`, 단어장 accent 색과 동일)·`apple-touch-icon`을 추가했어요. 아이콘 4종은 포트폴리오 원장 것을 그대로 재사용(새로 안 만듦). 사용자는 폰 브라우저에서 "홈 화면에 추가"하면 앱 아이콘으로 설치되고 전체화면(주소창 없이)으로 실행돼요. 스토어에 올라가는 정식 네이티브 앱은 아니고, 그러려면 Capacitor로 감싸서 로컬 환경(맥+Xcode 또는 Android Studio)에서 빌드해야 해요(8번 항목 참고, 포트폴리오 원장과 동일 후보).
 
 ## 9. 작업 시 유의사항
 
