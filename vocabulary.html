@@ -195,6 +195,7 @@
     <button class="tab" data-panel="panel-quiz">오늘의 시험</button>
     <button class="tab" data-panel="panel-typing">주관식 문제</button>
     <button class="tab" data-panel="panel-phrase">생활영어</button>
+    <button class="tab" data-panel="panel-phrase-typing">생활영어 주관식</button>
   </div>
 
   <div class="panel active" id="panel-list">
@@ -327,6 +328,10 @@
         <div>위에서 첫 표현을 등록해 보세요.</div>
       </div>
     </div>
+  </div>
+
+  <div class="panel" id="panel-phrase-typing">
+    <div id="phrase-typing-quiz-area"></div>
   </div>
 </div>
 
@@ -489,6 +494,7 @@ function renderAll() {
   refreshWordDatalist();
   renderQuizArea('daily');
   renderQuizArea('typing');
+  renderQuizArea('phraseTyping');
   renderPhraseList();
 }
 
@@ -1128,6 +1134,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     const panel = tab.getAttribute('data-panel');
     if (panel === 'panel-quiz') renderQuizArea('daily');
     if (panel === 'panel-typing') renderQuizArea('typing');
+    if (panel === 'panel-phrase-typing') renderQuizArea('phraseTyping');
   });
 });
 
@@ -1152,6 +1159,8 @@ function buildDailyQuizQueue() { return shuffle(dailyTargetWords()).map(w => w.i
 function typingTargetWords() { return words; }
 function buildTypingQuizQueue() { return shuffle(typingTargetWords()).map(w => w.id); }
 
+function buildPhraseTypingQuizQueue() { return shuffle(phrases).map(p => p.id); }
+
 function buildChoices(correctWord) {
   const pool = words.filter(w => w.id !== correctWord.id && w.meaning !== correctWord.meaning);
   const distractors = shuffle(pool).slice(0, QUIZ_CHOICES - 1).map(w => w.meaning);
@@ -1164,6 +1173,7 @@ const QUIZ_MODES = {
     state: null,
     areaId: 'quiz-area',
     interaction: 'choice',
+    find: (id) => words.find(x => x.id === id),
     targetWords: dailyTargetWords,
     buildQueue: buildDailyQuizQueue,
     updateWordStats: true,
@@ -1178,15 +1188,39 @@ const QUIZ_MODES = {
     state: null,
     areaId: 'typing-quiz-area',
     interaction: 'typed',
+    find: (id) => words.find(x => x.id === id),
     targetWords: typingTargetWords,
     buildQueue: buildTypingQuizQueue,
     updateWordStats: false,
     minCount: 1,
+    promptField: 'meaning',
+    answerField: 'word',
+    typedPromptLabel: '이 뜻에 해당하는 영어 단어는?',
+    typedPlaceholder: '영어 단어를 입력하세요',
     emptyHtml: '등록된 단어가 없어요.<br>단어장 탭에서 단어를 먼저 등록해 보세요.',
     startHint: (n) => `등록된 단어: <b>${n}개</b> (외운 단어 포함 전체)`,
     startBtnLabel: '주관식 문제 시작',
     resultNote: '주관식 문제 결과 (오답 재출제 포함 총 문제 수, 학습 기록에는 반영되지 않아요)',
     minWordsToast: '문제를 내려면 등록된 단어가 1개 이상 필요해요.',
+  },
+  phraseTyping: {
+    state: null,
+    areaId: 'phrase-typing-quiz-area',
+    interaction: 'typed',
+    find: (id) => phrases.find(x => x.id === id),
+    targetWords: () => phrases,
+    buildQueue: buildPhraseTypingQuizQueue,
+    updateWordStats: false,
+    minCount: 1,
+    promptField: 'translation',
+    answerField: 'phrase',
+    typedPromptLabel: '이 번역에 해당하는 생활영어 표현은?',
+    typedPlaceholder: '영어로 입력하세요',
+    emptyHtml: '등록된 생활영어가 없어요.<br>생활영어 탭에서 표현을 먼저 등록해 보세요.',
+    startHint: (n) => `등록된 생활영어: <b>${n}개</b>`,
+    startBtnLabel: '주관식 문제 시작',
+    resultNote: '생활영어 주관식 문제 결과 (오답 재출제 포함 총 문제 수, 학습 기록에는 반영되지 않아요)',
+    minWordsToast: '문제를 내려면 등록된 생활영어가 1개 이상 필요해요.',
   },
 };
 
@@ -1243,7 +1277,7 @@ function renderQuizQuestion(mode, area) {
     return;
   }
   const wordId = state.queue[0];
-  const w = words.find(x => x.id === wordId);
+  const w = m.find(wordId);
   if (!w || (m.updateWordStats && w.mastered)) {
     state.queue.shift();
     renderQuizQuestion(mode, area);
@@ -1281,15 +1315,18 @@ function renderChoiceQuestion(mode, area, w) {
   });
 }
 
-// 주관식(typing) 문제: 뜻을 보여주고 영어 단어를 직접 입력받아요(대소문자 무시, 앞뒤 공백 제거 후 비교).
+// 주관식(typed) 문제: 뜻/번역을 보여주고 정답(영어 단어 또는 생활영어 표현)을 직접
+// 입력받아요(대소문자 무시, 앞뒤 공백 제거 후 비교). promptField/answerField로 어떤
+// 필드를 보여주고 어떤 필드를 정답으로 볼지 모드별로 다르게 설정해요.
 function renderTypedQuestion(mode, area, w) {
-  const state = QUIZ_MODES[mode].state;
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
   area.innerHTML = `
     <div class="quiz-card">
       <div class="quiz-progress">진행 ${state.askedCount + 1} · 남은 문제 ${state.queue.length} · 정답 ${state.correctCount} / 오답 ${state.wrongCount}</div>
-      <div class="quiz-sub">이 뜻에 해당하는 영어 단어는?</div>
-      <div class="quiz-word" style="font-size: 22px;">${escapeHtml(w.meaning)}</div>
-      <input type="text" class="quiz-typed-input" id="${mode}-typed-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영어 단어를 입력하세요" />
+      <div class="quiz-sub">${m.typedPromptLabel}</div>
+      <div class="quiz-word" style="font-size: 22px;">${escapeHtml(w[m.promptField])}</div>
+      <input type="text" class="quiz-typed-input" id="${mode}-typed-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${escapeHtml(m.typedPlaceholder)}" />
       <div class="quiz-typed-feedback" id="${mode}-typed-feedback"></div>
       <div class="quiz-choices" style="flex-direction: row; justify-content: center;">
         <button class="primary-btn" id="${mode}-typed-submit-btn" style="width: auto; padding: 10px 24px;">확인</button>
@@ -1334,13 +1371,14 @@ async function answerTypedQuiz(mode, w, typedValue) {
   state.askedCount += 1;
   state.queue.shift();
 
-  const isCorrect = typedValue.trim().toLowerCase() === w.word.trim().toLowerCase();
+  const answerText = w[m.answerField];
+  const isCorrect = typedValue.trim().toLowerCase() === answerText.trim().toLowerCase();
   document.getElementById(`${mode}-typed-input`).disabled = true;
   document.getElementById(`${mode}-typed-submit-btn`).disabled = true;
   const feedbackEl = document.getElementById(`${mode}-typed-feedback`);
   feedbackEl.innerHTML = isCorrect
-    ? `<span style="color: var(--accent); font-weight:600;">정답이에요! (${escapeHtml(w.word)})</span>`
-    : `<span style="color: var(--down); font-weight:600;">오답이에요. 정답: ${escapeHtml(w.word)}</span>`;
+    ? `<span style="color: var(--accent); font-weight:600;">정답이에요! (${escapeHtml(answerText)})</span>`
+    : `<span style="color: var(--down); font-weight:600;">오답이에요. 정답: ${escapeHtml(answerText)}</span>`;
 
   finishQuizAnswer(mode, w, isCorrect);
 }
