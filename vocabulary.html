@@ -317,6 +317,7 @@
             <th>등록일</th>
             <th class="num">연속정답</th>
             <th>상태</th>
+            <th class="actions-cell">듣기</th>
             <th class="actions-cell">수정/삭제</th>
           </tr>
         </thead>
@@ -779,6 +780,7 @@ function renderPhraseList() {
         <td>${escapeHtml(p.dateAdded)}</td>
         <td class="num"><span class="streak-tag">${p.correctStreak}/${MASTER_STREAK}</span></td>
         <td><span class="mastered-badge ${p.mastered ? '' : 'off'}" data-id="${p.id}" data-action="toggle-mastered">${p.mastered ? '외움' : '학습중'}</span></td>
+        <td class="actions-cell"><button class="icon-btn" data-id="${p.id}" data-action="speak" title="발음 듣기">🔊 듣기</button></td>
         <td class="actions-cell">
           <button class="icon-btn" data-id="${p.id}" data-action="edit">수정</button>
           <button class="icon-btn danger" data-id="${p.id}" data-action="delete">삭제</button>
@@ -793,7 +795,12 @@ document.getElementById('phrase-body').addEventListener('click', async (e) => {
   const toggleEl = e.target.closest('[data-action="toggle-mastered"]');
   const delEl = e.target.closest('[data-action="delete"]');
   const editEl = e.target.closest('[data-action="edit"]');
-  if (editEl) {
+  const speakEl = e.target.closest('[data-action="speak"]');
+  if (speakEl) {
+    const id = speakEl.getAttribute('data-id');
+    const p = phrases.find(x => x.id === id);
+    if (p) speak(p.phrase, '');
+  } else if (editEl) {
     const id = editEl.getAttribute('data-id');
     const p = phrases.find(x => x.id === id);
     if (p) startEditPhrase(p);
@@ -815,10 +822,35 @@ document.getElementById('phrase-body').addEventListener('click', async (e) => {
   }
 });
 
+// 생활영어 표현을 입력하고 다른 칸으로 이동(blur)하면 번역 칸이 비어있을 때만 자동으로
+// 번역해서 채워요. 예문 자동 번역과 동일하게 dict-lookup의 "text" 모드(사전 조회 없이
+// 순수 번역만)를 재사용해요.
+let lastTranslatedPhrase = '';
+let phraseLookupPromise = null; // 등록 버튼이 번역 완료를 기다릴 수 있도록 진행 중인 조회를 추적해요.
+
+async function autoTranslatePhrase() {
+  const phraseEl = document.getElementById('pf-phrase');
+  const translationEl = document.getElementById('pf-translation');
+  const text = phraseEl.value.trim();
+  if (!text || text === lastTranslatedPhrase) return;
+  if (translationEl.value.trim()) { lastTranslatedPhrase = text; return; } // 번역이 이미 있으면 덮어쓰지 않고 호출도 생략해요.
+  const data = await translateExampleText(text);
+  lastTranslatedPhrase = text;
+  if (data && data.translated && !translationEl.value.trim()) {
+    translationEl.value = data.translated;
+  }
+}
+
+document.getElementById('pf-phrase').addEventListener('blur', () => {
+  phraseLookupPromise = autoTranslatePhrase().finally(() => { phraseLookupPromise = null; });
+});
+
 document.getElementById('pf-submit-btn').addEventListener('click', async () => {
   const phraseEl = document.getElementById('pf-phrase');
   const translationEl = document.getElementById('pf-translation');
   const errEl = document.getElementById('phrase-form-error');
+  // 표현 입력 직후 바로 등록을 누르면 번역 자동조회가 아직 끝나지 않았을 수 있어요 — 잠깐만 기다려요.
+  if (phraseLookupPromise) await Promise.race([phraseLookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
   const phraseText = phraseEl.value.trim();
   const translation = translationEl.value.trim();
   if (!phraseText || !translation) {
@@ -841,6 +873,7 @@ document.getElementById('pf-submit-btn').addEventListener('click', async () => {
     });
     phraseEl.value = ''; translationEl.value = '';
   }
+  lastTranslatedPhrase = '';
   await persist();
   renderAll();
   phraseEl.focus();
@@ -851,6 +884,7 @@ function startEditPhrase(p) {
   document.getElementById('pf-translation').value = p.translation;
   document.getElementById('phrase-form-error').style.display = 'none';
   editingPhraseId = p.id;
+  lastTranslatedPhrase = p.phrase || '';
   document.getElementById('phrase-form-title').textContent = '생활영어 수정';
   document.getElementById('pf-submit-btn').textContent = '수정 완료';
   document.getElementById('pf-cancel-edit-btn').style.display = '';
@@ -859,6 +893,7 @@ function startEditPhrase(p) {
 
 function cancelEditPhrase() {
   editingPhraseId = null;
+  lastTranslatedPhrase = '';
   document.getElementById('phrase-form-title').textContent = '생활영어 등록';
   document.getElementById('pf-submit-btn').textContent = '등록';
   document.getElementById('pf-cancel-edit-btn').style.display = 'none';
