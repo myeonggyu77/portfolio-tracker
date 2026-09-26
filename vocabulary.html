@@ -198,7 +198,7 @@
 
   <div class="panel active" id="panel-list">
     <div class="form-card">
-      <h3>단어 등록</h3>
+      <h3 id="word-form-title">단어 등록</h3>
       <div class="form-error" id="word-form-error" style="display:none;"></div>
       <div class="form-grid">
         <div>
@@ -240,6 +240,7 @@
       </div>
       <div class="form-note">단어를 입력하고 다른 칸으로 이동하면 품사·뜻·예문이 자동으로 채워지고, 예문의 한국어 해설이 메모 칸(비어있을 때만)에 채워져요 (확인 후 필요하면 수정하세요).</div>
       <div class="form-actions">
+        <button class="ghost-btn" id="wf-cancel-edit-btn" style="display:none;">취소</button>
         <button class="primary-btn" id="wf-submit-btn">등록</button>
       </div>
     </div>
@@ -302,6 +303,7 @@ const QUIZ_CHOICES = 4;
 
 let supabaseClient = null;
 let words = []; // {id, word, meaning, memo, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}
+let editingId = null; // 목록에서 "수정" 버튼을 누른 단어의 id (null이면 새 단어 등록 모드)
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -489,7 +491,10 @@ function renderList() {
         <td>${escapeHtml(w.dateAdded)}</td>
         <td class="num"><span class="streak-tag">${w.correctStreak}/${MASTER_STREAK}</span></td>
         <td><span class="mastered-badge ${w.mastered ? '' : 'off'}" data-id="${w.id}" data-action="toggle-mastered">${w.mastered ? '외움' : '학습중'}</span></td>
-        <td class="actions-cell"><button class="icon-btn danger" data-id="${w.id}" data-action="delete">삭제</button></td>
+        <td class="actions-cell">
+          <button class="icon-btn" data-id="${w.id}" data-action="edit">수정</button>
+          <button class="icon-btn danger" data-id="${w.id}" data-action="delete">삭제</button>
+        </td>
       `;
       body.appendChild(tr);
     });
@@ -524,10 +529,15 @@ document.getElementById('list-body').addEventListener('click', async (e) => {
   const toggleEl = e.target.closest('[data-action="toggle-mastered"]');
   const delEl = e.target.closest('[data-action="delete"]');
   const speakEl = e.target.closest('[data-action="speak"]');
+  const editEl = e.target.closest('[data-action="edit"]');
   if (speakEl) {
     const id = speakEl.getAttribute('data-id');
     const w = words.find(x => x.id === id);
     if (w) speak(w.word, w.audioUrl);
+  } else if (editEl) {
+    const id = editEl.getAttribute('data-id');
+    const w = words.find(x => x.id === id);
+    if (w) startEditWord(w);
   } else if (toggleEl) {
     const id = toggleEl.getAttribute('data-id');
     const w = words.find(x => x.id === id);
@@ -540,6 +550,7 @@ document.getElementById('list-body').addEventListener('click', async (e) => {
   } else if (delEl) {
     if (!confirmDelete()) return;
     const id = delEl.getAttribute('data-id');
+    if (editingId === id) cancelEditWord();
     words = words.filter(w => w.id !== id);
     listSelected.delete(id);
     await persist();
@@ -627,17 +638,66 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
     return;
   }
   errEl.style.display = 'none';
-  words.push({
-    id: uid(), word, pos, participle, example, meaning, memo, dateAdded: todayStr(),
-    audioUrl: word === lastLookupWord ? lastLookupAudioUrl : '',
-    mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
-  });
-  wordEl.value = ''; posEl.value = ''; participleEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  if (editingId) {
+    // 수정 모드: 기존 단어를 찾아 입력한 값으로 덮어써요. mastered/correctStreak 등
+    // 학습 기록 필드는 그대로 유지하고, 오디오는 이번에 다시 조회했을 때만 갱신해요.
+    const target = words.find(w => w.id === editingId);
+    if (target) {
+      target.word = word;
+      target.pos = pos;
+      target.participle = participle;
+      target.example = example;
+      target.meaning = meaning;
+      target.memo = memo;
+      if (word === lastLookupWord && lastLookupAudioUrl) target.audioUrl = lastLookupAudioUrl;
+    }
+    cancelEditWord();
+  } else {
+    words.push({
+      id: uid(), word, pos, participle, example, meaning, memo, dateAdded: todayStr(),
+      audioUrl: word === lastLookupWord ? lastLookupAudioUrl : '',
+      mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
+    });
+    wordEl.value = ''; posEl.value = ''; participleEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
+  }
   lastLookupWord = ''; lastLookupAudioUrl = '';
   await persist();
   renderAll();
   wordEl.focus();
 });
+
+// 목록에서 "수정" 버튼을 누르면 등록 폼에 기존 값을 채우고 수정 모드로 전환해요.
+function startEditWord(w) {
+  document.getElementById('wf-word').value = w.word;
+  document.getElementById('wf-pos').value = w.pos || '';
+  document.getElementById('wf-participle').value = w.participle || '';
+  document.getElementById('wf-example').value = w.example || '';
+  document.getElementById('wf-meaning').value = w.meaning;
+  document.getElementById('wf-memo').value = w.memo || '';
+  document.getElementById('word-form-error').style.display = 'none';
+  editingId = w.id;
+  lastLookupWord = ''; lastLookupAudioUrl = '';
+  document.getElementById('word-form-title').textContent = '단어 수정';
+  document.getElementById('wf-submit-btn').textContent = '수정 완료';
+  document.getElementById('wf-cancel-edit-btn').style.display = '';
+  document.getElementById('wf-word').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditWord() {
+  editingId = null;
+  document.getElementById('word-form-title').textContent = '단어 등록';
+  document.getElementById('wf-submit-btn').textContent = '등록';
+  document.getElementById('wf-cancel-edit-btn').style.display = 'none';
+  document.getElementById('wf-word').value = '';
+  document.getElementById('wf-pos').value = '';
+  document.getElementById('wf-participle').value = '';
+  document.getElementById('wf-example').value = '';
+  document.getElementById('wf-meaning').value = '';
+  document.getElementById('wf-memo').value = '';
+  document.getElementById('word-form-error').style.display = 'none';
+}
+
+document.getElementById('wf-cancel-edit-btn').addEventListener('click', cancelEditWord);
 
 // ---------- 사전 자동조회(품사·뜻·예문, 예문 해설→메모) — 선택 기능 ----------
 // Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 번역(뜻)과
