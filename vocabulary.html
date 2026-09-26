@@ -623,9 +623,11 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
   const meaningEl = document.getElementById('wf-meaning');
   const memoEl = document.getElementById('wf-memo');
   const errEl = document.getElementById('word-form-error');
-  // 단어 입력 직후 바로 등록을 누르면 자동조회가 아직 끝나지 않았을 수 있어요 — 잠깐만 기다려요.
-  // (사전 조회 자체에 타임아웃이 있지만, 혹시 모를 지연에 대비해 등록 버튼도 최대 대기시간을 둬요.)
+  // 단어/예문 입력 직후 바로 등록을 누르면 자동조회(뜻·품사·예문 / 예문 번역)가 아직 끝나지
+  // 않았을 수 있어요 — 잠깐만 기다려요. (조회 자체에 타임아웃이 있지만, 혹시 모를 지연에
+  // 대비해 등록 버튼도 최대 대기시간을 둬요.)
   if (lookupPromise) await Promise.race([lookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
+  if (exampleLookupPromise) await Promise.race([exampleLookupPromise, sleep(DICT_FETCH_TIMEOUT_MS + 500)]);
   const word = wordEl.value.trim();
   const pos = posEl.value;
   const participle = participleEl.value.trim();
@@ -660,7 +662,7 @@ document.getElementById('wf-submit-btn').addEventListener('click', async () => {
     });
     wordEl.value = ''; posEl.value = ''; participleEl.value = ''; exampleEl.value = ''; meaningEl.value = ''; memoEl.value = '';
   }
-  lastLookupWord = ''; lastLookupAudioUrl = '';
+  lastLookupWord = ''; lastLookupAudioUrl = ''; lastTranslatedExample = '';
   await persist();
   renderAll();
   wordEl.focus();
@@ -676,7 +678,7 @@ function startEditWord(w) {
   document.getElementById('wf-memo').value = w.memo || '';
   document.getElementById('word-form-error').style.display = 'none';
   editingId = w.id;
-  lastLookupWord = ''; lastLookupAudioUrl = '';
+  lastLookupWord = ''; lastLookupAudioUrl = ''; lastTranslatedExample = w.example || '';
   document.getElementById('word-form-title').textContent = '단어 수정';
   document.getElementById('wf-submit-btn').textContent = '수정 완료';
   document.getElementById('wf-cancel-edit-btn').style.display = '';
@@ -685,6 +687,7 @@ function startEditWord(w) {
 
 function cancelEditWord() {
   editingId = null;
+  lastTranslatedExample = '';
   document.getElementById('word-form-title').textContent = '단어 등록';
   document.getElementById('wf-submit-btn').textContent = '등록';
   document.getElementById('wf-cancel-edit-btn').style.display = 'none';
@@ -734,6 +737,42 @@ async function lookupWord(word) {
     return null; // 타임아웃/네트워크 오류 — 조용히 실패, 직접 입력으로 대체 가능
   }
 }
+
+// ---------- 예문 직접 수정 시 메모 자동 번역 ----------
+// 사전 자동조회(단어 blur)와 별개로, 사용자가 예문 칸을 직접 입력/수정했을 때도 그 예문을
+// 번역해서 메모에 채워줘요. dict-lookup 함수에 단어 대신 "text"만 넘기면 사전 조회 없이
+// 순수 번역만 돌려주는 모드를 타요(위 dict-lookup.ts 참고).
+let lastTranslatedExample = '';
+let exampleLookupPromise = null; // 등록 버튼이 예문 번역 완료도 기다릴 수 있도록 추적해요.
+
+async function translateExampleText(text) {
+  const url = `${SUPABASE_URL}/functions/v1/dict-lookup?text=${encodeURIComponent(text)}`;
+  try {
+    const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function autoTranslateExample() {
+  const exampleEl = document.getElementById('wf-example');
+  const memoEl = document.getElementById('wf-memo');
+  const text = exampleEl.value.trim();
+  if (!text || text === lastTranslatedExample) return;
+  if (memoEl.value.trim()) { lastTranslatedExample = text; return; } // 메모가 이미 있으면 덮어쓰지 않고, 호출도 생략해요.
+  const data = await translateExampleText(text);
+  lastTranslatedExample = text;
+  if (data && data.translated && !memoEl.value.trim()) {
+    memoEl.value = data.translated;
+  }
+}
+
+document.getElementById('wf-example').addEventListener('blur', () => {
+  exampleLookupPromise = autoTranslateExample().finally(() => { exampleLookupPromise = null; });
+});
 
 // ---------- 분사(현재분사/과거분사) 자동 계산 — 외부 API 없이 문법 규칙 + 불규칙 동사표로 계산해요 ----------
 // dictionaryapi.dev 등 외부 사전 API는 분사 형태를 안 주기도 하고, 이번 세션에서 겪었듯 외부

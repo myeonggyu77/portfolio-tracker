@@ -55,6 +55,11 @@
 // 장애가 하루 넘게 이어지는 걸 직접 겪고 나서 추가했어요. 예문을 못 가져오면 Tatoeba의
 // 예문 문장 데이터베이스에서 그 단어가 쓰인 문장을 검색해서 대신 써요.
 // dictionaryapi.dev가 죽어도 최소한 품사·예문은 계속 채워지도록 하는 안전장치예요.
+//
+// 예문 직접 수정 시 번역(2026-09 말 추가): 등록 폼에서 예문 칸을 사용자가 직접 입력/수정했을
+// 때도 메모에 한국어 해설을 자동으로 채워주려고, 단어 조회와 별개로 "text" 쿼리 파라미터만
+// 넘기면 그 텍스트를 그냥 번역만 해서 돌려주는 모드를 추가했어요(사전 조회 없이 translate()만
+// 호출). 클라이언트는 예문 칸에서 포커스를 옮길 때(blur) 이 모드로 호출해요.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -259,6 +264,18 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
 
   const url = new URL(req.url);
+
+  // "text"가 있으면 사전 조회 없이 그 텍스트만 순수 번역해서 돌려줘요(예문 직접 수정 시 사용).
+  const text = (url.searchParams.get("text") || "").trim();
+  if (text) {
+    const translated = await translate(text, EXAMPLE_TRANSLATE_TIMEOUT_MS);
+    if (!translated) return jsonResponse({ error: "no_result" }, 502);
+    return jsonResponse({
+      translated,
+      meaningSource: NAVER_CLIENT_ID && NAVER_CLIENT_SECRET ? "papago" : "mymemory",
+    });
+  }
+
   const word = (url.searchParams.get("word") || "").trim();
   if (!word) return jsonResponse({ error: "missing_word" }, 400);
 
