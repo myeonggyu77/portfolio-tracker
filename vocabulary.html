@@ -194,6 +194,7 @@
     <button class="tab active" data-panel="panel-list">단어장</button>
     <button class="tab" data-panel="panel-quiz">오늘의 시험</button>
     <button class="tab" data-panel="panel-typing">주관식 문제</button>
+    <button class="tab" data-panel="panel-phrase">생활영어</button>
   </div>
 
   <div class="panel active" id="panel-list">
@@ -286,6 +287,47 @@
   <div class="panel" id="panel-typing">
     <div id="typing-quiz-area"></div>
   </div>
+
+  <div class="panel" id="panel-phrase">
+    <div class="form-card">
+      <h3 id="phrase-form-title">생활영어 등록</h3>
+      <div class="form-error" id="phrase-form-error" style="display:none;"></div>
+      <div class="form-grid">
+        <div>
+          <div class="field-lbl">생활영어</div>
+          <input type="text" id="pf-phrase" placeholder="How's it going?" autocomplete="off" />
+        </div>
+        <div>
+          <div class="field-lbl">번역</div>
+          <input type="text" id="pf-translation" placeholder="요즘 어때?" autocomplete="off" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="ghost-btn" id="pf-cancel-edit-btn" style="display:none;">취소</button>
+        <button class="primary-btn" id="pf-submit-btn">등록</button>
+      </div>
+    </div>
+
+    <div class="overflow-x">
+      <table id="phrase-table">
+        <thead>
+          <tr>
+            <th class="name-th">생활영어</th>
+            <th>번역</th>
+            <th>등록일</th>
+            <th class="num">연속정답</th>
+            <th>상태</th>
+            <th class="actions-cell">수정/삭제</th>
+          </tr>
+        </thead>
+        <tbody id="phrase-body"></tbody>
+      </table>
+      <div class="empty" id="phrase-empty" style="display:none;">
+        <div class="big">등록된 생활영어가 없어요</div>
+        <div>위에서 첫 표현을 등록해 보세요.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -304,6 +346,8 @@ const QUIZ_CHOICES = 4;
 let supabaseClient = null;
 let words = []; // {id, word, meaning, memo, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}
 let editingId = null; // 목록에서 "수정" 버튼을 누른 단어의 id (null이면 새 단어 등록 모드)
+let phrases = []; // 생활영어. {id, phrase, translation, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}
+let editingPhraseId = null; // 생활영어 목록에서 "수정" 버튼을 누른 항목의 id (null이면 새 등록 모드)
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -358,6 +402,7 @@ async function persist(retries = 2) {
       const { error } = await supabaseClient.from('vocabulary_data').upsert({
         id: 'main',
         words,
+        phrases,
         updated_at: new Date().toISOString(),
       });
       if (error) throw error;
@@ -376,6 +421,7 @@ async function fetchAndRenderData() {
     const { data, error } = await supabaseClient.from('vocabulary_data').select('*').eq('id', 'main').maybeSingle();
     if (error) throw error;
     words = (data && data.words) || [];
+    phrases = (data && data.phrases) || [];
   } catch (e) {
     console.error(e);
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
@@ -389,6 +435,12 @@ async function fetchAndRenderData() {
     if (w.correctStreak === undefined) w.correctStreak = 0;
     if (w.wrongCount === undefined) w.wrongCount = 0;
     if (w.lastTestedDate === undefined) w.lastTestedDate = null;
+  });
+  phrases.forEach(p => {
+    if (p.mastered === undefined) p.mastered = false;
+    if (p.correctStreak === undefined) p.correctStreak = 0;
+    if (p.wrongCount === undefined) p.wrongCount = 0;
+    if (p.lastTestedDate === undefined) p.lastTestedDate = null;
   });
   renderAll();
 }
@@ -437,6 +489,7 @@ function renderAll() {
   refreshWordDatalist();
   renderQuizArea('daily');
   renderQuizArea('typing');
+  renderPhraseList();
 }
 
 function renderKpis() {
@@ -701,6 +754,120 @@ function cancelEditWord() {
 }
 
 document.getElementById('wf-cancel-edit-btn').addEventListener('click', cancelEditWord);
+
+// ---------- 생활영어 ----------
+// 단어장과는 별개인 표현(생활영어 문장) + 번역 쌍의 목록이에요. 사전 자동조회 없이 표현과
+// 번역을 직접 입력해요. "연속정답"/"상태"는 단어장과 같은 방식으로 상태 배지를 눌러 수동으로
+// 토글해요(외운 단어와 동일하게 MASTER_STREAK로 채우거나 0으로 초기화).
+function renderPhraseList() {
+  const list = [...phrases].sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
+  const body = document.getElementById('phrase-body');
+  const empty = document.getElementById('phrase-empty');
+  const table = document.getElementById('phrase-table');
+  body.innerHTML = '';
+  if (list.length === 0) {
+    table.style.display = 'none';
+    empty.style.display = 'block';
+  } else {
+    table.style.display = '';
+    empty.style.display = 'none';
+    list.forEach(p => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="word-cell">${escapeHtml(p.phrase)}</td>
+        <td class="meaning-cell">${escapeHtml(p.translation)}</td>
+        <td>${escapeHtml(p.dateAdded)}</td>
+        <td class="num"><span class="streak-tag">${p.correctStreak}/${MASTER_STREAK}</span></td>
+        <td><span class="mastered-badge ${p.mastered ? '' : 'off'}" data-id="${p.id}" data-action="toggle-mastered">${p.mastered ? '외움' : '학습중'}</span></td>
+        <td class="actions-cell">
+          <button class="icon-btn" data-id="${p.id}" data-action="edit">수정</button>
+          <button class="icon-btn danger" data-id="${p.id}" data-action="delete">삭제</button>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+}
+
+document.getElementById('phrase-body').addEventListener('click', async (e) => {
+  const toggleEl = e.target.closest('[data-action="toggle-mastered"]');
+  const delEl = e.target.closest('[data-action="delete"]');
+  const editEl = e.target.closest('[data-action="edit"]');
+  if (editEl) {
+    const id = editEl.getAttribute('data-id');
+    const p = phrases.find(x => x.id === id);
+    if (p) startEditPhrase(p);
+  } else if (toggleEl) {
+    const id = toggleEl.getAttribute('data-id');
+    const p = phrases.find(x => x.id === id);
+    if (!p) return;
+    p.mastered = !p.mastered;
+    p.correctStreak = p.mastered ? MASTER_STREAK : 0;
+    await persist();
+    renderAll();
+  } else if (delEl) {
+    if (!confirmDelete()) return;
+    const id = delEl.getAttribute('data-id');
+    if (editingPhraseId === id) cancelEditPhrase();
+    phrases = phrases.filter(p => p.id !== id);
+    await persist();
+    renderAll();
+  }
+});
+
+document.getElementById('pf-submit-btn').addEventListener('click', async () => {
+  const phraseEl = document.getElementById('pf-phrase');
+  const translationEl = document.getElementById('pf-translation');
+  const errEl = document.getElementById('phrase-form-error');
+  const phraseText = phraseEl.value.trim();
+  const translation = translationEl.value.trim();
+  if (!phraseText || !translation) {
+    errEl.textContent = '생활영어 표현과 번역을 모두 입력해 주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+  if (editingPhraseId) {
+    const target = phrases.find(p => p.id === editingPhraseId);
+    if (target) {
+      target.phrase = phraseText;
+      target.translation = translation;
+    }
+    cancelEditPhrase();
+  } else {
+    phrases.push({
+      id: uid(), phrase: phraseText, translation, dateAdded: todayStr(),
+      mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
+    });
+    phraseEl.value = ''; translationEl.value = '';
+  }
+  await persist();
+  renderAll();
+  phraseEl.focus();
+});
+
+function startEditPhrase(p) {
+  document.getElementById('pf-phrase').value = p.phrase;
+  document.getElementById('pf-translation').value = p.translation;
+  document.getElementById('phrase-form-error').style.display = 'none';
+  editingPhraseId = p.id;
+  document.getElementById('phrase-form-title').textContent = '생활영어 수정';
+  document.getElementById('pf-submit-btn').textContent = '수정 완료';
+  document.getElementById('pf-cancel-edit-btn').style.display = '';
+  document.getElementById('pf-phrase').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditPhrase() {
+  editingPhraseId = null;
+  document.getElementById('phrase-form-title').textContent = '생활영어 등록';
+  document.getElementById('pf-submit-btn').textContent = '등록';
+  document.getElementById('pf-cancel-edit-btn').style.display = 'none';
+  document.getElementById('pf-phrase').value = '';
+  document.getElementById('pf-translation').value = '';
+  document.getElementById('phrase-form-error').style.display = 'none';
+}
+
+document.getElementById('pf-cancel-edit-btn').addEventListener('click', cancelEditPhrase);
 
 // ---------- 사전 자동조회(품사·뜻·예문, 예문 해설→메모) — 선택 기능 ----------
 // Supabase Edge Function(dict-lookup) 하나만 호출해요. 이 함수 안에서 번역(뜻)과
