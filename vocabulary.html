@@ -126,6 +126,8 @@
   button.quiz-choice.correct { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
   button.quiz-choice.wrong { background: var(--down-soft); border-color: var(--down); color: var(--down); font-weight: 600; }
   button.quiz-choice:disabled { cursor: default; }
+  .quiz-typed-input { width: 100%; height: 44px; font-size: 17px; font-family: var(--mono); text-align: center; margin-bottom: 12px; }
+  .quiz-typed-feedback { min-height: 20px; font-size: 13px; margin-bottom: 6px; }
   .quiz-next-row { margin-top: 20px; }
   .quiz-empty { color: var(--ink-faint); font-size: 13px; padding: 40px 0; }
   .quiz-result { max-width: 420px; margin: 0 auto; text-align: center; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 32px; }
@@ -191,7 +193,7 @@
   <div class="tabs">
     <button class="tab active" data-panel="panel-list">단어장</button>
     <button class="tab" data-panel="panel-quiz">오늘의 시험</button>
-    <button class="tab" data-panel="panel-weekly">주간 퀴즈</button>
+    <button class="tab" data-panel="panel-typing">주관식 문제</button>
   </div>
 
   <div class="panel active" id="panel-list">
@@ -280,8 +282,8 @@
     <div id="quiz-area"></div>
   </div>
 
-  <div class="panel" id="panel-weekly">
-    <div id="weekly-quiz-area"></div>
+  <div class="panel" id="panel-typing">
+    <div id="typing-quiz-area"></div>
   </div>
 </div>
 
@@ -432,7 +434,7 @@ function renderAll() {
   renderList();
   refreshWordDatalist();
   renderQuizArea('daily');
-  renderQuizArea('weekly');
+  renderQuizArea('typing');
 }
 
 function renderKpis() {
@@ -825,14 +827,16 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById(tab.getAttribute('data-panel')).classList.add('active');
     const panel = tab.getAttribute('data-panel');
     if (panel === 'panel-quiz') renderQuizArea('daily');
-    if (panel === 'panel-weekly') renderQuizArea('weekly');
+    if (panel === 'panel-typing') renderQuizArea('typing');
   });
 });
 
 // ---------- Quiz ----------
-// "오늘의 시험"(daily)과 "주간 퀴즈"(weekly) 둘 다 아래 공용 엔진으로 돌아가요.
-// - daily: 아직 안 외운(mastered=false) 단어 전체가 대상, 정답/오답이 실제 학습 기록(연속정답·외운 단어)에 반영돼요.
-// - weekly: 최근 7일 안에 등록된 단어가 대상(외운 단어 포함), 그냥 복습용이라 학습 기록에는 반영하지 않아요.
+// "오늘의 시험"(daily, 객관식)과 "주관식 문제"(typing, 주관식) 둘 다 아래 공용 엔진으로 돌아가요.
+// - daily: 아직 안 외운(mastered=false) 단어 전체가 대상, 뜻 4지선다 객관식. 정답/오답이 실제 학습
+//   기록(연속정답·외운 단어)에 반영돼요.
+// - typing: 등록된 단어 전체(외운 단어 포함)가 대상, 뜻을 보고 영어 단어를 직접 입력하는 주관식.
+//   철자 연습용이라 학습 기록(연속정답·외운 단어)에는 반영하지 않아요.
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -845,17 +849,8 @@ function shuffle(arr) {
 function dailyTargetWords() { return words.filter(w => !w.mastered); }
 function buildDailyQuizQueue() { return shuffle(dailyTargetWords()).map(w => w.id); }
 
-// 주간 퀴즈 대상: 오늘 포함 최근 7일(오늘 - 6일 ~ 오늘) 안에 등록된 단어 전체(외운 단어도 포함).
-function weeklyRangeStartStr() {
-  const d = new Date();
-  d.setDate(d.getDate() - 6);
-  return d.toISOString().slice(0, 10);
-}
-function weeklyTargetWords() {
-  const start = weeklyRangeStartStr();
-  return words.filter(w => w.dateAdded >= start);
-}
-function buildWeeklyQuizQueue() { return shuffle(weeklyTargetWords()).map(w => w.id); }
+function typingTargetWords() { return words; }
+function buildTypingQuizQueue() { return shuffle(typingTargetWords()).map(w => w.id); }
 
 function buildChoices(correctWord) {
   const pool = words.filter(w => w.id !== correctWord.id && w.meaning !== correctWord.meaning);
@@ -868,26 +863,30 @@ const QUIZ_MODES = {
   daily: {
     state: null,
     areaId: 'quiz-area',
+    interaction: 'choice',
     targetWords: dailyTargetWords,
     buildQueue: buildDailyQuizQueue,
     updateWordStats: true,
+    minCount: 2,
     emptyHtml: '시험 볼 단어가 없어요. 모든 단어를 외웠거나, 아직 등록된 단어가 없어요.<br>단어장 탭에서 단어를 등록해 보세요.',
     startHint: (n) => `오늘 시험 대상 단어: <b>${n}개</b> (아직 외우지 못한 단어 전체)`,
     startBtnLabel: '오늘의 시험 시작',
     resultNote: '오늘의 시험 결과 (오답 재출제 포함 총 문제 수)',
     minWordsToast: '객관식 문제를 내려면 학습 중인 단어가 2개 이상 필요해요.',
   },
-  weekly: {
+  typing: {
     state: null,
-    areaId: 'weekly-quiz-area',
-    targetWords: weeklyTargetWords,
-    buildQueue: buildWeeklyQuizQueue,
+    areaId: 'typing-quiz-area',
+    interaction: 'typed',
+    targetWords: typingTargetWords,
+    buildQueue: buildTypingQuizQueue,
     updateWordStats: false,
-    emptyHtml: '최근 7일 안에 등록된 단어가 없어요.<br>단어장 탭에서 새 단어를 등록해 보세요.',
-    startHint: (n) => `이번 주(최근 7일) 등록 단어: <b>${n}개</b>`,
-    startBtnLabel: '주간 퀴즈 시작',
-    resultNote: '주간 퀴즈 결과 (오답 재출제 포함 총 문제 수, 학습 기록에는 반영되지 않아요)',
-    minWordsToast: '객관식 문제를 내려면 이번 주에 등록된 단어가 2개 이상 필요해요.',
+    minCount: 1,
+    emptyHtml: '등록된 단어가 없어요.<br>단어장 탭에서 단어를 먼저 등록해 보세요.',
+    startHint: (n) => `등록된 단어: <b>${n}개</b> (외운 단어 포함 전체)`,
+    startBtnLabel: '주관식 문제 시작',
+    resultNote: '주관식 문제 결과 (오답 재출제 포함 총 문제 수, 학습 기록에는 반영되지 않아요)',
+    minWordsToast: '문제를 내려면 등록된 단어가 1개 이상 필요해요.',
   },
 };
 
@@ -919,7 +918,7 @@ function renderQuizArea(mode) {
 function startQuiz(mode) {
   const m = QUIZ_MODES[mode];
   const targetCount = m.targetWords().length;
-  if (targetCount < 2) {
+  if (targetCount < m.minCount) {
     showToast(m.minWordsToast, 'info', 5000);
   }
   m.state = {
@@ -950,8 +949,17 @@ function renderQuizQuestion(mode, area) {
     renderQuizQuestion(mode, area);
     return;
   }
-  const choices = buildChoices(w);
   state.answered = false;
+  if (m.interaction === 'typed') {
+    renderTypedQuestion(mode, area, w);
+  } else {
+    renderChoiceQuestion(mode, area, w);
+  }
+}
+
+function renderChoiceQuestion(mode, area, w) {
+  const state = QUIZ_MODES[mode].state;
+  const choices = buildChoices(w);
   area.innerHTML = `
     <div class="quiz-card">
       <div class="quiz-progress">진행 ${state.askedCount + 1} · 남은 문제 ${state.queue.length} · 정답 ${state.correctCount} / 오답 ${state.wrongCount}</div>
@@ -973,6 +981,34 @@ function renderQuizQuestion(mode, area) {
   });
 }
 
+// 주관식(typing) 문제: 뜻을 보여주고 영어 단어를 직접 입력받아요(대소문자 무시, 앞뒤 공백 제거 후 비교).
+function renderTypedQuestion(mode, area, w) {
+  const state = QUIZ_MODES[mode].state;
+  area.innerHTML = `
+    <div class="quiz-card">
+      <div class="quiz-progress">진행 ${state.askedCount + 1} · 남은 문제 ${state.queue.length} · 정답 ${state.correctCount} / 오답 ${state.wrongCount}</div>
+      <div class="quiz-sub">이 뜻에 해당하는 영어 단어는?</div>
+      <div class="quiz-word" style="font-size: 22px;">${escapeHtml(w.meaning)}</div>
+      <input type="text" class="quiz-typed-input" id="${mode}-typed-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="영어 단어를 입력하세요" />
+      <div class="quiz-typed-feedback" id="${mode}-typed-feedback"></div>
+      <div class="quiz-choices" style="flex-direction: row; justify-content: center;">
+        <button class="primary-btn" id="${mode}-typed-submit-btn" style="width: auto; padding: 10px 24px;">확인</button>
+      </div>
+      <div class="quiz-next-row" id="${mode}-quiz-next-row" style="display:none;">
+        <button class="primary-btn" id="${mode}-quiz-next-btn">다음</button>
+      </div>
+    </div>
+  `;
+  const inputEl = document.getElementById(`${mode}-typed-input`);
+  const submit = () => {
+    if (!inputEl.value.trim()) return;
+    answerTypedQuiz(mode, w, inputEl.value);
+  };
+  document.getElementById(`${mode}-typed-submit-btn`).addEventListener('click', submit);
+  inputEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  inputEl.focus();
+}
+
 async function answerQuiz(mode, w, chosen, isCorrect) {
   const m = QUIZ_MODES[mode];
   const state = m.state;
@@ -986,6 +1022,33 @@ async function answerQuiz(mode, w, chosen, isCorrect) {
     if (btn.textContent === w.meaning) btn.classList.add('correct');
     else if (btn.textContent === chosen && !isCorrect) btn.classList.add('wrong');
   });
+
+  finishQuizAnswer(mode, w, isCorrect);
+}
+
+async function answerTypedQuiz(mode, w, typedValue) {
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
+  if (state.answered) return;
+  state.answered = true;
+  state.askedCount += 1;
+  state.queue.shift();
+
+  const isCorrect = typedValue.trim().toLowerCase() === w.word.trim().toLowerCase();
+  document.getElementById(`${mode}-typed-input`).disabled = true;
+  document.getElementById(`${mode}-typed-submit-btn`).disabled = true;
+  const feedbackEl = document.getElementById(`${mode}-typed-feedback`);
+  feedbackEl.innerHTML = isCorrect
+    ? `<span style="color: var(--accent); font-weight:600;">정답이에요! (${escapeHtml(w.word)})</span>`
+    : `<span style="color: var(--down); font-weight:600;">오답이에요. 정답: ${escapeHtml(w.word)}</span>`;
+
+  finishQuizAnswer(mode, w, isCorrect);
+}
+
+// 두 문제 형식(객관식/주관식) 공통: 정답/오답 집계, 오답 재출제, (설정된 모드면) 학습 기록 반영, 다음 버튼 노출.
+async function finishQuizAnswer(mode, w, isCorrect) {
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
 
   if (isCorrect) {
     state.correctCount += 1;
