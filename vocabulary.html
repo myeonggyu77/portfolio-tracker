@@ -191,6 +191,7 @@
   <div class="tabs">
     <button class="tab active" data-panel="panel-list">단어장</button>
     <button class="tab" data-panel="panel-quiz">오늘의 시험</button>
+    <button class="tab" data-panel="panel-weekly">주간 퀴즈</button>
   </div>
 
   <div class="panel active" id="panel-list">
@@ -278,6 +279,10 @@
   <div class="panel" id="panel-quiz">
     <div id="quiz-area"></div>
   </div>
+
+  <div class="panel" id="panel-weekly">
+    <div id="weekly-quiz-area"></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -295,7 +300,6 @@ const QUIZ_CHOICES = 4;
 
 let supabaseClient = null;
 let words = []; // {id, word, meaning, memo, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}
-let quiz = null; // 진행 중인 시험 상태
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -427,7 +431,8 @@ function renderAll() {
   renderKpis();
   renderList();
   refreshWordDatalist();
-  renderQuizArea();
+  renderQuizArea('daily');
+  renderQuizArea('weekly');
 }
 
 function renderKpis() {
@@ -818,11 +823,16 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
     document.getElementById(tab.getAttribute('data-panel')).classList.add('active');
-    if (tab.getAttribute('data-panel') === 'panel-quiz') renderQuizArea();
+    const panel = tab.getAttribute('data-panel');
+    if (panel === 'panel-quiz') renderQuizArea('daily');
+    if (panel === 'panel-weekly') renderQuizArea('weekly');
   });
 });
 
 // ---------- Quiz ----------
+// "오늘의 시험"(daily)과 "주간 퀴즈"(weekly) 둘 다 아래 공용 엔진으로 돌아가요.
+// - daily: 아직 안 외운(mastered=false) 단어 전체가 대상, 정답/오답이 실제 학습 기록(연속정답·외운 단어)에 반영돼요.
+// - weekly: 최근 7일 안에 등록된 단어가 대상(외운 단어 포함), 그냥 복습용이라 학습 기록에는 반영하지 않아요.
 function shuffle(arr) {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -832,9 +842,20 @@ function shuffle(arr) {
   return a;
 }
 
-function buildQuizQueue() {
-  return shuffle(words.filter(w => !w.mastered)).map(w => w.id);
+function dailyTargetWords() { return words.filter(w => !w.mastered); }
+function buildDailyQuizQueue() { return shuffle(dailyTargetWords()).map(w => w.id); }
+
+// 주간 퀴즈 대상: 오늘 포함 최근 7일(오늘 - 6일 ~ 오늘) 안에 등록된 단어 전체(외운 단어도 포함).
+function weeklyRangeStartStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 6);
+  return d.toISOString().slice(0, 10);
 }
+function weeklyTargetWords() {
+  const start = weeklyRangeStartStr();
+  return words.filter(w => w.dateAdded >= start);
+}
+function buildWeeklyQuizQueue() { return shuffle(weeklyTargetWords()).map(w => w.id); }
 
 function buildChoices(correctWord) {
   const pool = words.filter(w => w.id !== correctWord.id && w.meaning !== correctWord.meaning);
@@ -843,37 +864,67 @@ function buildChoices(correctWord) {
   return choices;
 }
 
-function renderQuizArea() {
-  const area = document.getElementById('quiz-area');
-  if (!quiz) {
-    const dueCount = words.filter(w => !w.mastered).length;
+const QUIZ_MODES = {
+  daily: {
+    state: null,
+    areaId: 'quiz-area',
+    targetWords: dailyTargetWords,
+    buildQueue: buildDailyQuizQueue,
+    updateWordStats: true,
+    emptyHtml: '시험 볼 단어가 없어요. 모든 단어를 외웠거나, 아직 등록된 단어가 없어요.<br>단어장 탭에서 단어를 등록해 보세요.',
+    startHint: (n) => `오늘 시험 대상 단어: <b>${n}개</b> (아직 외우지 못한 단어 전체)`,
+    startBtnLabel: '오늘의 시험 시작',
+    resultNote: '오늘의 시험 결과 (오답 재출제 포함 총 문제 수)',
+    minWordsToast: '객관식 문제를 내려면 학습 중인 단어가 2개 이상 필요해요.',
+  },
+  weekly: {
+    state: null,
+    areaId: 'weekly-quiz-area',
+    targetWords: weeklyTargetWords,
+    buildQueue: buildWeeklyQuizQueue,
+    updateWordStats: false,
+    emptyHtml: '최근 7일 안에 등록된 단어가 없어요.<br>단어장 탭에서 새 단어를 등록해 보세요.',
+    startHint: (n) => `이번 주(최근 7일) 등록 단어: <b>${n}개</b>`,
+    startBtnLabel: '주간 퀴즈 시작',
+    resultNote: '주간 퀴즈 결과 (오답 재출제 포함 총 문제 수, 학습 기록에는 반영되지 않아요)',
+    minWordsToast: '객관식 문제를 내려면 이번 주에 등록된 단어가 2개 이상 필요해요.',
+  },
+};
+
+function renderQuizArea(mode) {
+  const m = QUIZ_MODES[mode];
+  const area = document.getElementById(m.areaId);
+  if (!m.state) {
+    const dueCount = m.targetWords().length;
     if (dueCount === 0) {
-      area.innerHTML = `<div class="quiz-empty">시험 볼 단어가 없어요. 모든 단어를 외웠거나, 아직 등록된 단어가 없어요.<br>단어장 탭에서 단어를 등록해 보세요.</div>`;
+      area.innerHTML = `<div class="quiz-empty">${m.emptyHtml}</div>`;
       return;
     }
     area.innerHTML = `
       <div class="quiz-start-wrap">
-        <p>오늘 시험 대상 단어: <b>${dueCount}개</b> (아직 외우지 못한 단어 전체)</p>
-        <button class="primary-btn" id="quiz-start-btn">오늘의 시험 시작</button>
+        <p>${m.startHint(dueCount)}</p>
+        <button class="primary-btn" id="${mode}-quiz-start-btn">${m.startBtnLabel}</button>
       </div>
     `;
-    document.getElementById('quiz-start-btn').addEventListener('click', startQuiz);
+    document.getElementById(`${mode}-quiz-start-btn`).addEventListener('click', () => startQuiz(mode));
     return;
   }
-  if (quiz.finished) {
-    renderQuizResult(area);
+  if (m.state.finished) {
+    renderQuizResult(mode, area);
     return;
   }
-  renderQuizQuestion(area);
+  renderQuizQuestion(mode, area);
 }
 
-function startQuiz() {
-  if (words.filter(w => !w.mastered).length < 2) {
-    showToast('객관식 문제를 내려면 학습 중인 단어가 2개 이상 필요해요.', 'info', 5000);
+function startQuiz(mode) {
+  const m = QUIZ_MODES[mode];
+  const targetCount = m.targetWords().length;
+  if (targetCount < 2) {
+    showToast(m.minWordsToast, 'info', 5000);
   }
-  quiz = {
-    queue: buildQuizQueue(),
-    totalCount: words.filter(w => !w.mastered).length,
+  m.state = {
+    queue: m.buildQueue(),
+    totalCount: targetCount,
     askedCount: 0,
     correctCount: 0,
     wrongCount: 0,
@@ -881,95 +932,110 @@ function startQuiz() {
     answered: false,
     finished: false,
   };
-  renderQuizArea();
+  renderQuizArea(mode);
 }
 
-function renderQuizQuestion(area) {
-  if (quiz.queue.length === 0) {
-    quiz.finished = true;
-    renderQuizArea();
+function renderQuizQuestion(mode, area) {
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
+  if (state.queue.length === 0) {
+    state.finished = true;
+    renderQuizArea(mode);
     return;
   }
-  const wordId = quiz.queue[0];
+  const wordId = state.queue[0];
   const w = words.find(x => x.id === wordId);
-  if (!w || w.mastered) {
-    quiz.queue.shift();
-    renderQuizQuestion(area);
+  if (!w || (m.updateWordStats && w.mastered)) {
+    state.queue.shift();
+    renderQuizQuestion(mode, area);
     return;
   }
   const choices = buildChoices(w);
-  quiz.answered = false;
+  state.answered = false;
   area.innerHTML = `
     <div class="quiz-card">
-      <div class="quiz-progress">진행 ${quiz.askedCount + 1} · 남은 문제 ${quiz.queue.length} · 정답 ${quiz.correctCount} / 오답 ${quiz.wrongCount}</div>
+      <div class="quiz-progress">진행 ${state.askedCount + 1} · 남은 문제 ${state.queue.length} · 정답 ${state.correctCount} / 오답 ${state.wrongCount}</div>
       <div class="quiz-word">${escapeHtml(w.word)}</div>
       <div class="quiz-sub">이 단어의 뜻은?</div>
-      <div class="quiz-choices" id="quiz-choices"></div>
-      <div class="quiz-next-row" id="quiz-next-row" style="display:none;">
-        <button class="primary-btn" id="quiz-next-btn">다음</button>
+      <div class="quiz-choices" id="${mode}-quiz-choices"></div>
+      <div class="quiz-next-row" id="${mode}-quiz-next-row" style="display:none;">
+        <button class="primary-btn" id="${mode}-quiz-next-btn">다음</button>
       </div>
     </div>
   `;
-  const choicesEl = document.getElementById('quiz-choices');
+  const choicesEl = document.getElementById(`${mode}-quiz-choices`);
   choices.forEach(choice => {
     const btn = document.createElement('button');
     btn.className = 'quiz-choice';
     btn.textContent = choice;
-    btn.addEventListener('click', () => answerQuiz(w, choice, choice === w.meaning));
+    btn.addEventListener('click', () => answerQuiz(mode, w, choice, choice === w.meaning));
     choicesEl.appendChild(btn);
   });
 }
 
-async function answerQuiz(w, chosen, isCorrect) {
-  if (quiz.answered) return;
-  quiz.answered = true;
-  quiz.askedCount += 1;
-  quiz.queue.shift();
+async function answerQuiz(mode, w, chosen, isCorrect) {
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
+  if (state.answered) return;
+  state.answered = true;
+  state.askedCount += 1;
+  state.queue.shift();
 
-  document.querySelectorAll('.quiz-choice').forEach(btn => {
+  document.querySelectorAll(`#${m.areaId} .quiz-choice`).forEach(btn => {
     btn.disabled = true;
     if (btn.textContent === w.meaning) btn.classList.add('correct');
     else if (btn.textContent === chosen && !isCorrect) btn.classList.add('wrong');
   });
 
-  w.lastTestedDate = todayStr();
   if (isCorrect) {
-    quiz.correctCount += 1;
-    w.correctStreak += 1;
-    if (w.correctStreak >= MASTER_STREAK) {
-      w.mastered = true;
-      quiz.newlyMastered += 1;
-    }
+    state.correctCount += 1;
   } else {
-    quiz.wrongCount += 1;
-    w.wrongCount += 1;
-    w.correctStreak = 0;
+    state.wrongCount += 1;
     // 오답은 이번 시험 안에서 다시 나오도록 뒤쪽에 재등록해요.
-    quiz.queue.push(w.id);
+    state.queue.push(w.id);
   }
-  renderKpis();
-  await persist();
 
-  document.getElementById('quiz-next-row').style.display = 'block';
-  document.getElementById('quiz-next-btn').addEventListener('click', () => {
-    renderQuizArea();
+  if (m.updateWordStats) {
+    w.lastTestedDate = todayStr();
+    if (isCorrect) {
+      w.correctStreak += 1;
+      if (w.correctStreak >= MASTER_STREAK) {
+        w.mastered = true;
+        state.newlyMastered += 1;
+      }
+    } else {
+      w.wrongCount += 1;
+      w.correctStreak = 0;
+    }
+    renderKpis();
+    await persist();
+  }
+
+  document.getElementById(`${mode}-quiz-next-row`).style.display = 'block';
+  document.getElementById(`${mode}-quiz-next-btn`).addEventListener('click', () => {
+    renderQuizArea(mode);
   });
 }
 
-function renderQuizResult(area) {
+function renderQuizResult(mode, area) {
+  const m = QUIZ_MODES[mode];
+  const state = m.state;
+  const masteredRow = m.updateWordStats
+    ? `<div class="row"><span>새로 외운 단어</span><span>${state.newlyMastered}개</span></div>`
+    : '';
   area.innerHTML = `
     <div class="quiz-result">
-      <div class="big-num">${quiz.correctCount} / ${quiz.askedCount}</div>
-      <div style="color: var(--ink-faint); font-size: 12px; margin-bottom: 16px;">오늘의 시험 결과 (오답 재출제 포함 총 문제 수)</div>
-      <div class="row"><span>새로 외운 단어</span><span>${quiz.newlyMastered}개</span></div>
-      <div class="row"><span>오답 횟수</span><span>${quiz.wrongCount}회</span></div>
+      <div class="big-num">${state.correctCount} / ${state.askedCount}</div>
+      <div style="color: var(--ink-faint); font-size: 12px; margin-bottom: 16px;">${m.resultNote}</div>
+      ${masteredRow}
+      <div class="row"><span>오답 횟수</span><span>${state.wrongCount}회</span></div>
       <div class="form-actions" style="justify-content:center; margin-top:20px;">
-        <button class="ghost-btn" id="quiz-restart-btn">단어장으로</button>
+        <button class="ghost-btn" id="${mode}-quiz-restart-btn">단어장으로</button>
       </div>
     </div>
   `;
-  document.getElementById('quiz-restart-btn').addEventListener('click', () => {
-    quiz = null;
+  document.getElementById(`${mode}-quiz-restart-btn`).addEventListener('click', () => {
+    m.state = null;
     renderAll();
   });
 }
