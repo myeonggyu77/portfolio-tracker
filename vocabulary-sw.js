@@ -3,12 +3,12 @@
 // 실제 데이터(Supabase, 사전 API)는 캐싱하지 않고 항상 네트워크에서 최신 값을 가져와요.
 // (portfolio-tracker.html의 sw.js와 같은 구조 — 파일 이름만 단어장 것으로 바꿨어요.)
 
-const CACHE_NAME = 'vocabulary-shell-v1';
+const CACHE_NAME = 'vocabulary-shell-v2'; // v2: 단어장 전용 아이콘으로 교체하며 캐시 무효화
 const SHELL_FILES = [
   './vocabulary.html',
   './vocabulary-manifest.json',
-  './icon-192.png',
-  './icon-512.png',
+  './vocabulary-icon-192.png',
+  './vocabulary-icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

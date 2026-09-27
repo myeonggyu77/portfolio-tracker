@@ -28,6 +28,7 @@
 | `dict-lookup.ts` | (선택) 단어장의 "뜻 자동조회" 기능용 Supabase Edge Function 소스. 구글 번역(비공식) 중계 서버, 키 발급 불필요. |
 | `vocabulary-manifest.json` | (2026-09 말 추가) 단어장 전용 PWA 매니페스트. `manifest.json`(포트폴리오 원장용)과 별개 파일 — 아이콘은 기존 4종을 그대로 재사용해요. |
 | `vocabulary-sw.js` | (2026-09 말 추가) 단어장 전용 PWA 서비스워커 (앱 셸 캐싱). `sw.js`(포트폴리오 원장용)와 같은 구조, 파일만 분리. |
+| `vocabulary-icon-192.png`, `vocabulary-icon-512.png`, `vocabulary-icon-512-maskable.png`, `vocabulary-apple-touch-icon.png` | (2026-09 말 추가) 단어장 전용 PWA 아이콘 4종. `icon-192.png` 등(포트폴리오 원장용)과 별개 파일 — 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자. |
 
 ## 3. 백엔드/외부 연동 설정값
 
@@ -157,7 +158,8 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - [x] ~~국립국어원 KRDICT 오픈 API로 뜻 조회 대체~~ — 검토해봤지만 영어 단어로 검색해서 한국어 뜻을 역으로 찾는 기능 자체가 없음(한국어 표제어 → 외국어 뜻 방향만 지원). 이 용도에는 부적합, 채택 안 함(2026-09 말)
 - Supabase에 테스트용으로만 배포하고 git에는 커밋하지 않은 임시 진단 Edge Function들이 남아있어요(삭제 API 없음, 무시해도 됨): `krdict-test`(KRDICT 검색 파라미터 테스트용), `dict-diag`(구글 번역 429 차단 여부 확인용). 둘 다 더 이상 앱에서 호출하지 않아요.
 
-**PWA(홈 화면에 추가) 지원(2026-09 말 추가)**: 포트폴리오 원장과 같은 방식으로 단어장도 PWA를 지원해요. `vocabulary-manifest.json`·`vocabulary-sw.js`를 추가하고, `vocabulary.html` `<head>`에 manifest 링크·`theme-color`(`#0f6e56`, 단어장 accent 색과 동일)·`apple-touch-icon`을 추가했어요. 아이콘 4종은 포트폴리오 원장 것을 그대로 재사용(새로 안 만듦). 사용자는 폰 브라우저에서 "홈 화면에 추가"하면 앱 아이콘으로 설치되고 전체화면(주소창 없이)으로 실행돼요. 스토어에 올라가는 정식 네이티브 앱은 아니고, 그러려면 Capacitor로 감싸서 로컬 환경(맥+Xcode 또는 Android Studio)에서 빌드해야 해요(8번 항목 참고, 포트폴리오 원장과 동일 후보).
+**PWA(홈 화면에 추가) 지원(2026-09 말 추가)**: 포트폴리오 원장과 같은 방식으로 단어장도 PWA를 지원해요. `vocabulary-manifest.json`·`vocabulary-sw.js`를 추가하고, `vocabulary.html` `<head>`에 manifest 링크·`theme-color`(`#0f6e56`, 단어장 accent 색과 동일)·`apple-touch-icon`을 추가했어요. 사용자는 폰 브라우저에서 "홈 화면에 추가"(PC 크롬/엣지에서는 "설치")하면 앱 아이콘으로 설치되고 전체화면(주소창 없이)으로 실행돼요. 스토어에 올라가는 정식 네이티브 앱은 아니고, 그러려면 Capacitor로 감싸서 로컬 환경(맥+Xcode 또는 Android Studio)에서 빌드해야 해요(8번 항목 참고, 포트폴리오 원장과 동일 후보).
+  - **단어장 전용 아이콘(2026-09 말 추가)**: 처음엔 포트폴리오 원장 아이콘을 그대로 재사용했는데, 사용자 요청으로 단어장만의 아이콘을 새로 만들었어요. `vocabulary-icon-192.png`/`vocabulary-icon-512.png`/`vocabulary-icon-512-maskable.png`/`vocabulary-apple-touch-icon.png` 4개 파일이고, 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자를 넣은 단순한 디자인이에요(Pillow로 생성). `vocabulary-manifest.json`의 `icons` 배열과 `vocabulary.html`의 `<link rel="icon">`/`<link rel="apple-touch-icon">`, `vocabulary-sw.js`의 캐싱 목록을 전부 이 새 파일명으로 갱신했고, 서비스워커 캐시 이름도 `vocabulary-shell-v2`로 올려서 기존에 캐시돼 있던 옛 아이콘(포트폴리오 원장 것)이 남지 않도록 했어요. 아이콘을 다시 바꾸고 싶으면 이 4개 파일만 교체하면 돼요(디자인 마음에 안 들면 언제든 다시 요청하세요).
 
 ## 9. 작업 시 유의사항
 
