@@ -336,7 +336,7 @@ function speakWithTts(word) {
 async function initBackend() {
   try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false, autoRefreshToken: true },
+      auth: { persistSession: true, autoRefreshToken: true },
     });
   } catch (e) {
     console.error('Supabase 초기화 실패:', e);
