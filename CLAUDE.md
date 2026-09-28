@@ -28,6 +28,7 @@
 | `dict-lookup.ts` | (선택) 단어장의 "뜻 자동조회" 기능용 Supabase Edge Function 소스. 구글 번역(비공식) 중계 서버, 키 발급 불필요. |
 | `vocabulary-manifest.json` | (2026-09 말 추가) 단어장 전용 PWA 매니페스트. `manifest.json`(포트폴리오 원장용)과 별개 파일 — 아이콘은 기존 4종을 그대로 재사용해요. |
 | `vocabulary-sw.js` | (2026-09 말 추가) 단어장 전용 PWA 서비스워커 (앱 셸 캐싱). `sw.js`(포트폴리오 원장용)와 같은 구조, 파일만 분리. |
+| `vocabulary-icon-192.png`, `vocabulary-icon-512.png`, `vocabulary-icon-512-maskable.png`, `vocabulary-apple-touch-icon.png` | (2026-09 말 추가) 단어장 전용 PWA 아이콘 4종. `icon-192.png` 등(포트폴리오 원장용)과 별개 파일 — 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자. |
 
 ## 3. 백엔드/외부 연동 설정값
 
@@ -111,7 +112,14 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
   - **(2026-09 말 변경) 발음기호(`phonetic`) 필드는 제거됐어요.** 대신 그 자리에 예문(`example`)을 넣었어요. 기존에 저장돼 있던 `phonetic` 값은 그냥 무시돼요(마이그레이션 불필요).
   - `audioUrl`은 dictionaryapi.dev가 제공하는 실제 발음 녹음 파일 주소(없을 수 있음, 2026-09 추가). 저장은 되지만 표시 컬럼은 없고 발음 듣기 버튼에서만 쓰여요.
   - `mastered`는 수동 토글 또는 시험에서 `correctStreak`가 `MASTER_STREAK`(기본 3)에 도달하면 자동으로 `true`가 돼요.
+  - `phrases` (jsonb 배열, 2026-09 말 추가, "생활영어" 탭용). 단어(`words`)와는 완전히 별개인 표현+번역 목록이에요. 항목당 `{id, phrase, translation, dateAdded, mastered, correctStreak, wrongCount, lastTestedDate}`. Supabase에 `alter table vocabulary_data add column phrases jsonb not null default '[]'::jsonb;`로 컬럼을 추가했어요.
+- **생활영어 탭(2026-09 말 추가, 네 번째 탭)**: 단어장과는 별개로 생활 회화 표현(문장)과 그 번역을 등록·관리하는 탭이에요. 등록 폼은 "생활영어"(표현)·"번역" 두 칸만 있어요. 목록 표 칼럼은 **생활영어 / 번역 / 등록일 / 연속정답 / 상태 / 듣기 / 수정·삭제**예요. "상태" 배지(외움/학습중)는 단어장과 동일하게 클릭해서 수동으로 토글할 수 있고(토글 시 `correctStreak`를 `MASTER_STREAK`로 채우거나 0으로 초기화), "수정" 버튼은 단어장의 수정 기능과 같은 패턴(폼에 값 채우고 "수정 완료"/"취소"로 전환, `editingPhraseId`로 추적)이에요.
+- **생활영어 주관식 문제(2026-09 말 추가, 다섯 번째 탭)**: 단어장의 "주관식 문제"와 동일한 방식을 생활영어에도 적용한 탭이에요. **번역(한국어)을 보여주고 생활영어 표현을 영어로 직접 입력**해서 맞혀요(대소문자 무시, 앞뒤 공백 제거 후 정확히 일치해야 정답). 등록된 생활영어 전체가 출제 범위고, 오답은 재출제되지만 **`correctStreak`/`mastered` 등 학습 기록에는 반영되지 않아요**(정답/오답 집계는 그 세션 안에서만 보여줌) — 생활영어 목록의 "상태"/"연속정답"은 여전히 목록에서 배지를 직접 눌러야만 바뀌어요.
+  - 구현: 퀴즈 엔진(`QUIZ_MODES`)을 일반화해서 `find`(id로 항목을 찾는 함수, 단어는 `words.find`·생활영어는 `phrases.find`)와, 주관식 모드용 `promptField`/`answerField`(무엇을 보여주고 무엇을 입력받을지 — 단어 주관식은 `meaning`→`word`, 생활영어 주관식은 `translation`→`phrase`)를 모드별로 설정하도록 바꿨어요. `renderTypedQuestion`/`answerTypedQuiz`가 이 필드명을 참조해서 두 주관식 모드(단어/생활영어)가 같은 코드를 공유해요. 새 주관식류 탭을 추가할 땐 이 패턴(`find`/`promptField`/`answerField`)을 재사용하면 돼요.
+  - **번역 자동채움(2026-09 말 추가)**: 표현 칸을 입력하고 다른 칸으로 이동(blur)하면, 번역 칸이 비어있을 때만 자동으로 한국어 번역을 채워요. 단어장의 "예문 직접 수정 시 번역" 기능과 동일하게 `dict-lookup` Edge Function의 `text` 모드(사전 조회 없이 순수 번역만)를 재사용해요(`translateExampleText()`/`autoTranslatePhrase()`). 등록/수정 버튼도 이 번역이 끝날 때까지(최대 `DICT_FETCH_TIMEOUT_MS`) 기다려요.
+  - **발음 듣기(2026-09 말 추가)**: 목록의 "듣기" 버튼이 단어장과 같은 `speak()` 함수를 호출해요. 생활영어 표현에는 `audioUrl`이 없어서 항상 브라우저 내장 Web Speech API(`speechSynthesis`)로 읽어줘요.
 - **오늘의 시험 로직**: `mastered=false`인 단어 전체가 그날의 출제 범위. 4지선다 객관식(단어 → 뜻 고르기). 오답은 같은 시험 세션 안에서 뒤로 재배치되어 다시 나오고, 정답을 맞히면 `correctStreak`가 올라가며 `MASTER_STREAK`회 연속 정답 시 자동으로 "외운 단어" 처리돼요. 오답 시 `correctStreak`는 0으로 초기화돼요.
+- **주관식 문제(2026-09 말 추가, 세 번째 탭)**: "오늘의 시험" 탭 옆에 새로 추가된 탭. (처음엔 "주간 퀴즈"라는 이름으로 최근 7일 등록 단어 대상 객관식으로 만들었었는데, 사용자가 원한 건 "주간"이 아니라 "주관식"이었음을 확인하고 뜻→단어 직접 입력 방식으로 다시 구현함.) **등록된 단어 전체**(외운 단어 포함)가 출제 범위이고, 단어가 아니라 **뜻을 보여주고 사용자가 영어 단어를 직접 입력**해서 맞히는 주관식(단답형) 문제예요. 입력값은 앞뒤 공백 제거 + 대소문자 무시하고 정확히 일치해야 정답 처리돼요. "오늘의 시험"과 오답 재출제·다음 문제 진행 로직은 공용 엔진(`QUIZ_MODES`)을 같이 쓰지만(`interaction: 'typed'`로 구분), **`correctStreak`·`mastered` 등 학습 기록에는 전혀 반영되지 않는 독립된 철자 연습**이에요(정답/오답 집계는 그 퀴즈 세션 안에서만 보여주고 저장되지 않음).
 - **사전 자동조회(품사·뜻·예문, 선택 기능, 2026-09 확장, 2026-09 말 대대적 개편)**: 단어 등록 폼에서 **단어 입력 후 다른 칸으로 포커스를 옮기면(blur) 자동으로** 품사·뜻·예문을 채워요. 언어 아이콘 버튼(`wf-dict-btn`)으로 언제든 수동 재조회도 가능해요.
   - **(2026-09 말) 발음기호 필드는 없앴고, 그 자리에 예문 필드를 넣었어요.** 예문은 dictionaryapi.dev의 정의(definition)에 달린 실제 예문 문장을 그대로 가져와요.
   - **품사가 자주 비어있던 버그 두 가지 수정(2026-09 말)**:
@@ -126,6 +134,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
   - **품사 대체(fallback) 소스: Datamuse API(2026-09 말 추가, api.datamuse.com, 가입·키 불필요)**: dictionaryapi.dev가 예고 없이 다운되는 일이 실제로 있었어요(직접 겪은 사례: Cloudflare 522 장애로 **하루 넘게** 응답 자체가 안 됨 — 우리 코드 문제 아니라 그 사이트 자체 장애였음, `dict-diag`로 직접 확인). dictionaryapi.dev에서 품사를 못 가져오면 `fetchPosViaDatamuse()`가 한 번 더 품사만 조회해요.
   - **예문 대체(fallback) 소스: Tatoeba(2026-09 말 추가, tatoeba.org, 가입·키 불필요)**: dictionaryapi.dev 장애가 하루 넘게 이어지는 걸 직접 겪고 나서 추가했어요. dictionaryapi.dev에서 예문을 못 가져오면 `fetchExampleViaTatoeba()`가 실제 사람들이 작성한 예문 문장 데이터베이스(Tatoeba)에서 그 단어가 쓰인 문장을 검색해 대신 써요(`https://tatoeba.org/eng/api_v0/search?from=eng&query=...`). 이 덕분에 dictionaryapi.dev가 죽어있어도 뜻·품사·예문 전부 계속 채워져요(테스트로 확인: elephant → "Elephants trumpet." 예문이 Tatoeba에서 정상적으로 채워짐). dictionaryapi.dev가 복구되면 다시 그쪽이 우선순위를 가져가요(항상 dictionaryapi.dev를 먼저 시도하고, 실패했을 때만 대체 소스로 넘어가는 구조).
   - **예문의 한국어 해설 → 메모 자동채움(2026-09 말 추가)**: dictionaryapi.dev에서 예문을 찾으면, 서버가 그 예문을 같은 번역 소스(Papago/MyMemory/구글)로 한 번 더 번역해서 `exampleKo` 필드로 돌려줘요. 클라이언트는 **메모 칸이 비어있을 때만** 이 값을 자동으로 채워요(사용자가 이미 메모를 적어뒀으면 덮어쓰지 않음).
+  - **예문을 직접 입력/수정했을 때도 메모 자동 번역(2026-09 말 추가)**: 위 항목은 단어 조회로 자동 채워진 예문에만 적용됐는데, 사용자가 등록 폼의 예문 칸을 **직접 입력·수정**하고 다른 칸으로 포커스를 옮겨도(blur) 그 예문을 번역해서 메모에 채워줘요(메모가 비어있을 때만, 단어 조회 때와 동일한 규칙). `dict-lookup` Edge Function에 `word` 대신 `text` 쿼리 파라미터를 넘기면 사전 조회는 건너뛰고 `translate()`만 호출해서 순수 번역 결과만 돌려주는 모드를 추가했어요(`dict-lookup.ts` 버전 16). 클라이언트는 `translateExampleText()`/`autoTranslateExample()`가 이 모드를 호출하고, `wf-example` 필드에 별도 blur 리스너를 달았어요. 같은 예문을 반복 번역하지 않도록 `lastTranslatedExample`로 추적하고, 등록/수정 버튼도 이 번역이 끝날 때까지(최대 `DICT_FETCH_TIMEOUT_MS`) 기다려요(단어 조회 때와 같은 안전장치).
   - **클라이언트 타임아웃 15초(`DICT_FETCH_TIMEOUT_MS`, 2026-09 말 최종 조정)**: 뜻 번역 → 사전 조회 → 예문 번역이 순차로 이어지는 구조라 병렬일 때보다 느려요. 서버 쪽 외부 호출 타임아웃(`FETCH_TIMEOUT_MS`=8초, 예문 번역=5초)까지 감안해서 여유 있게 15초로 잡았어요. 이 타임아웃을 줄이면 응답이 오기 전에 등록 버튼이 조회를 포기해버릴 수 있으니 주의하세요.
   - Papago Secrets이 없던 시절 안내했던 "가입이나 API 키, Secrets 설정이 전혀 필요 없다"는 문구는 더 이상 최신 상태가 아니에요 — 지금은 Papago Secrets이 등록되어 있어요. 다만 Papago Secrets을 지워도 MyMemory로 자동 대체되어 앱은 계속 동작해요(가입 불필요 경로는 여전히 살아있음).
   - 옛 네이버 Papago 기반 `papago-lookup` Edge Function(별도 함수, 예전 openapi.naver.com 방식)은 더 이상 호출하지 않지만 Supabase에 남아있어요(삭제 API 없음) — 무시해도 돼요. Papago 지원은 이제 `dict-lookup` 안에 통합돼 있어요.
@@ -141,6 +150,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - **발음 듣기(스피커 버튼, 2026-09 추가, 2026-09 말 위치 조정)**: **단어장 목록 표에만** 있어요(등록 폼에는 없음 — 등록 전 단어까지 들을 필요는 적다는 사용자 피드백으로 폼에서는 제거). `speak(word, audioUrl)` 함수가 ① `audioUrl`(dictionaryapi.dev의 실제 녹음)이 있으면 그걸 재생하고, ② 없거나 재생 실패하면 브라우저 내장 Web Speech API(`speechSynthesis`, 무료·키 불필요, 인터넷 연결 없이도 되는 브라우저도 있음)로 대체해요. iOS Safari 등 일부 브라우저는 첫 재생에 사용자 제스처가 필요할 수 있어요(버튼 클릭이라 문제 없음).
 - **아이콘 폰트 의존 지양(2026-09 말 변경)**: tabler-icons 웹폰트가 사용자 환경에 따라 로드되지 않아 버튼이 빈 상자로 보이는 문제가 반복돼서, 단어장의 핵심 버튼(발음 듣기·삭제·사전 다시조회)은 아이콘 대신 **눈에 보이는 텍스트(또는 이모지)**로 표시해요 — 폰트 로드 여부와 무관하게 항상 보여요. 새 버튼을 추가할 때도 이 원칙을 따라주세요.
 - 단어명 자동완성(`word-datalist`), 검색, 체크박스 다중선택+일괄삭제 등은 포트폴리오 원장과 같은 UI 패턴을 재사용했어요.
+- **단어 목록 수정 기능(2026-09 말 추가)**: 목록 표의 각 행에 "수정" 버튼이 추가됐어요(삭제 버튼 왼쪽). 누르면 위쪽 "단어 등록" 폼에 그 단어의 값(단어/품사/분사/예문/뜻/메모)이 채워지고 폼이 "단어 수정" 모드로 바뀌어요(제목·등록 버튼 텍스트가 "수정 완료"로 바뀌고, "취소" 버튼이 나타남). `editingId`(전역 변수)로 어떤 단어를 수정 중인지 추적하고, 그 상태에서 "수정 완료"를 누르면 새로 추가하는 대신 해당 단어를 덮어써요(`mastered`/`correctStreak`/`wrongCount` 등 학습 기록 필드는 그대로 유지). "취소"를 누르거나 수정 중인 단어를 삭제하면 폼이 등록 모드로 초기화돼요.
 
 ## 11. 확인이 필요한 미해결 항목 (단어장)
 
@@ -148,7 +158,8 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - [x] ~~국립국어원 KRDICT 오픈 API로 뜻 조회 대체~~ — 검토해봤지만 영어 단어로 검색해서 한국어 뜻을 역으로 찾는 기능 자체가 없음(한국어 표제어 → 외국어 뜻 방향만 지원). 이 용도에는 부적합, 채택 안 함(2026-09 말)
 - Supabase에 테스트용으로만 배포하고 git에는 커밋하지 않은 임시 진단 Edge Function들이 남아있어요(삭제 API 없음, 무시해도 됨): `krdict-test`(KRDICT 검색 파라미터 테스트용), `dict-diag`(구글 번역 429 차단 여부 확인용). 둘 다 더 이상 앱에서 호출하지 않아요.
 
-**PWA(홈 화면에 추가) 지원(2026-09 말 추가)**: 포트폴리오 원장과 같은 방식으로 단어장도 PWA를 지원해요. `vocabulary-manifest.json`·`vocabulary-sw.js`를 추가하고, `vocabulary.html` `<head>`에 manifest 링크·`theme-color`(`#0f6e56`, 단어장 accent 색과 동일)·`apple-touch-icon`을 추가했어요. 아이콘 4종은 포트폴리오 원장 것을 그대로 재사용(새로 안 만듦). 사용자는 폰 브라우저에서 "홈 화면에 추가"하면 앱 아이콘으로 설치되고 전체화면(주소창 없이)으로 실행돼요. 스토어에 올라가는 정식 네이티브 앱은 아니고, 그러려면 Capacitor로 감싸서 로컬 환경(맥+Xcode 또는 Android Studio)에서 빌드해야 해요(8번 항목 참고, 포트폴리오 원장과 동일 후보).
+**PWA(홈 화면에 추가) 지원(2026-09 말 추가)**: 포트폴리오 원장과 같은 방식으로 단어장도 PWA를 지원해요. `vocabulary-manifest.json`·`vocabulary-sw.js`를 추가하고, `vocabulary.html` `<head>`에 manifest 링크·`theme-color`(`#0f6e56`, 단어장 accent 색과 동일)·`apple-touch-icon`을 추가했어요. 사용자는 폰 브라우저에서 "홈 화면에 추가"(PC 크롬/엣지에서는 "설치")하면 앱 아이콘으로 설치되고 전체화면(주소창 없이)으로 실행돼요. 스토어에 올라가는 정식 네이티브 앱은 아니고, 그러려면 Capacitor로 감싸서 로컬 환경(맥+Xcode 또는 Android Studio)에서 빌드해야 해요(8번 항목 참고, 포트폴리오 원장과 동일 후보).
+  - **단어장 전용 아이콘(2026-09 말 추가)**: 처음엔 포트폴리오 원장 아이콘을 그대로 재사용했는데, 사용자 요청으로 단어장만의 아이콘을 새로 만들었어요. `vocabulary-icon-192.png`/`vocabulary-icon-512.png`/`vocabulary-icon-512-maskable.png`/`vocabulary-apple-touch-icon.png` 4개 파일이고, 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자를 넣은 단순한 디자인이에요(Pillow로 생성). `vocabulary-manifest.json`의 `icons` 배열과 `vocabulary.html`의 `<link rel="icon">`/`<link rel="apple-touch-icon">`, `vocabulary-sw.js`의 캐싱 목록을 전부 이 새 파일명으로 갱신했고, 서비스워커 캐시 이름도 `vocabulary-shell-v2`로 올려서 기존에 캐시돼 있던 옛 아이콘(포트폴리오 원장 것)이 남지 않도록 했어요. 아이콘을 다시 바꾸고 싶으면 이 4개 파일만 교체하면 돼요(디자인 마음에 안 들면 언제든 다시 요청하세요).
 
 ## 9. 작업 시 유의사항
 
