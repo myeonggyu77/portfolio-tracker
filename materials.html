@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>자재관리</title>
+
+<!-- PWA(홈 화면에 추가) 설정 — 단어장(vocabulary-*)과 같은 구조, 자재관리 전용 파일을 따로 써요. -->
+<link rel="manifest" href="./materials-manifest.json">
+<meta name="theme-color" content="#b4530a">
+<link rel="icon" href="./materials-icon-192.png">
+<link rel="apple-touch-icon" href="./materials-apple-touch-icon.png">
+
+<style>
+  :root {
+    --ink: #221c16;
+    --ink-soft: #5e554b;
+    --ink-faint: #928878;
+    --paper: #fbf9f5;
+    --paper-raised: #ffffff;
+    --line: #ddd6ca;
+    --line-soft: #eee9e0;
+    --accent: #b4530a;
+    --accent-soft: #fbe9d9;
+    --accent-tint: #fdf5ee;
+    --down: #a32d2d;
+    --down-soft: #fcebeb;
+    --mono: 'SF Mono', ui-monospace, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-text-size-adjust: 100%; }
+  .app { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+  .masthead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--ink); }
+  .masthead h1 { font-size: 19px; font-weight: 600; margin: 0; white-space: nowrap; }
+  .masthead .sub { font-size: 12px; color: var(--ink-faint); font-family: var(--mono); }
+  .masthead-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 18px; }
+  .kpi { background: var(--paper-raised); padding: 12px 14px; }
+  .kpi .lbl { font-size: 11px; color: var(--ink-faint); margin-bottom: 4px; white-space: nowrap; }
+  .kpi .val { font-family: var(--mono); font-size: 18px; font-weight: 600; }
+  .kpi .val.accent { color: var(--accent); }
+
+  button.primary-btn { font-family: var(--sans); font-size: 14px; font-weight: 500; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 4px; padding: 9px 16px; cursor: pointer; white-space: nowrap; }
+  button.primary-btn:hover { background: #000; }
+  button.primary-btn:disabled { opacity: 0.4; cursor: default; }
+  button.ghost-btn { font-family: var(--sans); font-size: 13px; background: var(--paper-raised); color: var(--ink-soft); border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px; cursor: pointer; white-space: nowrap; }
+  button.ghost-btn:hover { background: var(--line-soft); }
+  button.ghost-btn.danger { color: var(--down); border-color: #f0c7c7; }
+  button.ghost-btn.danger:hover { background: var(--down-soft); }
+  button.accent-btn { font-family: var(--sans); font-size: 14px; font-weight: 600; background: var(--accent); color: #fff; border: 1px solid var(--accent); border-radius: 4px; padding: 9px 16px; cursor: pointer; white-space: nowrap; }
+  button.accent-btn:hover { filter: brightness(0.93); }
+
+  .form-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin-bottom: 18px; }
+  .form-card h3 { font-size: 14px; font-weight: 600; margin: 0 0 12px; }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 10px; }
+  .field-lbl { font-size: 11px; color: var(--ink-faint); margin-bottom: 4px; }
+  input, select, textarea { font-family: var(--sans); font-size: 16px; border: 1px solid var(--line); border-radius: 4px; padding: 0 10px; background: var(--paper); color: var(--ink); width: 100%; }
+  input, select { height: 40px; }
+  textarea { padding: 10px; min-height: 70px; resize: vertical; line-height: 1.5; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .form-error { font-size: 13px; color: var(--down); margin-bottom: 8px; white-space: pre-line; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+  /* 사진 등록 영역 */
+  .photo-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .photo-thumb { position: relative; width: 88px; height: 88px; border-radius: 5px; overflow: hidden; border: 1px solid var(--line); background: var(--line-soft); }
+  .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-thumb .rm { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; border: none; background: rgba(0,0,0,0.65); color: #fff; font-size: 15px; line-height: 24px; text-align: center; cursor: pointer; padding: 0; }
+  .photo-add { width: 88px; height: 88px; border: 1.5px dashed var(--ink-faint); border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: var(--ink-soft); cursor: pointer; background: var(--paper); text-align: center; gap: 2px; }
+  .photo-add:hover { border-color: var(--accent); color: var(--accent); }
+  .photo-add .plus { font-size: 26px; line-height: 1; }
+  .photo-hint { font-size: 11px; color: var(--ink-faint); margin: -4px 0 12px; }
+
+  /* 목록 툴바 / 필터 */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .toolbar .search { flex: 1 1 220px; }
+  .toolbar select { flex: 0 1 160px; }
+  .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .view-toggle button { font-family: var(--sans); font-size: 13px; border: none; background: var(--paper-raised); color: var(--ink-soft); padding: 9px 12px; cursor: pointer; }
+  .view-toggle button.active { background: var(--ink); color: var(--paper); }
+  .result-count { font-size: 12px; color: var(--ink-faint); margin-bottom: 10px; }
+
+  /* 카드 보기 */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+  .card-photo { position: relative; aspect-ratio: 4 / 3; background: var(--line-soft); cursor: pointer; }
+  .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .card-photo .no-photo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 13px; cursor: default; }
+  .card-photo .count { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; font-family: var(--mono); }
+  .card-body { padding: 12px 14px; flex: 1; }
+  .card-path { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+  .card-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; word-break: keep-all; overflow-wrap: anywhere; }
+  .card-row { display: flex; gap: 8px; font-size: 13px; padding: 3px 0; }
+  .card-row .k { color: var(--ink-faint); width: 48px; flex-shrink: 0; }
+  .card-row .v { overflow-wrap: anywhere; white-space: pre-wrap; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; padding: 8px 14px 12px; }
+  .card-foot .date { font-size: 11px; color: var(--ink-faint); font-family: var(--mono); }
+  .card-foot .btns { display: flex; gap: 6px; }
+  button.small-btn { font-family: var(--sans); font-size: 12px; background: none; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; padding: 6px 11px; color: var(--ink-soft); }
+  button.small-btn:hover { background: var(--line-soft); color: var(--ink); }
+  button.small-btn.danger { color: var(--down); border-color: #f0c7c7; }
+  button.small-btn.danger:hover { background: var(--down-soft); }
+
+  /* 표 보기 */
+  .overflow-x { overflow: auto; max-height: 75vh; border: 1px solid var(--line); border-radius: 6px; background: var(--paper-raised); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; font-size: 11px; color: var(--ink-faint); font-weight: 500; padding: 9px 8px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); z-index: 2; white-space: nowrap; }
+  tbody td { padding: 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  tbody tr:hover { background: var(--accent-tint); }
+  td.thumb-cell img { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; display: block; cursor: pointer; }
+  td.wrap { white-space: pre-wrap; min-width: 140px; max-width: 260px; overflow-wrap: anywhere; }
+  td.nowrap { white-space: nowrap; }
+  td.actions { white-space: nowrap; text-align: right; }
+
+  .empty { text-align: center; padding: 50px 0; color: var(--ink-faint); font-size: 14px; }
+
+  /* 사진 크게 보기 */
+  .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9500; display: none; align-items: center; justify-content: center; }
+  .lightbox.open { display: flex; }
+  .lightbox img { max-width: 94vw; max-height: 84vh; object-fit: contain; }
+  .lightbox .lb-btn { position: absolute; background: rgba(255,255,255,0.15); color: #fff; border: none; font-size: 28px; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; }
+  .lightbox .lb-prev { left: 12px; top: 50%; transform: translateY(-50%); }
+  .lightbox .lb-next { right: 12px; top: 50%; transform: translateY(-50%); }
+  .lightbox .lb-close { right: 12px; top: 12px; font-size: 22px; }
+  .lightbox .lb-counter { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: #fff; font-family: var(--mono); font-size: 13px; }
+
+  .toast-wrap { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .toast { font-size: 13px; padding: 10px 16px; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); max-width: 90vw; text-align: center; }
+  .toast.error { background: #fcebeb; color: #a32d2d; border: 1px solid #f0c7c7; }
+  .toast.success { background: var(--accent-soft); color: var(--accent); border: 1px solid #efc9a8; }
+  .toast.info { background: var(--paper-raised); color: var(--ink-soft); border: 1px solid var(--line); }
+
+  .login-overlay { position: fixed; inset: 0; background: var(--paper); z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .login-card { width: 100%; max-width: 340px; background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 28px 26px; }
+  .login-card h2 { font-size: 18px; font-weight: 700; margin: 0 0 4px; text-align: center; }
+  .login-card .login-sub { font-size: 12px; color: var(--ink-faint); text-align: center; margin: 0 0 20px; }
+  .login-card .field { margin-bottom: 14px; }
+  .login-card .login-note { font-size: 11px; color: var(--ink-faint); text-align: center; margin-top: 16px; line-height: 1.5; }
+
+  .busy-overlay { position: fixed; inset: 0; background: rgba(251,249,245,0.8); z-index: 9400; display: none; align-items: center; justify-content: center; font-size: 14px; color: var(--ink-soft); }
+  .busy-overlay.open { display: flex; }
+
+  @media (max-width: 600px) {
+    .app { padding: 16px 12px 50px; }
+    .toolbar select { flex: 1 1 45%; }
+    .form-actions button { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+<datalist id="process-datalist"></datalist>
+<datalist id="subprocess-datalist"></datalist>
+<datalist id="material-datalist"></datalist>
+<datalist id="vendor-datalist"></datalist>
+
+<div class="login-overlay" id="login-overlay" style="display:none;">
+  <div class="login-card">
+    <h2>자재관리</h2>
+    <p class="login-sub">로그인 후 이용해 주세요.</p>
+    <div class="field"><div class="field-lbl">이메일</div><input type="email" id="login-email" autocomplete="username" /></div>
+    <div class="field"><div class="field-lbl">비밀번호</div><input type="password" id="login-password" autocomplete="current-password" /></div>
+    <div class="form-error" id="login-error" style="display:none;"></div>
+    <button class="primary-btn" id="login-submit-btn" style="width:100%; height:42px;">로그인</button>
+    <p class="login-note">포트폴리오 원장·단어장과 같은 계정으로 로그인해요.</p>
+  </div>
+</div>
+
+<div class="login-overlay" id="backend-error" style="display:none;">
+  <div class="login-card">
+    <h2>연결할 수 없어요</h2>
+    <p class="login-sub">서버(Supabase)에 연결하지 못했어요.</p>
+    <button class="primary-btn" id="backend-retry-btn" style="width:100%; height:42px;">다시 시도</button>
+  </div>
+</div>
+
+<div class="busy-overlay" id="busy-overlay"><span id="busy-text">저장 중...</span></div>
+
+<div class="lightbox" id="lightbox">
+  <img id="lb-img" alt="자재 사진" />
+  <button class="lb-btn lb-prev" id="lb-prev" aria-label="이전">‹</button>
+  <button class="lb-btn lb-next" id="lb-next" aria-label="다음">›</button>
+  <button class="lb-btn lb-close" id="lb-close" aria-label="닫기">✕</button>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<div class="app" id="main-app" style="display:none;">
+  <div class="masthead">
+    <h1>자재관리</h1>
+    <div class="masthead-right">
+      <span class="sub" id="today-label"></span>
+      <button class="ghost-btn" id="refresh-btn">새로고침</button>
+      <button class="ghost-btn" id="logout-btn">로그아웃</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="lbl">등록 자재</div><div class="val" id="kpi-total">0</div></div>
+    <div class="kpi"><div class="lbl">공정 수</div><div class="val accent" id="kpi-process">0</div></div>
+    <div class="kpi"><div class="lbl">업체 수</div><div class="val accent" id="kpi-vendor">0</div></div>
+    <div class="kpi"><div class="lbl">사진</div><div class="val" id="kpi-photos">0</div></div>
+  </div>
+
+  <div class="form-card" id="form-card">
+    <h3 id="form-title">자재 등록</h3>
+
+    <div class="field-lbl">사진 (여러 장 가능)</div>
+    <div class="photo-picker" id="photo-picker"></div>
+    <p class="photo-hint">폰·탭에서는 카메라로 바로 찍거나 앨범에서 여러 장을 한 번에 고를 수 있어요. 사진은 자동으로 적당한 크기로 줄여서 저장돼요.</p>
+    <input type="file" id="photo-input" accept="image/*" multiple style="display:none;" />
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" />
+
+    <div class="form-grid">
+      <div><div class="field-lbl">공정</div><input id="f-process" list="process-datalist" autocomplete="off" placeholder="예: 배관" /></div>
+      <div><div class="field-lbl">세부공정</div><input id="f-subprocess" list="subprocess-datalist" autocomplete="off" placeholder="예: 급수배관" /></div>
+      <div><div class="field-lbl">자재명 *</div><input id="f-material" list="material-datalist" autocomplete="off" placeholder="예: PPC 엘보 90°" /></div>
+      <div><div class="field-lbl">피팅값</div><input id="f-fitting" autocomplete="off" placeholder="예: 25A / 1&quot;" /></div>
+      <div><div class="field-lbl">업체</div><input id="f-vendor" list="vendor-datalist" autocomplete="off" placeholder="예: ○○상사" /></div>
+    </div>
+    <div style="margin-bottom:10px;"><div class="field-lbl">메모</div><textarea id="f-memo" placeholder="수량, 단가, 설치 위치 등 자유롭게"></textarea></div>
+
+    <div class="form-error" id="form-error" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="ghost-btn" id="cancel-edit-btn" style="display:none;">취소</button>
+      <button class="ghost-btn" id="clear-form-btn">입력 비우기</button>
+      <button class="accent-btn" id="save-btn">등록</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, 업체, 메모 등)" autocomplete="off" />
+    <select id="filter-process"><option value="">공정 전체</option></select>
+    <select id="filter-subprocess"><option value="">세부공정 전체</option></select>
+    <select id="filter-vendor"><option value="">업체 전체</option></select>
+    <select id="sort-select">
+      <option value="new">최신 등록순</option>
+      <option value="old">오래된순</option>
+      <option value="process">공정순</option>
+      <option value="name">자재명순</option>
+    </select>
+    <div class="view-toggle">
+      <button id="view-card" class="active">카드</button>
+      <button id="view-table">표</button>
+    </div>
+    <button class="ghost-btn" id="csv-btn">CSV 다운로드</button>
+  </div>
+  <div class="result-count" id="result-count"></div>
+  <div id="list-area"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+
+// ============================================================
+// BACKEND CONFIG — 포트폴리오 원장·단어장과 같은 Supabase 프로젝트를 그대로 사용해요.
+// 데이터: public.materials 테이블(자재 1개 = 1행), 사진: Storage 'material-photos' 버킷(비공개)
+// ============================================================
+const SUPABASE_URL = 'https://kcmqzinekvikpmlxkdxf.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rZ6bmiQGScI6YewuRg_5aw_PijLpbkl';
+const PHOTO_BUCKET = 'material-photos';
+const PHOTO_MAX_DIM = 1600;   // 원본 사진은 긴 변 기준 이 크기로 줄여서 저장
+const THUMB_MAX_DIM = 400;    // 목록용 썸네일
+const SIGNED_URL_TTL = 60 * 60 * 6; // 비공개 사진을 보여주는 임시 주소 유효시간(초)
+
+let supabaseClient = null;
+let items = [];            // {id, process, sub_process, material_name, fitting, vendor, memo, photos:[{path, thumb}], created_at, updated_at}
+let editingId = null;      // 수정 중인 자재 id (null이면 새 등록 모드)
+let formPhotos = [];       // 폼에 올라간 사진. 기존: {path, thumb}, 새로 추가: {file, previewUrl}
+let removedPhotos = [];    // 수정 중 삭제한 기존 사진 (저장 시 Storage에서도 지움)
+let viewMode = 'card';
+const signedUrlCache = new Map(); // path -> {url, expires}
+let realtimeChannel = null;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+
+function showToast(message, type = 'info', duration = 4000) {
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = message;
+  wrap.appendChild(el);
+  setTimeout(() => { el.remove(); }, duration);
+}
+function setBusy(on, text = '저장 중...') {
+  document.getElementById('busy-text').textContent = text;
+  document.getElementById('busy-overlay').classList.toggle('open', on);
+}
+
+// ---------- Backend ----------
+async function initBackend() {
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true },
+    });
+  } catch (e) {
+    console.error('Supabase 초기화 실패:', e);
+    showToast('서버(Supabase) 연결에 실패했어요.', 'error', 8000);
+  }
+}
+
+async function fetchAndRenderData() {
+  try {
+    const { data, error } = await supabaseClient.from('materials').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    items = data || [];
+    items.forEach(it => { if (!Array.isArray(it.photos)) it.photos = []; });
+  } catch (e) {
+    console.error(e);
+    showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
+  }
+  await ensureSignedUrls(items.flatMap(it => it.photos.map(p => p.thumb)));
+  renderAll();
+}
+
+// 다른 기기(폰/탭/PC)에서 등록·수정·삭제하면 이 화면에도 자동으로 반영돼요.
+function subscribeRealtime() {
+  if (realtimeChannel) return;
+  let timer = null;
+  realtimeChannel = supabaseClient
+    .channel('materials-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'materials' }, () => {
+      clearTimeout(timer);
+      timer = setTimeout(fetchAndRenderData, 400);
+    })
+    .subscribe();
+}
+
+// ---------- 사진: 축소 → 업로드 → 임시주소 ----------
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽을 수 없어요')); };
+    img.src = url;
+  });
+}
+async function resizeToJpeg(img, maxDim, quality) {
+  const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+  const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return new Promise((resolve, reject) => canvas.toBlob(b => b ? resolve(b) : reject(new Error('변환 실패')), 'image/jpeg', quality));
+}
+async function uploadPhoto(file) {
+  const img = await loadImage(file);
+  const [full, thumb] = await Promise.all([resizeToJpeg(img, PHOTO_MAX_DIM, 0.85), resizeToJpeg(img, THUMB_MAX_DIM, 0.75)]);
+  const base = `${new Date().toISOString().slice(0, 7)}/${uid()}`;
+  const path = `${base}.jpg`, thumbPath = `${base}_t.jpg`;
+  const bucket = supabaseClient.storage.from(PHOTO_BUCKET);
+  const r1 = await bucket.upload(path, full, { contentType: 'image/jpeg' });
+  if (r1.error) throw r1.error;
+  const r2 = await bucket.upload(thumbPath, thumb, { contentType: 'image/jpeg' });
+  if (r2.error) { await bucket.remove([path]); throw r2.error; }
+  return { path, thumb: thumbPath };
+}
+async function removePhotoFiles(photos) {
+  const paths = photos.flatMap(p => [p.path, p.thumb]).filter(Boolean);
+  if (!paths.length) return;
+  const { error } = await supabaseClient.storage.from(PHOTO_BUCKET).remove(paths);
+  if (error) console.error('사진 삭제 실패:', error);
+}
+async function ensureSignedUrls(paths) {
+  const now = Date.now();
+  const need = [...new Set(paths.filter(p => p && !(signedUrlCache.get(p)?.expires > now + 60000)))];
+  for (let i = 0; i < need.length; i += 100) {
+    const chunk = need.slice(i, i + 100);
+    const { data, error } = await supabaseClient.storage.from(PHOTO_BUCKET).createSignedUrls(chunk, SIGNED_URL_TTL);
+    if (error) { console.error('사진 주소 발급 실패:', error); continue; }
+    (data || []).forEach(d => { if (d.signedUrl) signedUrlCache.set(d.path, { url: d.signedUrl, expires: now + SIGNED_URL_TTL * 1000 }); });
+  }
+}
+function urlOf(path) { return signedUrlCache.get(path)?.url || ''; }
+
+// ---------- 등록 폼 ----------
+const $ = (id) => document.getElementById(id);
+
+function renderPhotoPicker() {
+  const picker = $('photo-picker');
+  picker.innerHTML = formPhotos.map((p, i) => {
+    const src = p.previewUrl || urlOf(p.thumb);
+    return `<div class="photo-thumb"><img src="${esc(src)}" alt="" /><button class="rm" data-i="${i}" aria-label="사진 빼기">×</button></div>`;
+  }).join('') +
+    `<button type="button" class="photo-add" id="photo-add-btn"><span class="plus">+</span>사진 추가</button>` +
+    `<button type="button" class="photo-add" id="camera-add-btn"><span class="plus">📷</span>바로 촬영</button>`;
+  picker.querySelectorAll('.rm').forEach(btn => btn.addEventListener('click', () => {
+    const p = formPhotos.splice(Number(btn.dataset.i), 1)[0];
+    if (p.previewUrl) URL.revokeObjectURL(p.previewUrl);
+    else removedPhotos.push(p);
+    renderPhotoPicker();
+  }));
+  $('photo-add-btn').addEventListener('click', () => $('photo-input').click());
+  $('camera-add-btn').addEventListener('click', () => $('camera-input').click());
+}
+function addFiles(fileList) {
+  for (const f of fileList) {
+    if (!f.type.startsWith('image/')) continue;
+    formPhotos.push({ file: f, previewUrl: URL.createObjectURL(f) });
+  }
+  renderPhotoPicker();
+}
+$('photo-input').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+$('camera-input').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
+
+// PC에서는 사진 파일을 폼 위로 끌어다 놓아도 등록돼요.
+$('form-card').addEventListener('dragover', (e) => { e.preventDefault(); });
+$('form-card').addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
+
+function resetForm() {
+  formPhotos.forEach(p => { if (p.previewUrl) URL.revokeObjectURL(p.previewUrl); });
+  editingId = null;
+  formPhotos = [];
+  removedPhotos = [];
+  ['f-process', 'f-subprocess', 'f-material', 'f-fitting', 'f-vendor', 'f-memo'].forEach(id => { $(id).value = ''; });
+  $('form-error').style.display = 'none';
+  $('form-title').textContent = '자재 등록';
+  $('save-btn').textContent = '등록';
+  $('cancel-edit-btn').style.display = 'none';
+  renderPhotoPicker();
+}
+
+function startEdit(id) {
+  const it = items.find(x => x.id === id);
+  if (!it) return;
+  resetForm();
+  editingId = id;
+  $('f-process').value = it.process;
+  $('f-subprocess').value = it.sub_process;
+  $('f-material').value = it.material_name;
+  $('f-fitting').value = it.fitting;
+  $('f-vendor').value = it.vendor;
+  $('f-memo').value = it.memo;
+  formPhotos = it.photos.map(p => ({ ...p }));
+  $('form-title').textContent = '자재 수정';
+  $('save-btn').textContent = '수정 완료';
+  $('cancel-edit-btn').style.display = 'inline-block';
+  renderPhotoPicker();
+  $('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function saveForm() {
+  const errEl = $('form-error');
+  errEl.style.display = 'none';
+  const record = {
+    process: $('f-process').value.trim(),
+    sub_process: $('f-subprocess').value.trim(),
+    material_name: $('f-material').value.trim(),
+    fitting: $('f-fitting').value.trim(),
+    vendor: $('f-vendor').value.trim(),
+    memo: $('f-memo').value.trim(),
+  };
+  if (!record.material_name) {
+    errEl.textContent = '자재명을 입력해 주세요.';
+    errEl.style.display = 'block';
+    $('f-material').focus();
+    return;
+  }
+
+  const newOnes = formPhotos.filter(p => p.file);
+  const uploaded = []; // 이번에 새로 올린 사진 (저장 실패 시 되돌리기용)
+  try {
+    const photos = [];
+    let done = 0;
+    for (const p of formPhotos) {
+      if (p.file) {
+        setBusy(true, `사진 올리는 중... (${done + 1}/${newOnes.length})`);
+        const up = await uploadPhoto(p.file);
+        uploaded.push(up);
+        photos.push(up);
+        done++;
+      } else {
+        photos.push({ path: p.path, thumb: p.thumb });
+      }
+    }
+    setBusy(true, '저장 중...');
+    record.photos = photos;
+    record.updated_at = new Date().toISOString();
+    const q = editingId
+      ? supabaseClient.from('materials').update(record).eq('id', editingId)
+      : supabaseClient.from('materials').insert(record);
+    const { error } = await q;
+    if (error) throw error;
+    if (removedPhotos.length) await removePhotoFiles(removedPhotos);
+    showToast(editingId ? '수정했어요.' : '등록했어요.', 'success', 2500);
+    resetForm();
+    await fetchAndRenderData();
+  } catch (e) {
+    console.error(e);
+    if (uploaded.length) await removePhotoFiles(uploaded);
+    errEl.textContent = '저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.\n(' + (e.message || e) + ')';
+    errEl.style.display = 'block';
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function deleteItem(id) {
+  const it = items.find(x => x.id === id);
+  if (!it) return;
+  if (!window.confirm(`"${it.material_name}" 자재를 삭제할까요? 사진도 함께 지워지고 되돌릴 수 없어요.`)) return;
+  setBusy(true, '삭제 중...');
+  try {
+    const { error } = await supabaseClient.from('materials').delete().eq('id', id);
+    if (error) throw error;
+    await removePhotoFiles(it.photos);
+    if (editingId === id) resetForm();
+    showToast('삭제했어요.', 'success', 2500);
+    await fetchAndRenderData();
+  } catch (e) {
+    console.error(e);
+    showToast('삭제에 실패했어요.', 'error', 5000);
+  } finally {
+    setBusy(false);
+  }
+}
+
+$('save-btn').addEventListener('click', saveForm);
+$('cancel-edit-btn').addEventListener('click', resetForm);
+$('clear-form-btn').addEventListener('click', resetForm);
+
+// ---------- 목록 ----------
+function uniqSorted(arr) { return [...new Set(arr.filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko')); }
+
+function fillSelect(sel, values, allLabel) {
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  sel.value = values.includes(cur) ? cur : '';
+}
+function fillDatalist(id, values) { $(id).innerHTML = values.map(v => `<option value="${esc(v)}"></option>`).join(''); }
+
+function refreshFiltersAndLists() {
+  const processes = uniqSorted(items.map(i => i.process));
+  fillSelect($('filter-process'), processes, '공정 전체');
+  const p = $('filter-process').value;
+  fillSelect($('filter-subprocess'), uniqSorted(items.filter(i => !p || i.process === p).map(i => i.sub_process)), '세부공정 전체');
+  fillSelect($('filter-vendor'), uniqSorted(items.map(i => i.vendor)), '업체 전체');
+  fillDatalist('process-datalist', processes);
+  fillDatalist('subprocess-datalist', uniqSorted(items.map(i => i.sub_process)));
+  fillDatalist('material-datalist', uniqSorted(items.map(i => i.material_name)));
+  fillDatalist('vendor-datalist', uniqSorted(items.map(i => i.vendor)));
+}
+
+function filteredItems() {
+  const q = $('search-input').value.trim().toLowerCase();
+  const fp = $('filter-process').value, fs = $('filter-subprocess').value, fv = $('filter-vendor').value;
+  let list = items.filter(i =>
+    (!fp || i.process === fp) && (!fs || i.sub_process === fs) && (!fv || i.vendor === fv) &&
+    (!q || [i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
+  );
+  const sort = $('sort-select').value;
+  const cmp = (a, b) => a.localeCompare(b, 'ko');
+  if (sort === 'old') list.sort((a, b) => a.created_at.localeCompare(b.created_at));
+  else if (sort === 'process') list.sort((a, b) => cmp(a.process, b.process) || cmp(a.sub_process, b.sub_process) || cmp(a.material_name, b.material_name));
+  else if (sort === 'name') list.sort((a, b) => cmp(a.material_name, b.material_name));
+  else list.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return list;
+}
+
+function renderKpis() {
+  $('kpi-total').textContent = items.length;
+  $('kpi-process').textContent = uniqSorted(items.map(i => i.process)).length;
+  $('kpi-vendor').textContent = uniqSorted(items.map(i => i.vendor)).length;
+  $('kpi-photos').textContent = items.reduce((s, i) => s + i.photos.length, 0);
+}
+
+function pathLabel(i) { return [i.process, i.sub_process].filter(Boolean).map(esc).join(' › '); }
+
+function renderList() {
+  const list = filteredItems();
+  const area = $('list-area');
+  $('result-count').textContent = items.length ? `${list.length}건 표시 (전체 ${items.length}건)` : '';
+  if (!list.length) {
+    area.innerHTML = `<div class="empty">${items.length ? '조건에 맞는 자재가 없어요.' : '아직 등록된 자재가 없어요. 위 폼에서 첫 자재를 등록해 보세요.'}</div>`;
+    return;
+  }
+  if (viewMode === 'card') {
+    area.innerHTML = `<div class="cards">${list.map(i => {
+      const first = i.photos[0];
+      const photo = first
+        ? `<img src="${esc(urlOf(first.thumb))}" alt="" loading="lazy" />${i.photos.length > 1 ? `<span class="count">+${i.photos.length - 1}</span>` : ''}`
+        : `<div class="no-photo">사진 없음</div>`;
+      const row = (k, v) => v ? `<div class="card-row"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>` : '';
+      return `<div class="card">
+        <div class="card-photo" data-open="${i.id}">${photo}</div>
+        <div class="card-body">
+          ${pathLabel(i) ? `<div class="card-path">${pathLabel(i)}</div>` : ''}
+          <div class="card-name">${esc(i.material_name)}</div>
+          ${row('피팅값', i.fitting)}${row('업체', i.vendor)}${row('메모', i.memo)}
+        </div>
+        <div class="card-foot">
+          <span class="date">${fmtDate(i.created_at)}</span>
+          <span class="btns"><button class="small-btn" data-edit="${i.id}">수정</button><button class="small-btn danger" data-del="${i.id}">삭제</button></span>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  } else {
+    area.innerHTML = `<div class="overflow-x"><table>
+      <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th>등록일</th><th></th></tr></thead>
+      <tbody>${list.map(i => `<tr>
+        <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}${i.photos.length > 1 ? `<div style="font-size:11px;color:var(--ink-faint);text-align:center;">${i.photos.length}장</div>` : ''}</td>
+        <td class="nowrap">${esc(i.process)}</td>
+        <td class="nowrap">${esc(i.sub_process)}</td>
+        <td class="wrap"><b>${esc(i.material_name)}</b></td>
+        <td class="nowrap">${esc(i.fitting)}</td>
+        <td class="nowrap">${esc(i.vendor)}</td>
+        <td class="wrap">${esc(i.memo)}</td>
+        <td class="nowrap" style="font-family:var(--mono);font-size:12px;">${fmtDate(i.created_at)}</td>
+        <td class="actions"><button class="small-btn" data-edit="${i.id}">수정</button> <button class="small-btn danger" data-del="${i.id}">삭제</button></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+  area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
+  area.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
+  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+}
+
+function renderAll() {
+  renderKpis();
+  refreshFiltersAndLists();
+  renderList();
+  if (!editingId) renderPhotoPicker();
+}
+
+$('search-input').addEventListener('input', renderList);
+$('filter-process').addEventListener('change', () => { refreshFiltersAndLists(); renderList(); });
+['filter-subprocess', 'filter-vendor', 'sort-select'].forEach(id => $(id).addEventListener('change', renderList));
+$('view-card').addEventListener('click', () => { viewMode = 'card'; $('view-card').classList.add('active'); $('view-table').classList.remove('active'); renderList(); });
+$('view-table').addEventListener('click', () => { viewMode = 'table'; $('view-table').classList.add('active'); $('view-card').classList.remove('active'); renderList(); });
+
+// ---------- 사진 크게 보기 ----------
+let lbPhotos = [], lbIndex = 0;
+async function openLightbox(id, index) {
+  const it = items.find(x => x.id === id);
+  if (!it || !it.photos.length) return;
+  lbPhotos = it.photos;
+  lbIndex = index;
+  await ensureSignedUrls(lbPhotos.map(p => p.path));
+  $('lightbox').classList.add('open');
+  showLightboxPhoto();
+}
+function showLightboxPhoto() {
+  $('lb-img').src = urlOf(lbPhotos[lbIndex].path);
+  $('lb-counter').textContent = `${lbIndex + 1} / ${lbPhotos.length}`;
+  $('lb-prev').style.display = $('lb-next').style.display = lbPhotos.length > 1 ? 'block' : 'none';
+}
+function moveLightbox(d) { lbIndex = (lbIndex + d + lbPhotos.length) % lbPhotos.length; showLightboxPhoto(); }
+function closeLightbox() { $('lightbox').classList.remove('open'); $('lb-img').src = ''; }
+$('lb-prev').addEventListener('click', (e) => { e.stopPropagation(); moveLightbox(-1); });
+$('lb-next').addEventListener('click', (e) => { e.stopPropagation(); moveLightbox(1); });
+$('lb-close').addEventListener('click', closeLightbox);
+$('lightbox').addEventListener('click', (e) => { if (e.target.id === 'lightbox') closeLightbox(); });
+document.addEventListener('keydown', (e) => {
+  if (!$('lightbox').classList.contains('open')) return;
+  if (e.key === 'Escape') closeLightbox();
+  else if (e.key === 'ArrowLeft') moveLightbox(-1);
+  else if (e.key === 'ArrowRight') moveLightbox(1);
+});
+// 폰·탭에서는 좌우로 밀어서 다음/이전 사진
+let touchX = null;
+$('lightbox').addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
+$('lightbox').addEventListener('touchend', (e) => {
+  if (touchX === null) return;
+  const dx = e.changedTouches[0].clientX - touchX;
+  touchX = null;
+  if (Math.abs(dx) > 50 && lbPhotos.length > 1) moveLightbox(dx < 0 ? 1 : -1);
+});
+
+// ---------- CSV 다운로드 ----------
+$('csv-btn').addEventListener('click', () => {
+  const list = filteredItems();
+  if (!list.length) { showToast('다운로드할 자재가 없어요.', 'info', 3000); return; }
+  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows = [['공정', '세부공정', '자재명', '피팅값', '업체', '메모', '사진수', '등록일']]
+    .concat(list.map(i => [i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo, i.photos.length, fmtDate(i.created_at)]));
+  const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `자재목록_${fmtDate(new Date().toISOString())}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+// ---------- 화면 전환 / 인증 ----------
+function showApp() {
+  $('login-overlay').style.display = 'none';
+  $('backend-error').style.display = 'none';
+  $('main-app').style.display = 'block';
+  subscribeRealtime();
+}
+function showLogin() {
+  $('login-overlay').style.display = 'flex';
+  $('backend-error').style.display = 'none';
+  $('main-app').style.display = 'none';
+}
+function showBackendError() {
+  $('login-overlay').style.display = 'none';
+  $('main-app').style.display = 'none';
+  $('backend-error').style.display = 'flex';
+}
+
+async function loadAll() {
+  await initBackend();
+  if (!supabaseClient) { showBackendError(); return; }
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      showApp();
+      await fetchAndRenderData();
+    } else {
+      showLogin();
+    }
+    supabaseClient.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') showLogin();
+    });
+  } catch (e) {
+    console.error(e);
+    showToast('인증 상태를 확인하지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
+    showLogin();
+  }
+}
+
+$('login-submit-btn').addEventListener('click', doLogin);
+$('login-password').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+async function doLogin() {
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  const errEl = $('login-error');
+  errEl.style.display = 'none';
+  if (!email || !password) {
+    errEl.textContent = '이메일과 비밀번호를 입력해 주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = '로그인에 실패했어요: ' + error.message;
+    errEl.style.display = 'block';
+    return;
+  }
+  showApp();
+  await fetchAndRenderData();
+}
+
+$('logout-btn').addEventListener('click', async () => {
+  if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+  await supabaseClient.auth.signOut();
+  showLogin();
+});
+$('refresh-btn').addEventListener('click', fetchAndRenderData);
+$('backend-retry-btn').addEventListener('click', () => { loadAll(); });
+
+// 앱으로 다시 돌아왔을 때(폰에서 다른 앱 쓰다 복귀 등) 최신 목록으로 갱신
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && $('main-app').style.display === 'block') fetchAndRenderData();
+});
+
+$('today-label').textContent = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./materials-sw.js').catch((e) => console.error('서비스워커 등록 실패:', e));
+  });
+}
+
+renderPhotoPicker();
+loadAll();
+</script>
+</body>
+</html>
