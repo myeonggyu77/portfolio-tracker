@@ -29,6 +29,9 @@
 | `vocabulary-manifest.json` | (2026-09 말 추가) 단어장 전용 PWA 매니페스트. `manifest.json`(포트폴리오 원장용)과 별개 파일 — 아이콘은 기존 4종을 그대로 재사용해요. |
 | `vocabulary-sw.js` | (2026-09 말 추가) 단어장 전용 PWA 서비스워커 (앱 셸 캐싱). `sw.js`(포트폴리오 원장용)와 같은 구조, 파일만 분리. |
 | `vocabulary-icon-192.png`, `vocabulary-icon-512.png`, `vocabulary-icon-512-maskable.png`, `vocabulary-apple-touch-icon.png` | (2026-09 말 추가) 단어장 전용 PWA 아이콘 4종. `icon-192.png` 등(포트폴리오 원장용)과 별개 파일 — 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자. |
+| `materials.html` | (2026-09 말 추가) **자재관리** 앱 본체. 포트폴리오 원장·단어장과 독립된 세 번째 앱, 같은 Supabase 프로젝트·로그인 계정 공유. 12번 항목 참고. |
+| `materials-setup.sql` | 자재관리용 테이블·Storage 버킷·RLS 생성 SQL (이미 실행 완료, 참고용 기록) |
+| `materials-manifest.json`, `materials-sw.js`, `materials-icon-192.png`, `materials-icon-512.png`, `materials-icon-512-maskable.png`, `materials-apple-touch-icon.png` | 자재관리 전용 PWA 파일 (accent `#b4530a` 배경에 흰색 상자 3개 아이콘) |
 
 ## 3. 백엔드/외부 연동 설정값
 
@@ -167,3 +170,13 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - 새 기능 추가 시 데이터 구조가 바뀌면(`setup.sql`에 새 컬럼 필요) 사용자에게 Supabase SQL Editor에서 실행할 ALTER TABLE 구문을 안내해야 해요.
 - 사용자는 코딩 경험이 없는 초보자예요. 설명은 쉽게, 단계별로, 스크린샷 요청에는 실제 화면과 최대한 비슷하게 안내해주세요.
 - **Supabase MCP 도구는 이 저장소에서 자동 허용돼요(2026-09 설정)**: `.claude/settings.json`의 `permissions.allow`에 `mcp__Supabase__*`가 등록되어 있어서, `execute_sql`·`apply_migration`·`deploy_edge_function` 등 Supabase 관련 도구 호출은 매번 승인 프롬프트 없이 바로 실행돼요. 테이블 생성/변경, Edge Function 배포처럼 되돌리기 번거로운 작업도 포함되니 신중하게 사용하고, 실행 후에는 무엇을 했는지 사용자에게 알려주세요.
+
+## 12. 자재관리 (`materials.html`, 2026-09 말 추가)
+
+현장 자재를 사진과 함께 목록화하는 앱. 서비스 주소: https://myeonggyu77.github.io/portfolio-tracker/materials.html
+
+- **백엔드**: 같은 Supabase 프로젝트(`kcmqzinekvikpmlxkdxf`), 같은 로그인 계정. 다른 두 앱과 달리 1행짜리 JSON이 아니라 **자재 1개 = 1행**인 `materials` 테이블을 써요(폰·탭·PC에서 동시에 입력해도 서로 덮어쓰지 않도록). 컬럼: `process`(공정), `sub_process`(세부공정), `material_name`(자재명, 필수), `fitting`(피팅값), `vendor`(업체), `memo`, `photos`(jsonb `[{path, thumb}]`), `created_at`, `updated_at`.
+- **사진**: 비공개 Storage 버킷 `material-photos`. 업로드 전에 브라우저에서 긴 변 1600px(원본용)·400px(썸네일용) JPEG로 줄여서 2개 파일로 올려요(`YYYY-MM/<id>.jpg`, `..._t.jpg`). 화면 표시는 `createSignedUrls`로 발급한 임시 주소(6시간). 자재 삭제·수정 중 사진 빼기 시 Storage 파일도 같이 지워요.
+- **여러 기기 동기화**: `materials` 테이블을 `supabase_realtime` publication에 추가해서, 다른 기기에서 등록/수정/삭제하면 열려있는 화면에 자동 반영돼요. 앱으로 돌아올 때(visibilitychange)와 "새로고침" 버튼으로도 다시 불러와요.
+- **화면**: 등록 폼(사진 추가/바로 촬영/PC 드래그앤드롭, 공정·세부공정·자재명·업체는 입력 이력 자동완성) + 목록(검색, 공정/세부공정/업체 필터, 정렬, 카드/표 보기 전환, 사진 크게 보기(스와이프·방향키), CSV 다운로드, 수정·삭제).
+
