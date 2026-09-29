@@ -109,7 +109,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 포트폴리오 원장과는 기능상 완전히 별개인 **영어 단어 암기 앱**이에요. 같은 저장소에 두 번째 HTML 파일로 존재하고, 실제 서비스 주소는 https://myeonggyu77.github.io/portfolio-tracker/vocabulary.html 이에요.
 
 - **백엔드**: 포트폴리오 원장과 **같은 Supabase 프로젝트**(`kcmqzinekvikpmlxkdxf`)를 그대로 써요. 로그인 계정도 동일. 데이터는 새로 만든 `vocabulary_data` 테이블(1행짜리 JSON 저장, `portfolio_data`와 동일한 패턴)에 들어가요.
-  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, participle, example, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate}`.
+  - 컬럼: `words` (jsonb 배열). 단어 1개당 `{id, word, pos, participle, example, meaning, memo, dateAdded, audioUrl, mastered, correctStreak, wrongCount, lastTestedDate, fullyMastered}`.
   - `pos`(품사)·`example`(예문)는 사전 자동조회로 채워지고, 사용자가 직접 수정도 가능해요.
   - `participle`(분사, 2026-09 말 추가): 품사가 "동사"일 때 "현재분사 / 과거분사" 형태(예: "running / run")로 자동 채워짐. 자세한 내용은 아래 사전 자동조회 항목 참고.
   - **(2026-09 말 변경) 발음기호(`phonetic`) 필드는 제거됐어요.** 대신 그 자리에 예문(`example`)을 넣었어요. 기존에 저장돼 있던 `phonetic` 값은 그냥 무시돼요(마이그레이션 불필요).
@@ -154,6 +154,7 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - **아이콘 폰트 의존 지양(2026-09 말 변경)**: tabler-icons 웹폰트가 사용자 환경에 따라 로드되지 않아 버튼이 빈 상자로 보이는 문제가 반복돼서, 단어장의 핵심 버튼(발음 듣기·삭제·사전 다시조회)은 아이콘 대신 **눈에 보이는 텍스트(또는 이모지)**로 표시해요 — 폰트 로드 여부와 무관하게 항상 보여요. 새 버튼을 추가할 때도 이 원칙을 따라주세요.
 - 단어명 자동완성(`word-datalist`), 검색, 체크박스 다중선택+일괄삭제 등은 포트폴리오 원장과 같은 UI 패턴을 재사용했어요.
 - **단어 목록 수정 기능(2026-09 말 추가)**: 목록 표의 각 행에 "수정" 버튼이 추가됐어요(삭제 버튼 왼쪽). 누르면 위쪽 "단어 등록" 폼에 그 단어의 값(단어/품사/분사/예문/뜻/메모)이 채워지고 폼이 "단어 수정" 모드로 바뀌어요(제목·등록 버튼 텍스트가 "수정 완료"로 바뀌고, "취소" 버튼이 나타남). `editingId`(전역 변수)로 어떤 단어를 수정 중인지 추적하고, 그 상태에서 "수정 완료"를 누르면 새로 추가하는 대신 해당 단어를 덮어써요(`mastered`/`correctStreak`/`wrongCount` 등 학습 기록 필드는 그대로 유지). "취소"를 누르거나 수정 중인 단어를 삭제하면 폼이 등록 모드로 초기화돼요.
+- **"완전 외움" 체크(2026-09 말 추가, 단어장 목록 전용)**: `mastered`(연속정답 3회로 자동 도달하는 "외운 단어")와는 별개인 새 필드 `fullyMastered`(기본 `false`)를 추가했어요. 목록의 "상태"(외움/학습중) 배지 옆에 "완전 외움" 배지가 새로 생겼고, 클릭하면 토글돼요. **체크하면 `mastered=true`·`correctStreak=MASTER_STREAK`로도 같이 맞추고, "오늘의 시험"(`dailyTargetWords`)과 "주관식 문제"(`typingTargetWords`) 양쪽 출제 대상에서 완전히 빠져요** — `mastered=false`이기만 하면 주관식 문제엔 여전히 나오던 기존 동작(외운 단어도 주관식 대상)과 달리, `fullyMastered`는 "이 단어는 더 이상 아예 보고 싶지 않다"는 강한 제외예요. 퀴즈 진행 중 큐에서 문제를 꺼낼 때도(`renderQuizQuestion`) `w.fullyMastered`면 건너뛰도록 이중으로 막아뒀어요. 생활영어(`phrases`)에는 이 필드가 없어요 — 요청 범위가 단어장(`words`)이었어서 생활영어 목록/퀴즈에는 적용하지 않았고, 필요하면 같은 패턴으로 추가하면 돼요.
 
 ## 11. 확인이 필요한 미해결 항목 (단어장)
 
