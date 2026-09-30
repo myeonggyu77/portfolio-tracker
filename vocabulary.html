@@ -84,8 +84,8 @@
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   tbody td { white-space: nowrap; padding: 10px 8px; border-bottom: 1px solid var(--line-soft); }
   .word-cell, .meaning-cell, .memo-cell { white-space: normal; line-height: 1.35; word-break: keep-all; overflow-wrap: break-word; }
-  .word-cell { font-weight: 600; font-family: var(--mono); width: 140px; }
-  .meaning-cell { width: 180px; }
+  .word-cell { font-weight: 600; font-family: var(--mono); width: 140px; min-width: 140px; }
+  .meaning-cell { width: 180px; min-width: 180px; }
   thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--ink-faint); font-weight: 500; padding: 8px 8px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); z-index: 4; box-shadow: 0 1px 0 var(--ink); white-space: nowrap; }
   th.num, td.num { text-align: right; font-family: var(--mono); }
   tbody tr:hover { background: var(--accent-tint); }

@@ -37,6 +37,7 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); }
   .app { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
   .masthead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; row-gap: 10px; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid var(--ink); }
   .masthead h1 { font-size: 19px; font-weight: 600; letter-spacing: -0.01em; margin: 0; flex-shrink: 0; white-space: nowrap; }
@@ -66,10 +67,10 @@
   .panel { display: none; }
   .panel.active { display: block; }
 
-  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .toolbar .hint { font-size: 12px; color: var(--ink-faint); }
-  .toolbar .btn-group { display: flex; gap: 8px; }
-  .search-wrap { flex: 1; max-width: 280px; position: relative; }
+  .toolbar .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .search-wrap { flex: 1; min-width: 160px; max-width: 280px; position: relative; }
   input.search-input { width: 100%; height: 34px; padding: 0 12px 0 30px; font-size: 13px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238a958f" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 8px center; background-size: 14px; }
   input.search-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
   button.primary-btn { font-family: var(--sans); font-size: 13px; font-weight: 500; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 3px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
