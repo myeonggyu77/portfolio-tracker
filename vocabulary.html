@@ -137,6 +137,13 @@
   .quiz-result .row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
   .quiz-start-wrap { text-align: center; padding: 40px 0; }
   .quiz-start-wrap p { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+
+  /* 아이폰 Safari는 입력칸 글자 크기가 16px보다 작으면 탭할 때 화면을 자동으로 확대해요.
+     좁은 화면(모바일)에서만 입력칸 글자를 16px로 키워서 그 자동 확대를 막아요
+     (데스크톱 화면은 기존 13px 그대로 유지). */
+  @media (max-width: 600px) {
+    input, select, textarea { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
