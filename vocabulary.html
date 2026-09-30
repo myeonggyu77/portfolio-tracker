@@ -952,12 +952,25 @@ function fetchWithTimeout(url, options, timeoutMs = DICT_FETCH_TIMEOUT_MS) {
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-async function lookupWord(word) {
-  const url = `${SUPABASE_URL}/functions/v1/dict-lookup?word=${encodeURIComponent(word)}`;
+// 같은 단어를 다시 조회할 때(예: "사전 다시조회" 버튼을 두 번 누르거나, 이미 등록했던 단어를
+// 수정 화면에서 다시 열 때) 네트워크를 다시 타지 않도록 이번 세션 동안의 결과를 캐시해요.
+// exampleKo까지 다 채운 "완전한" 결과만 캐시하고(아래 skipExampleTranslate로 받은 부분 결과는
+// 캐시하지 않음), 캐시가 있으면 그 즉시(0ms) 반환해요.
+const dictLookupCache = new Map();
+
+async function lookupWord(word, opts = {}) {
+  const key = word.trim().toLowerCase();
+  if (dictLookupCache.has(key)) return dictLookupCache.get(key);
+  const params = new URLSearchParams({ word });
+  // 메모 칸에 이미 내용이 있으면 예문 번역(exampleKo) 결과를 어차피 안 쓰니, 서버에 그
+  // 번역 단계를 건너뛰라고 알려서 순차 호출 한 단계(번역 왕복 1회)를 통째로 줄여요.
+  if (opts.skipExampleTranslate) params.set('skipExampleTranslate', '1');
+  const url = `${SUPABASE_URL}/functions/v1/dict-lookup?${params.toString()}`;
   try {
     const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return null;
+    if (!opts.skipExampleTranslate) dictLookupCache.set(key, data);
     return data;
   } catch (e) {
     return null; // 타임아웃/네트워크 오류 — 조용히 실패, 직접 입력으로 대체 가능
@@ -1090,7 +1103,7 @@ async function autoFillFromWord(showFeedback) {
   if (!showFeedback && word === lastLookupWord) return; // 자동 조회는 같은 단어를 반복 호출하지 않아요.
   btn.disabled = true;
   try {
-    const data = await lookupWord(word);
+    const data = await lookupWord(word, { skipExampleTranslate: !!memoEl.value.trim() });
     if (!data || (!data.meaning && !data.pos && !data.example)) {
       if (showFeedback) showToast('사전 조회에 실패했어요. 직접 입력해 주세요.', 'error', 5000);
       return;
