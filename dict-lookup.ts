@@ -60,6 +60,16 @@
 // 때도 메모에 한국어 해설을 자동으로 채워주려고, 단어 조회와 별개로 "text" 쿼리 파라미터만
 // 넘기면 그 텍스트를 그냥 번역만 해서 돌려주는 모드를 추가했어요(사전 조회 없이 translate()만
 // 호출). 클라이언트는 예문 칸에서 포커스를 옮길 때(blur) 이 모드로 호출해요.
+//
+// 속도 개선(2026-09 말 추가): 단어 조회 응답이 느리다는 피드백으로 두 가지를 추가했어요.
+// (1) `skipExampleTranslate=1`을 넘기면 예문 한국어 번역(exampleKo) 단계를 건너뛰어요 —
+// 클라이언트가 메모 칸에 이미 내용이 있어 exampleKo를 어차피 쓰지 않을 때(재조회 등) 순차
+// 호출 3단계(뜻 번역 → 사전 조회 → 예문 번역) 중 마지막 한 단계를 통째로 생략해서 응답을
+// 앞당겨요. (2) 클라이언트가 세션 동안 같은 단어의 "완전한"(예문 번역까지 끝난) 응답을
+// 캐시해뒀다가 재조회 시 네트워크 호출 자체를 생략하기도 해요(클라이언트 쪽 변경, 이 파일과는
+// 무관). **주의**: 이 두 가지는 순차 호출 "횟수"를 줄이는 것이지, 뜻 번역(translate)과 사전
+// 조회(fetchDictionaryInfo)를 다시 동시(Promise.all)에 부르는 것과는 전혀 다른 변경이에요 —
+// 그 둘을 병렬로 부르면 안 된다는 규칙은 그대로 유지돼요(아래 참고).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -298,7 +308,13 @@ Deno.serve(async (req: Request) => {
   }
 
   // 예문을 찾았으면 그 예문도 한국어로 번역해서 메모 자동채움용으로 같이 보내요.
-  const exampleKo = dict.example ? await translate(dict.example, EXAMPLE_TRANSLATE_TIMEOUT_MS) : "";
+  // (2026-09 말 추가) 클라이언트가 skipExampleTranslate=1을 넘기면 이 번역 호출 자체를
+  // 건너뛰어요 — 메모 칸에 이미 내용이 있어서 exampleKo를 어차피 안 쓸 때(재조회 등) 순차
+  // 호출 한 단계를 통째로 줄여서 응답 속도를 앞당기는 용도예요.
+  const skipExampleTranslate = url.searchParams.get("skipExampleTranslate") === "1";
+  const exampleKo = (dict.example && !skipExampleTranslate)
+    ? await translate(dict.example, EXAMPLE_TRANSLATE_TIMEOUT_MS)
+    : "";
 
   if (!meaning && !dict.pos && !dict.example) {
     return jsonResponse({ error: "no_result" }, 502);
