@@ -183,6 +183,13 @@
   input.price-input:hover { border-color: var(--line); background: var(--paper-raised); }
   input.price-input:focus { outline: none; border-color: var(--accent); background: var(--paper-raised); box-shadow: 0 0 0 2px var(--accent-soft); text-align: right; }
   input.price-input::placeholder { color: var(--ink-faint); font-family: var(--sans); font-size: 12px; }
+
+  /* 아이폰 Safari는 입력칸 글자 크기가 16px보다 작으면 탭할 때 화면을 자동으로 확대해요.
+     좁은 화면(모바일)에서만 입력칸 글자를 16px로 키워서 그 자동 확대를 막아요
+     (데스크톱 화면은 기존 글자 크기 그대로 유지). */
+  @media (max-width: 600px) {
+    input, select, textarea { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
