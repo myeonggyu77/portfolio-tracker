@@ -534,9 +534,13 @@ let listSelected = new Set();
 
 function renderList() {
   const q = (document.getElementById('list-search').value || '').trim().toLowerCase();
+  // 정렬: "완전 외움" 여부로 먼저 묶고(학습 중인 단어가 위로), 그 안에서는 알파벳 순.
   const filtered = words
     .filter(w => !q || w.word.toLowerCase().includes(q) || w.meaning.toLowerCase().includes(q))
-    .sort((a, b) => b.dateAdded.localeCompare(a.dateAdded));
+    .sort((a, b) => {
+      if (a.fullyMastered !== b.fullyMastered) return a.fullyMastered ? 1 : -1;
+      return a.word.toLowerCase().localeCompare(b.word.toLowerCase());
+    });
   const body = document.getElementById('list-body');
   const empty = document.getElementById('list-empty');
   const table = document.getElementById('list-table');
