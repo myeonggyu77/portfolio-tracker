@@ -124,6 +124,15 @@
   .tab:hover:not(.active) { color: var(--ink-soft); }
   .panel { display: none; }
   .panel.active { display: block; }
+  /* 장비별 자재 리스트 */
+  .eq-group { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+  .eq-group summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 700; }
+  .eq-group summary::-webkit-details-marker { display: none; }
+  .eq-group summary::before { content: '▸'; color: var(--ink-faint); font-size: 13px; transition: transform 0.15s; }
+  .eq-group[open] summary::before { transform: rotate(90deg); }
+  .eq-group summary .eq-count { margin-left: auto; font-size: 12px; font-weight: 600; font-family: var(--mono); color: var(--accent); background: var(--accent-soft); padding: 2px 9px; border-radius: 10px; }
+  .eq-group summary .eq-none { color: var(--ink-faint); font-weight: 500; }
+  .eq-group .overflow-x { border: none; border-top: 1px solid var(--line); border-radius: 0; max-height: none; }
   .coming-soon { background: var(--paper-raised); border: 1px dashed var(--line); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
   .coming-soon .big { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
 
@@ -167,6 +176,7 @@
 <datalist id="subprocess-datalist"></datalist>
 <datalist id="material-datalist"></datalist>
 <datalist id="vendor-datalist"></datalist>
+<datalist id="equipment-datalist"></datalist>
 
 <div class="login-overlay" id="login-overlay" style="display:none;">
   <div class="login-card">
@@ -217,6 +227,7 @@
 
   <div class="tabs">
     <button class="tab active" data-panel="panel-materials">자재 목록</button>
+    <button class="tab" data-panel="panel-equipment">장비별 자재</button>
     <button class="tab" data-panel="panel-request">자재 신청</button>
   </div>
 
@@ -231,6 +242,7 @@
     <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none;" />
 
     <div class="form-grid">
+      <div><div class="field-lbl">장비</div><input id="f-equipment" list="equipment-datalist" autocomplete="off" placeholder="예: 냉동기 1호기" /></div>
       <div><div class="field-lbl">공정</div><input id="f-process" list="process-datalist" autocomplete="off" placeholder="예: 배관" /></div>
       <div><div class="field-lbl">세부공정</div><input id="f-subprocess" list="subprocess-datalist" autocomplete="off" placeholder="예: 급수배관" /></div>
       <div><div class="field-lbl">자재명 *</div><input id="f-material" list="material-datalist" autocomplete="off" placeholder="예: PPC 엘보 90°" /></div>
@@ -248,7 +260,7 @@
   </div>
 
   <div class="toolbar">
-    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, 업체, 메모 등)" autocomplete="off" />
+    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, 장비, 업체, 메모 등)" autocomplete="off" />
     <select id="filter-process"><option value="">공정 전체</option></select>
     <select id="filter-subprocess"><option value="">세부공정 전체</option></select>
     <select id="filter-vendor"><option value="">업체 전체</option></select>
@@ -266,6 +278,18 @@
   </div>
   <div class="result-count" id="result-count"></div>
   <div id="list-area"></div>
+  </div>
+
+  <!-- 장비별 자재 리스트: 자재 목록과 같은 데이터(materials 테이블)를 '장비' 칸 기준으로 묶어서 보여줘요. -->
+  <div class="panel" id="panel-equipment">
+    <div class="toolbar">
+      <input class="search" id="eq-search-input" type="search" placeholder="장비명 또는 자재 검색" autocomplete="off" />
+      <button class="ghost-btn" id="eq-expand-btn">모두 펼치기</button>
+      <button class="ghost-btn" id="eq-collapse-btn">모두 접기</button>
+      <button class="ghost-btn" id="eq-csv-btn">CSV 다운로드</button>
+    </div>
+    <div class="result-count" id="eq-result-count"></div>
+    <div id="eq-area"></div>
   </div>
 
   <!-- 자재 신청 탭: 신청 항목(입력 칸) 목록은 사용자가 차후 정해주기로 함 — 정해지면 여기에 폼·목록을 채워 넣으면 돼요. -->
@@ -293,7 +317,7 @@ const THUMB_MAX_DIM = 400;    // 목록용 썸네일
 const SIGNED_URL_TTL = 60 * 60 * 6; // 비공개 사진을 보여주는 임시 주소 유효시간(초)
 
 let supabaseClient = null;
-let items = [];            // {id, process, sub_process, material_name, fitting, vendor, memo, photos:[{path, thumb}], created_at, updated_at}
+let items = [];            // {id, equipment, process, sub_process, material_name, fitting, vendor, memo, photos:[{path, thumb}], created_at, updated_at}
 let editingId = null;      // 수정 중인 자재 id (null이면 새 등록 모드)
 let formPhotos = [];       // 폼에 올라간 사진. 기존: {path, thumb}, 새로 추가: {file, previewUrl}
 let removedPhotos = [];    // 수정 중 삭제한 기존 사진 (저장 시 Storage에서도 지움)
@@ -336,7 +360,7 @@ async function fetchAndRenderData() {
     const { data, error } = await supabaseClient.from('materials').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     items = data || [];
-    items.forEach(it => { if (!Array.isArray(it.photos)) it.photos = []; });
+    items.forEach(it => { if (!Array.isArray(it.photos)) it.photos = []; if (it.equipment == null) it.equipment = ''; });
   } catch (e) {
     console.error(e);
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
@@ -448,7 +472,7 @@ function resetForm() {
   editingId = null;
   formPhotos = [];
   removedPhotos = [];
-  ['f-process', 'f-subprocess', 'f-material', 'f-fitting', 'f-vendor', 'f-memo'].forEach(id => { $(id).value = ''; });
+  ['f-equipment', 'f-process', 'f-subprocess', 'f-material', 'f-fitting', 'f-vendor', 'f-memo'].forEach(id => { $(id).value = ''; });
   $('form-error').style.display = 'none';
   $('form-title').textContent = '자재 등록';
   $('save-btn').textContent = '등록';
@@ -461,6 +485,8 @@ function startEdit(id) {
   if (!it) return;
   resetForm();
   editingId = id;
+  showTab('panel-materials');
+  $('f-equipment').value = it.equipment;
   $('f-process').value = it.process;
   $('f-subprocess').value = it.sub_process;
   $('f-material').value = it.material_name;
@@ -479,6 +505,7 @@ async function saveForm() {
   const errEl = $('form-error');
   errEl.style.display = 'none';
   const record = {
+    equipment: $('f-equipment').value.trim(),
     process: $('f-process').value.trim(),
     sub_process: $('f-subprocess').value.trim(),
     material_name: $('f-material').value.trim(),
@@ -575,6 +602,7 @@ function refreshFiltersAndLists() {
   fillDatalist('subprocess-datalist', uniqSorted(items.map(i => i.sub_process)));
   fillDatalist('material-datalist', uniqSorted(items.map(i => i.material_name)));
   fillDatalist('vendor-datalist', uniqSorted(items.map(i => i.vendor)));
+  fillDatalist('equipment-datalist', uniqSorted(items.map(i => i.equipment)));
 }
 
 function filteredItems() {
@@ -582,7 +610,7 @@ function filteredItems() {
   const fp = $('filter-process').value, fs = $('filter-subprocess').value, fv = $('filter-vendor').value;
   let list = items.filter(i =>
     (!fp || i.process === fp) && (!fs || i.sub_process === fs) && (!fv || i.vendor === fv) &&
-    (!q || [i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
+    (!q || [i.equipment, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
   );
   const sort = $('sort-select').value;
   const cmp = (a, b) => a.localeCompare(b, 'ko');
@@ -622,7 +650,7 @@ function renderList() {
         <div class="card-body">
           ${pathLabel(i) ? `<div class="card-path">${pathLabel(i)}</div>` : ''}
           <div class="card-name">${esc(i.material_name)}</div>
-          ${row('피팅값', i.fitting)}${row('업체', i.vendor)}${row('메모', i.memo)}
+          ${row('장비', i.equipment)}${row('피팅값', i.fitting)}${row('업체', i.vendor)}${row('메모', i.memo)}
         </div>
         <div class="card-foot">
           <span class="date">${fmtDate(i.created_at)}</span>
@@ -632,9 +660,10 @@ function renderList() {
     }).join('')}</div>`;
   } else {
     area.innerHTML = `<div class="overflow-x"><table>
-      <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th>등록일</th><th></th></tr></thead>
+      <thead><tr><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th>등록일</th><th></th></tr></thead>
       <tbody>${list.map(i => `<tr>
         <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}${i.photos.length > 1 ? `<div style="font-size:11px;color:var(--ink-faint);text-align:center;">${i.photos.length}장</div>` : ''}</td>
+        <td class="nowrap">${esc(i.equipment)}</td>
         <td class="nowrap">${esc(i.process)}</td>
         <td class="nowrap">${esc(i.sub_process)}</td>
         <td class="wrap"><b>${esc(i.material_name)}</b></td>
@@ -654,8 +683,66 @@ function renderAll() {
   renderKpis();
   refreshFiltersAndLists();
   renderList();
+  renderEquipment();
   if (!editingId) renderPhotoPicker();
 }
+
+// ---------- 장비별 자재 리스트 ----------
+const NO_EQUIPMENT = '장비 미지정';
+const eqOpen = new Set(); // 펼쳐둔 장비 그룹 (다시 그려도 유지)
+
+function equipmentGroups() {
+  const q = $('eq-search-input').value.trim().toLowerCase();
+  const cmp = (a, b) => a.localeCompare(b, 'ko');
+  const groups = new Map();
+  items.forEach(i => {
+    const key = i.equipment || NO_EQUIPMENT;
+    if (q && ![key, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q)) return;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  });
+  groups.forEach(list => list.sort((a, b) => cmp(a.process, b.process) || cmp(a.sub_process, b.sub_process) || cmp(a.material_name, b.material_name)));
+  return [...groups.entries()].sort(([a], [b]) => (a === NO_EQUIPMENT) - (b === NO_EQUIPMENT) || cmp(a, b));
+}
+
+function renderEquipment() {
+  const groups = equipmentGroups();
+  const area = $('eq-area');
+  const total = groups.reduce((s, [, l]) => s + l.length, 0);
+  $('eq-result-count').textContent = items.length ? `장비 ${groups.filter(([k]) => k !== NO_EQUIPMENT).length}개 · 자재 ${total}건` : '';
+  if (!groups.length) {
+    area.innerHTML = `<div class="empty">${items.length ? '조건에 맞는 자재가 없어요.' : '아직 등록된 자재가 없어요. "자재 목록" 탭에서 장비를 적어 자재를 등록해 보세요.'}</div>`;
+    return;
+  }
+  const searching = !!$('eq-search-input').value.trim();
+  area.innerHTML = groups.map(([eq, list]) => `
+    <details class="eq-group" data-eq="${esc(eq)}" ${searching || eqOpen.has(eq) ? 'open' : ''}>
+      <summary><span class="${eq === NO_EQUIPMENT ? 'eq-none' : ''}">${esc(eq)}</span><span class="eq-count">${list.length}</span></summary>
+      <div class="overflow-x"><table>
+        <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+        <tbody>${list.map(i => `<tr>
+          <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}</td>
+          <td class="nowrap">${esc(i.process)}</td>
+          <td class="nowrap">${esc(i.sub_process)}</td>
+          <td class="wrap"><b>${esc(i.material_name)}</b></td>
+          <td class="nowrap">${esc(i.fitting)}</td>
+          <td class="nowrap">${esc(i.vendor)}</td>
+          <td class="wrap">${esc(i.memo)}</td>
+          <td class="actions"><button class="small-btn" data-edit="${i.id}">수정</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </details>`).join('');
+  area.querySelectorAll('details').forEach(d => d.addEventListener('toggle', () => {
+    if (searching) return;
+    if (d.open) eqOpen.add(d.dataset.eq); else eqOpen.delete(d.dataset.eq);
+  }));
+  area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
+  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+}
+
+$('eq-search-input').addEventListener('input', renderEquipment);
+$('eq-expand-btn').addEventListener('click', () => { equipmentGroups().forEach(([eq]) => eqOpen.add(eq)); $('eq-area').querySelectorAll('details').forEach(d => { d.open = true; }); });
+$('eq-collapse-btn').addEventListener('click', () => { eqOpen.clear(); $('eq-area').querySelectorAll('details').forEach(d => { d.open = false; }); });
 
 $('search-input').addEventListener('input', renderList);
 $('filter-process').addEventListener('change', () => { refreshFiltersAndLists(); renderList(); });
@@ -702,25 +789,27 @@ $('lightbox').addEventListener('touchend', (e) => {
 });
 
 // ---------- CSV 다운로드 ----------
-$('csv-btn').addEventListener('click', () => {
-  const list = filteredItems();
+function downloadCsv(list, filePrefix) {
   if (!list.length) { showToast('다운로드할 자재가 없어요.', 'info', 3000); return; }
   const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const rows = [['공정', '세부공정', '자재명', '피팅값', '업체', '메모', '사진수', '등록일']]
-    .concat(list.map(i => [i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo, i.photos.length, fmtDate(i.created_at)]));
+  const rows = [['장비', '공정', '세부공정', '자재명', '피팅값', '업체', '메모', '사진수', '등록일']]
+    .concat(list.map(i => [i.equipment, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo, i.photos.length, fmtDate(i.created_at)]));
   const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `자재목록_${fmtDate(new Date().toISOString())}.csv`;
+  a.download = `${filePrefix}_${fmtDate(new Date().toISOString())}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-});
+}
+$('csv-btn').addEventListener('click', () => downloadCsv(filteredItems(), '자재목록'));
+$('eq-csv-btn').addEventListener('click', () => downloadCsv(equipmentGroups().flatMap(([, list]) => list), '장비별자재'));
 
 // ---------- 탭 전환 ----------
-document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
-  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === tab.dataset.panel));
-}));
+function showTab(panelId) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.panel === panelId));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === panelId));
+}
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => showTab(tab.dataset.panel)));
 
 // ---------- 화면 전환 / 인증 ----------
 function showApp() {

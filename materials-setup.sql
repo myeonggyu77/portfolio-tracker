@@ -26,3 +26,6 @@ create policy "material photos delete" on storage.objects for delete to authenti
 
 -- 다른 기기에서 입력한 내용이 실시간으로 반영되도록
 alter publication supabase_realtime add table public.materials;
+
+-- 2026-10: '장비별 자재' 탭용 장비 칸 추가
+alter table public.materials add column if not exists equipment text not null default '';
