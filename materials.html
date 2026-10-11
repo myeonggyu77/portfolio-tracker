@@ -137,6 +137,31 @@
   .coming-soon { background: var(--paper-raised); border: 1px dashed var(--line); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
   .coming-soon .big { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
 
+  /* 선택 + 일괄 수정 */
+  input.sel { width: 20px; height: 20px; padding: 0; accent-color: var(--accent); cursor: pointer; vertical-align: middle; }
+  .card-photo .card-check { position: absolute; left: 8px; top: 8px; width: 34px; height: 34px; background: rgba(255,255,255,0.92); border-radius: 6px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.25); cursor: pointer; z-index: 1; }
+  .card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  th.check-cell, td.check-cell { width: 36px; text-align: center; }
+  tbody tr.selected td { background: var(--accent-tint); }
+  .bulk-bar { position: fixed; left: 0; right: 0; margin: 0 auto; width: fit-content; bottom: calc(16px + env(safe-area-inset-bottom)); z-index: 9300; background: var(--ink); color: var(--paper); border-radius: 8px; padding: 10px 12px; display: none; align-items: center; gap: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); max-width: calc(100vw - 24px); flex-wrap: wrap; justify-content: center; font-size: 14px; }
+  .bulk-bar.open { display: flex; }
+  .bulk-bar #bulk-count { font-weight: 600; padding: 0 4px; white-space: nowrap; }
+  .bulk-bar .ghost-btn { background: transparent; color: var(--paper); border-color: rgba(255,255,255,0.35); }
+  .bulk-bar .ghost-btn:hover { background: rgba(255,255,255,0.12); }
+  body.has-bulk .app { padding-bottom: 120px; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 9350; display: none; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 24px 12px; }
+  .modal.open { display: flex; }
+  .modal-card { background: var(--paper-raised); border-radius: 8px; width: 100%; max-width: 580px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  .modal-card h3 { font-size: 15px; margin: 0 0 6px; }
+  .modal-note { font-size: 12px; color: var(--ink-faint); margin: 0 0 14px; line-height: 1.5; }
+  .radio-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; margin: -2px 0 16px; }
+  .radio-row label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .radio-row input { width: 18px; height: 18px; padding: 0; accent-color: var(--accent); }
+  .bulk-field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bulk-field .chk { flex: 0 0 92px; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
+  .bulk-field .chk input { width: 18px; height: 18px; padding: 0; accent-color: var(--accent); }
+  .bulk-field textarea { min-height: 60px; }
+
   /* 사진 크게 보기 */
   .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9500; display: none; align-items: center; justify-content: center; }
   .lightbox.open { display: flex; }
@@ -209,6 +234,38 @@
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
+<!-- 일괄 수정: 목록에서 체크한 자재가 있으면 화면 아래에 나타나요. -->
+<div class="bulk-bar" id="bulk-bar">
+  <span id="bulk-count">0개 선택</span>
+  <button class="accent-btn" id="bulk-edit-btn">일괄 수정</button>
+  <button class="ghost-btn" id="bulk-clear-btn">선택 해제</button>
+</div>
+
+<div class="modal" id="bulk-modal">
+  <div class="modal-card">
+    <h3 id="bulk-title">선택한 자재 일괄 수정</h3>
+    <p class="modal-note">사진과 체크한 칸만 선택한 자재 전체에 똑같이 적용돼요. 체크하지 않은 칸은 그대로 두고, 체크한 칸을 비워두면 그 내용이 지워져요. 칸이 "여러 값"이면 선택한 자재마다 값이 달라요.</p>
+
+    <div class="field-lbl">사진 (여러 장 가능)</div>
+    <div class="photo-picker" id="bulk-photo-picker"></div>
+    <input type="file" id="bulk-photo-input" accept="image/*" multiple style="display:none;" />
+    <input type="file" id="bulk-camera-input" accept="image/*" capture="environment" style="display:none;" />
+    <div class="radio-row">
+      <label><input type="radio" name="bulk-photo-mode" value="add" checked /> 기존 사진에 추가</label>
+      <label><input type="radio" name="bulk-photo-mode" value="replace" /> 기존 사진 지우고 교체</label>
+    </div>
+
+    <div class="field-lbl" style="margin-bottom:8px;">내용 변경 (바꿀 칸만 체크)</div>
+    <div id="bulk-fields"></div>
+
+    <div class="form-error" id="bulk-error" style="display:none;"></div>
+    <div class="form-actions">
+      <button class="ghost-btn" id="bulk-cancel-btn">취소</button>
+      <button class="accent-btn" id="bulk-apply-btn">적용</button>
+    </div>
+  </div>
+</div>
+
 <div class="app" id="main-app" style="display:none;">
   <div class="masthead">
     <h1>자재관리</h1>
@@ -276,6 +333,7 @@
       <button id="view-card" class="active">카드</button>
       <button id="view-table">표</button>
     </div>
+    <button class="ghost-btn" id="select-visible-btn">전체 선택</button>
     <button class="ghost-btn" id="csv-btn">CSV 다운로드</button>
   </div>
   <div class="result-count" id="result-count"></div>
@@ -423,6 +481,17 @@ async function removePhotoFiles(photos) {
   const { error } = await supabaseClient.storage.from(PHOTO_BUCKET).remove(paths);
   if (error) console.error('사진 삭제 실패:', error);
 }
+// 일괄 등록으로 같은 사진 파일을 여러 자재가 함께 쓸 수 있어서, 다른 자재가 아직 쓰고 있는 사진은 지우지 않아요.
+// (DB에서 지금 쓰이는 사진 목록을 새로 읽어와서 확인 — 확인에 실패하면 안전하게 아무것도 안 지워요.)
+async function cleanupUnreferencedPhotos(photos) {
+  if (!photos.length) return;
+  const { data, error } = await supabaseClient.from('materials').select('photos');
+  if (error) { console.error('사진 사용 여부 확인 실패:', error); return; }
+  const used = new Set();
+  (data || []).forEach(r => (r.photos || []).forEach(p => { used.add(p.path); used.add(p.thumb); }));
+  const seen = new Set();
+  await removePhotoFiles(photos.filter(p => !used.has(p.path) && !seen.has(p.path) && seen.add(p.path)));
+}
 async function ensureSignedUrls(paths) {
   const now = Date.now();
   const need = [...new Set(paths.filter(p => p && !(signedUrlCache.get(p)?.expires > now + 60000)))];
@@ -548,7 +617,7 @@ async function saveForm() {
       : supabaseClient.from('materials').insert(record);
     const { error } = await q;
     if (error) throw error;
-    if (removedPhotos.length) await removePhotoFiles(removedPhotos);
+    if (removedPhotos.length) await cleanupUnreferencedPhotos(removedPhotos);
     showToast(editingId ? '수정했어요.' : '등록했어요.', 'success', 2500);
     resetForm();
     await fetchAndRenderData();
@@ -570,7 +639,7 @@ async function deleteItem(id) {
   try {
     const { error } = await supabaseClient.from('materials').delete().eq('id', id);
     if (error) throw error;
-    await removePhotoFiles(it.photos);
+    await cleanupUnreferencedPhotos(it.photos);
     if (editingId === id) resetForm();
     showToast('삭제했어요.', 'success', 2500);
     await fetchAndRenderData();
@@ -649,8 +718,8 @@ function renderList() {
         ? `<img src="${esc(urlOf(first.thumb))}" alt="" loading="lazy" />${i.photos.length > 1 ? `<span class="count">+${i.photos.length - 1}</span>` : ''}`
         : `<div class="no-photo">사진 없음</div>`;
       const row = (k, v) => v ? `<div class="card-row"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>` : '';
-      return `<div class="card">
-        <div class="card-photo" data-open="${i.id}">${photo}</div>
+      return `<div class="card ${selectedIds.has(i.id) ? 'selected' : ''}">
+        <div class="card-photo" data-open="${i.id}"><label class="card-check"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></label>${photo}</div>
         <div class="card-body">
           ${pathLabel(i) ? `<div class="card-path">${pathLabel(i)}</div>` : ''}
           <div class="card-name">${esc(i.material_name)}</div>
@@ -664,8 +733,9 @@ function renderList() {
     }).join('')}</div>`;
   } else {
     area.innerHTML = `<div class="overflow-x"><table>
-      <thead><tr><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
-      <tbody>${list.map(i => `<tr>
+      <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="list" aria-label="전체 선택" /></th><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+      <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
+        <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
         <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}${i.photos.length > 1 ? `<div style="font-size:11px;color:var(--ink-faint);text-align:center;">${i.photos.length}장</div>` : ''}</td>
         <td class="nowrap">${esc(i.equipment)}</td>
         <td class="nowrap">${esc(i.process)}</td>
@@ -681,15 +751,199 @@ function renderList() {
   area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
   area.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
   area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+  bindSelection(area, 'list');
 }
 
 function renderAll() {
+  [...selectedIds].forEach(id => { if (!items.some(i => i.id === id)) selectedIds.delete(id); });
   renderKpis();
   refreshFiltersAndLists();
   renderList();
   renderEquipment();
+  updateBulkBar();
   if (!editingId) renderPhotoPicker();
 }
+
+// ---------- 선택 (체크박스) ----------
+const selectedIds = new Set();
+
+function groupIds(eq) { return (equipmentGroups().find(([k]) => k === eq)?.[1] || []).map(i => i.id); }
+
+function syncHeaderChecks() {
+  const setState = (cb, ids) => {
+    const n = ids.filter(id => selectedIds.has(id)).length;
+    cb.checked = ids.length > 0 && n === ids.length;
+    cb.indeterminate = n > 0 && n < ids.length;
+  };
+  document.querySelectorAll('input[data-sel-all="list"]').forEach(cb => setState(cb, filteredItems().map(i => i.id)));
+  document.querySelectorAll('input[data-sel-all="eq"]').forEach(cb => setState(cb, groupIds(cb.dataset.eq)));
+  const visible = filteredItems().map(i => i.id);
+  $('select-visible-btn').textContent = visible.length && visible.every(id => selectedIds.has(id)) ? '선택 해제' : '전체 선택';
+}
+
+function updateBulkBar() {
+  const n = selectedIds.size;
+  $('bulk-count').textContent = `${n}개 선택`;
+  $('bulk-bar').classList.toggle('open', n > 0);
+  document.body.classList.toggle('has-bulk', n > 0);
+  syncHeaderChecks();
+}
+
+function bindSelection(area, view) {
+  area.querySelectorAll('.card-check').forEach(l => l.addEventListener('click', e => e.stopPropagation()));
+  area.querySelectorAll('input.sel[data-sel]').forEach(cb => cb.addEventListener('change', () => {
+    if (cb.checked) selectedIds.add(cb.dataset.sel); else selectedIds.delete(cb.dataset.sel);
+    cb.closest('.card, tr')?.classList.toggle('selected', cb.checked);
+    if (view === 'list') renderEquipment(); else renderList(); // 다른 탭 화면도 같은 선택 상태로 맞춰둠
+    updateBulkBar();
+  }));
+  area.querySelectorAll('input.sel[data-sel-all]').forEach(cb => cb.addEventListener('change', () => {
+    const ids = cb.dataset.selAll === 'list' ? filteredItems().map(i => i.id) : groupIds(cb.dataset.eq);
+    ids.forEach(id => cb.checked ? selectedIds.add(id) : selectedIds.delete(id));
+    renderList(); renderEquipment(); updateBulkBar();
+  }));
+}
+
+function clearSelection() { selectedIds.clear(); renderList(); renderEquipment(); updateBulkBar(); }
+
+$('select-visible-btn').addEventListener('click', () => {
+  const ids = filteredItems().map(i => i.id);
+  const allOn = ids.length && ids.every(id => selectedIds.has(id));
+  ids.forEach(id => allOn ? selectedIds.delete(id) : selectedIds.add(id));
+  renderList(); renderEquipment(); updateBulkBar();
+});
+$('bulk-clear-btn').addEventListener('click', clearSelection);
+
+// ---------- 일괄 수정 (사진 일괄 등록 + 내용 일괄 변경) ----------
+const BULK_FIELDS = [
+  ['equipment', '장비', 'equipment-datalist'],
+  ['process', '공정', 'process-datalist'],
+  ['sub_process', '세부공정', 'subprocess-datalist'],
+  ['fitting', '피팅값', ''],
+  ['vendor', '업체', 'vendor-datalist'],
+  ['memo', '메모', ''],
+];
+let bulkPhotos = []; // {file, previewUrl}
+
+$('bulk-fields').innerHTML = BULK_FIELDS.map(([k, label, list]) => `
+  <div class="bulk-field">
+    <label class="chk"><input type="checkbox" id="bk-on-${k}" /> ${label}</label>
+    ${k === 'memo'
+      ? `<textarea id="bk-${k}" placeholder="메모"></textarea>`
+      : `<input id="bk-${k}" ${list ? `list="${list}"` : ''} autocomplete="off" />`}
+  </div>`).join('');
+// 칸에 입력하면 그 칸의 "변경" 체크가 자동으로 켜져요.
+BULK_FIELDS.forEach(([k]) => $('bk-' + k).addEventListener('input', () => { $('bk-on-' + k).checked = true; }));
+
+function renderBulkPhotoPicker() {
+  const picker = $('bulk-photo-picker');
+  picker.innerHTML = bulkPhotos.map((p, i) =>
+    `<div class="photo-thumb"><img src="${esc(p.previewUrl)}" alt="" /><button class="rm" data-i="${i}" aria-label="사진 빼기">×</button></div>`).join('') +
+    `<button type="button" class="photo-add" id="bulk-photo-add-btn"><span class="plus">+</span>사진 추가</button>` +
+    `<button type="button" class="photo-add" id="bulk-camera-add-btn"><span class="plus">📷</span>바로 촬영</button>`;
+  picker.querySelectorAll('.rm').forEach(btn => btn.addEventListener('click', () => {
+    URL.revokeObjectURL(bulkPhotos.splice(Number(btn.dataset.i), 1)[0].previewUrl);
+    renderBulkPhotoPicker();
+  }));
+  $('bulk-photo-add-btn').addEventListener('click', () => $('bulk-photo-input').click());
+  $('bulk-camera-add-btn').addEventListener('click', () => $('bulk-camera-input').click());
+}
+function addBulkFiles(fileList) {
+  for (const f of fileList) if (f.type.startsWith('image/')) bulkPhotos.push({ file: f, previewUrl: URL.createObjectURL(f) });
+  renderBulkPhotoPicker();
+}
+$('bulk-photo-input').addEventListener('change', (e) => { addBulkFiles(e.target.files); e.target.value = ''; });
+$('bulk-camera-input').addEventListener('change', (e) => { addBulkFiles(e.target.files); e.target.value = ''; });
+$('bulk-modal').addEventListener('dragover', (e) => { e.preventDefault(); });
+$('bulk-modal').addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer?.files?.length) addBulkFiles(e.dataTransfer.files); });
+
+function openBulkModal() {
+  const sel = items.filter(i => selectedIds.has(i.id));
+  if (!sel.length) return;
+  bulkPhotos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+  bulkPhotos = [];
+  document.querySelector('input[name="bulk-photo-mode"][value="add"]').checked = true;
+  $('bulk-title').textContent = `선택한 자재 ${sel.length}개 일괄 수정`;
+  $('bulk-error').style.display = 'none';
+  // 선택한 자재들이 모두 같은 값이면 그 값을, 서로 다르면 "여러 값"이라고 보여줘요.
+  BULK_FIELDS.forEach(([k]) => {
+    const vals = [...new Set(sel.map(i => i[k] || ''))];
+    $('bk-on-' + k).checked = false;
+    $('bk-' + k).value = vals.length === 1 ? vals[0] : '';
+    $('bk-' + k).placeholder = vals.length === 1 ? '' : '여러 값';
+  });
+  renderBulkPhotoPicker();
+  $('bulk-modal').classList.add('open');
+}
+function closeBulkModal() {
+  $('bulk-modal').classList.remove('open');
+  bulkPhotos.forEach(p => URL.revokeObjectURL(p.previewUrl));
+  bulkPhotos = [];
+}
+$('bulk-edit-btn').addEventListener('click', openBulkModal);
+$('bulk-cancel-btn').addEventListener('click', closeBulkModal);
+
+async function applyBulk() {
+  const errEl = $('bulk-error');
+  errEl.style.display = 'none';
+  const targets = items.filter(i => selectedIds.has(i.id));
+  const fields = {};
+  BULK_FIELDS.forEach(([k]) => { if ($('bk-on-' + k).checked) fields[k] = $('bk-' + k).value.trim(); });
+  const mode = document.querySelector('input[name="bulk-photo-mode"]:checked').value;
+  const photoChange = bulkPhotos.length > 0 || mode === 'replace';
+  if (!targets.length) { closeBulkModal(); return; }
+  if (!Object.keys(fields).length && !photoChange) {
+    errEl.textContent = '사진을 추가하거나, 바꿀 칸을 체크해 주세요.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const labels = BULK_FIELDS.filter(([k]) => k in fields).map(([, l]) => l);
+  if (bulkPhotos.length) labels.unshift(mode === 'replace' ? `사진 교체(${bulkPhotos.length}장)` : `사진 추가(${bulkPhotos.length}장)`);
+  else if (mode === 'replace') labels.unshift('사진 모두 삭제');
+  if (!window.confirm(`선택한 자재 ${targets.length}개에 아래 내용을 적용할까요?\n- ${labels.join('\n- ')}`)) return;
+
+  const uploaded = [];
+  const replaced = [];
+  let saved = 0;
+  try {
+    for (let n = 0; n < bulkPhotos.length; n++) {
+      setBusy(true, `사진 올리는 중... (${n + 1}/${bulkPhotos.length})`);
+      uploaded.push(await uploadPhoto(bulkPhotos[n].file));
+    }
+    const now = new Date().toISOString();
+    if (!photoChange) {
+      setBusy(true, '저장 중...');
+      const { error } = await supabaseClient.from('materials').update({ ...fields, updated_at: now }).in('id', targets.map(i => i.id));
+      if (error) throw error;
+      saved = targets.length;
+    } else {
+      // 사진은 자재마다 기존 사진 목록이 달라서 한 건씩 저장해요. (새 사진 파일은 한 번만 올리고 여러 자재가 함께 써요.)
+      for (const it of targets) {
+        setBusy(true, `저장 중... (${saved + 1}/${targets.length})`);
+        const photos = mode === 'replace' ? [...uploaded] : [...it.photos, ...uploaded];
+        const { error } = await supabaseClient.from('materials').update({ ...fields, photos, updated_at: now }).eq('id', it.id);
+        if (error) throw error;
+        if (mode === 'replace') replaced.push(...it.photos);
+        saved++;
+      }
+    }
+    showToast(`자재 ${saved}개에 적용했어요.`, 'success', 3000);
+    closeBulkModal();
+    selectedIds.clear();
+  } catch (e) {
+    console.error(e);
+    errEl.textContent = (saved ? `${targets.length}개 중 ${saved}개만 적용되고 나머지는 실패했어요.` : '적용에 실패했어요.') +
+      ' 네트워크 상태를 확인하고 다시 시도해 주세요.\n(' + (e.message || e) + ')';
+    errEl.style.display = 'block';
+  } finally {
+    setBusy(true, '정리 중...');
+    // 교체로 빠진 기존 사진, 저장에 실패해 아무 데도 안 쓰이는 새 사진은 지워요(다른 자재가 쓰는 사진은 남김).
+    await cleanupUnreferencedPhotos([...replaced, ...uploaded]);
+    setBusy(false);
+    await fetchAndRenderData();
+  }
+}
+$('bulk-apply-btn').addEventListener('click', applyBulk);
 
 // ---------- 장비별 자재 리스트 ----------
 const NO_EQUIPMENT = '장비 미지정';
@@ -723,8 +977,9 @@ function renderEquipment() {
     <details class="eq-group" data-eq="${esc(eq)}" ${searching || eqOpen.has(eq) ? 'open' : ''}>
       <summary><span class="${eq === NO_EQUIPMENT ? 'eq-none' : ''}">${esc(eq)}</span><span class="eq-count">${list.length}</span></summary>
       <div class="overflow-x"><table>
-        <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
-        <tbody>${list.map(i => `<tr>
+        <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="eq" data-eq="${esc(eq)}" aria-label="이 장비 전체 선택" /></th><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+        <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
+          <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
           <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}</td>
           <td class="nowrap">${esc(i.process)}</td>
           <td class="nowrap">${esc(i.sub_process)}</td>
@@ -743,6 +998,7 @@ function renderEquipment() {
   }));
   area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
   area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+  bindSelection(area, 'eq');
 }
 
 $('eq-search-input').addEventListener('input', renderEquipment);
