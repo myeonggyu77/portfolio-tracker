@@ -302,15 +302,6 @@
 
   <div class="panel" id="panel-phrase">
     <div class="form-card">
-      <h3>번역 조회</h3>
-      <div class="form-grid" style="grid-template-columns: 1fr auto;">
-        <input type="text" id="pf-quick-lookup-input" placeholder="영어 또는 한글을 입력하세요" autocomplete="off" />
-        <button class="ghost-btn" id="pf-quick-lookup-btn" type="button" style="white-space:nowrap;">조회</button>
-      </div>
-      <div id="pf-quick-lookup-result" style="font-size:13px; min-height:18px;"></div>
-    </div>
-
-    <div class="form-card">
       <h3 id="phrase-form-title">생활영어 등록</h3>
       <div class="form-error" id="phrase-form-error" style="display:none;"></div>
       <div class="form-grid">
@@ -327,6 +318,16 @@
         <button class="ghost-btn" id="pf-cancel-edit-btn" style="display:none;">취소</button>
         <button class="primary-btn" id="pf-submit-btn">등록</button>
       </div>
+    </div>
+
+    <div class="form-card">
+      <h3>번역 조회</h3>
+      <div class="form-note" style="font-size:12px; color:var(--ink-faint); margin-bottom:10px;">영어나 한글을 입력하고 "조회"를 누르면 번역 결과와 함께 생활영어 목록에 바로 등록돼요.</div>
+      <div class="form-grid" style="grid-template-columns: 1fr auto;">
+        <input type="text" id="pf-quick-lookup-input" placeholder="영어 또는 한글을 입력하세요" autocomplete="off" />
+        <button class="ghost-btn" id="pf-quick-lookup-btn" type="button" style="white-space:nowrap;">조회</button>
+      </div>
+      <div id="pf-quick-lookup-result" style="font-size:13px; min-height:18px;"></div>
     </div>
 
     <div class="overflow-x">
@@ -913,6 +914,8 @@ async function translateText(text, source, target) {
   }
 }
 
+// 조회가 성공하면 번역 결과만 보여주는 게 아니라, 입력한 표현+번역을 생활영어
+// 목록에 바로 등록까지 해요(한 번의 조회로 번역 확인과 등록이 한 번에 끝나도록).
 async function runQuickLookup() {
   const inputEl = document.getElementById('pf-quick-lookup-input');
   const btn = document.getElementById('pf-quick-lookup-btn');
@@ -931,8 +934,19 @@ async function runQuickLookup() {
   const data = await translateText(text, source, target);
   btn.disabled = false;
   if (data && data.translated) {
-    resultEl.textContent = data.translated;
+    // source가 ko면 입력한 한글이 번역(translation)이고 결과가 영어 표현(phrase),
+    // source가 en이면 그 반대예요.
+    const phraseText = korean ? data.translated : text;
+    const translationText = korean ? text : data.translated;
+    phrases.push({
+      id: uid(), phrase: phraseText, translation: translationText, dateAdded: todayStr(),
+      mastered: false, correctStreak: 0, wrongCount: 0, lastTestedDate: null,
+    });
+    await persist();
+    renderAll();
+    resultEl.textContent = `등록 완료: ${phraseText} — ${translationText}`;
     resultEl.className = 'found';
+    inputEl.value = '';
   } else {
     resultEl.textContent = '번역 결과를 찾지 못했어요.';
     resultEl.className = 'notfound';
