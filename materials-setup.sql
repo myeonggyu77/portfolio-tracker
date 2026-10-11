@@ -29,3 +29,6 @@ alter publication supabase_realtime add table public.materials;
 
 -- 2026-10: '장비별 자재' 탭용 장비 칸 추가
 alter table public.materials add column if not exists equipment text not null default '';
+
+-- 2026-10: MDG 코드 칸 추가 (메모 앞에 "MDG xxxx · "로 넣어뒀던 값은 이 칸으로 옮김)
+alter table public.materials add column if not exists mdg_code text not null default '';
