@@ -70,6 +70,13 @@
 // 무관). **주의**: 이 두 가지는 순차 호출 "횟수"를 줄이는 것이지, 뜻 번역(translate)과 사전
 // 조회(fetchDictionaryInfo)를 다시 동시(Promise.all)에 부르는 것과는 전혀 다른 변경이에요 —
 // 그 둘을 병렬로 부르면 안 된다는 규칙은 그대로 유지돼요(아래 참고).
+//
+// 양방향 번역 — 생활영어 "번역 조회" 버튼(2026-10 추가): "text" 모드에 `source`/`target`
+// 쿼리 파라미터를 추가했어요(기본값은 기존과 동일하게 en/ko). 클라이언트(생활영어 탭)가
+// 입력한 문자열에 한글이 있는지로 언어를 판별해서 한글이면 source=ko&target=en, 아니면
+// source=en&target=ko로 호출해요. translateViaPapago/MyMemory/Google과 translate() 전부
+// source/target을 받도록 일반화했고, 기본값을 유지해서 단어 조회·예문 번역(항상 en→ko) 쪽
+// 호출부는 하나도 안 고쳐도 기존과 똑같이 동작해요.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -107,7 +114,7 @@ function decodeHtmlEntities(s: string): string {
     .replace(/&gt;/g, ">");
 }
 
-async function translateViaPapago(text: string): Promise<string> {
+async function translateViaPapago(text: string, source = "en", target = "ko"): Promise<string> {
   try {
     // 2026-09 말: 네이버 클라우드 플랫폼(NCP)의 신규 Papago Translation API로 전환.
     // (예전 개인 개발자용 openapi.naver.com/v1/papago/n2mt 엔드포인트는 서비스 종료됨.
@@ -120,7 +127,7 @@ async function translateViaPapago(text: string): Promise<string> {
         "X-NCP-APIGW-API-KEY": NAVER_CLIENT_SECRET!,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ source: "en", target: "ko", text }),
+      body: JSON.stringify({ source, target, text }),
     });
     if (!res.ok) return "";
     const data = await res.json();
@@ -130,9 +137,9 @@ async function translateViaPapago(text: string): Promise<string> {
   }
 }
 
-async function translateViaMyMemory(text: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<string> {
+async function translateViaMyMemory(text: string, timeoutMs = FETCH_TIMEOUT_MS, source = "en", target = "ko"): Promise<string> {
   try {
-    const mUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ko`;
+    const mUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`;
     const res = await fetchWithTimeout(mUrl, {}, timeoutMs);
     if (!res.ok) return "";
     const data = await res.json();
@@ -143,9 +150,9 @@ async function translateViaMyMemory(text: string, timeoutMs = FETCH_TIMEOUT_MS):
   }
 }
 
-async function translateViaGoogle(text: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<string> {
+async function translateViaGoogle(text: string, timeoutMs = FETCH_TIMEOUT_MS, source = "en", target = "ko"): Promise<string> {
   try {
-    const gUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ko&dt=t&q=${encodeURIComponent(text)}`;
+    const gUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${source}&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
     const res = await fetchWithTimeout(gUrl, {}, timeoutMs);
     if (!res.ok) return "";
     const data = await res.json();
@@ -156,16 +163,18 @@ async function translateViaGoogle(text: string, timeoutMs = FETCH_TIMEOUT_MS): P
   }
 }
 
-// 공용 번역 함수 — 단어 뜻 조회와 예문 번역 둘 다 여기로 통해요.
-async function translate(text: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<string> {
+// 공용 번역 함수 — 단어 뜻 조회·예문 번역(항상 en→ko)과, 생활영어 탭의 "번역 조회"
+// 버튼(2026-10 추가, 한↔영 양방향)이 전부 이 함수로 통해요. source/target 기본값은
+// 기존 동작(en→ko)을 그대로 유지하기 위한 거예요 — 호출부를 안 고치면 전과 똑같이 동작해요.
+async function translate(text: string, timeoutMs = FETCH_TIMEOUT_MS, source = "en", target = "ko"): Promise<string> {
   if (NAVER_CLIENT_ID && NAVER_CLIENT_SECRET) {
-    const viaPapago = await translateViaPapago(text);
+    const viaPapago = await translateViaPapago(text, source, target);
     if (viaPapago) return viaPapago;
     // Papago가 키 오류 등으로 실패하면 아래 소스로 조용히 대체해요.
   }
-  const viaMyMemory = await translateViaMyMemory(text, timeoutMs);
+  const viaMyMemory = await translateViaMyMemory(text, timeoutMs, source, target);
   if (viaMyMemory) return viaMyMemory;
-  return translateViaGoogle(text, timeoutMs);
+  return translateViaGoogle(text, timeoutMs, source, target);
 }
 
 // dictionaryapi.dev가 돌려주는 partOfSpeech 문자열(예: "noun", "transitive verb",
@@ -276,9 +285,13 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
 
   // "text"가 있으면 사전 조회 없이 그 텍스트만 순수 번역해서 돌려줘요(예문 직접 수정 시 사용).
+  // source/target 파라미터가 있으면 그 방향으로(생활영어 탭의 "번역 조회" 버튼이 한↔영
+  // 양방향으로 쓰려고 2026-10에 추가), 없으면 기존처럼 en→ko로 번역해요.
   const text = (url.searchParams.get("text") || "").trim();
   if (text) {
-    const translated = await translate(text, EXAMPLE_TRANSLATE_TIMEOUT_MS);
+    const source = url.searchParams.get("source") || "en";
+    const target = url.searchParams.get("target") || "ko";
+    const translated = await translate(text, EXAMPLE_TRANSLATE_TIMEOUT_MS, source, target);
     if (!translated) return jsonResponse({ error: "no_result" }, 502);
     return jsonResponse({
       translated,
