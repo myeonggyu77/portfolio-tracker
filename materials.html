@@ -103,7 +103,9 @@
   .card-photo { position: relative; aspect-ratio: 4 / 3; background: var(--line-soft); cursor: pointer; }
   .card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .card-photo .no-photo { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--ink-faint); font-size: 13px; cursor: default; }
-  .card-photo .count { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.65); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; font-family: var(--mono); }
+  /* 사진이 여러 장이면 카드에 전부 바둑판으로 보여줘요 */
+  .card-photo.multi { aspect-ratio: auto; cursor: default; display: grid; grid-template-columns: repeat(var(--cols, 2), 1fr); gap: 2px; }
+  .card-photo.multi img { aspect-ratio: 1 / 1; height: auto; cursor: pointer; }
   .card-body { padding: 12px 14px; flex: 1; }
   .card-path { font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
   .card-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; word-break: keep-all; overflow-wrap: anywhere; }
@@ -124,6 +126,7 @@
   thead th { text-align: left; font-size: 11px; color: var(--ink-faint); font-weight: 500; padding: 9px 8px; border-bottom: 1px solid var(--ink); position: sticky; top: 0; background: var(--paper); z-index: 2; white-space: nowrap; }
   tbody td { padding: 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
   tbody tr:hover { background: var(--accent-tint); }
+  td.thumb-cell .thumbs { display: grid; grid-template-columns: repeat(var(--cols, 1), 52px); gap: 4px; }
   td.thumb-cell img { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; display: block; cursor: pointer; }
   td.wrap { white-space: pre-wrap; min-width: 140px; max-width: 260px; overflow-wrap: anywhere; }
   td.nowrap { white-space: nowrap; }
@@ -737,6 +740,14 @@ function renderKpis() {
   $('kpi-photos').textContent = items.reduce((s, i) => s + i.photos.length, 0);
 }
 
+// 표에서 사진 칸: 등록된 사진 썸네일을 전부 보여줘요(한 줄에 최대 3장, 넘으면 다음 줄).
+function thumbsCell(i) {
+  if (!i.photos.length) return '';
+  const cols = Math.min(i.photos.length, 3);
+  return `<div class="thumbs" style="--cols:${cols}">${i.photos.map((p, k) =>
+    `<img src="${esc(urlOf(p.thumb))}" alt="" loading="lazy" data-open="${i.id}" data-idx="${k}" />`).join('')}</div>`;
+}
+
 function pathLabel(i) { return [i.process, i.sub_process].filter(Boolean).map(esc).join(' › '); }
 
 function renderList() {
@@ -749,13 +760,12 @@ function renderList() {
   }
   if (viewMode === 'card') {
     area.innerHTML = `<div class="cards">${list.map(i => {
-      const first = i.photos[0];
-      const photo = first
-        ? `<img src="${esc(urlOf(first.thumb))}" alt="" loading="lazy" />${i.photos.length > 1 ? `<span class="count">+${i.photos.length - 1}</span>` : ''}`
-        : `<div class="no-photo">사진 없음</div>`;
+      const n = i.photos.length;
+      const imgs = i.photos.map((p, k) => `<img src="${esc(urlOf(p.thumb))}" alt="" loading="lazy" data-open="${i.id}" data-idx="${k}" />`).join('');
+      const photo = n ? imgs : `<div class="no-photo">사진 없음</div>`;
       const row = (k, v) => v ? `<div class="card-row"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>` : '';
       return `<div class="card ${selectedIds.has(i.id) ? 'selected' : ''}">
-        <div class="card-photo" data-open="${i.id}"><label class="card-check"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></label>${photo}</div>
+        <div class="card-photo ${n > 1 ? 'multi' : ''}" style="--cols:${n === 2 || n === 4 ? 2 : 3}"><label class="card-check"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></label>${photo}</div>
         <div class="card-body">
           ${pathLabel(i) ? `<div class="card-path">${pathLabel(i)}</div>` : ''}
           <div class="card-name">${esc(i.material_name)}</div>
@@ -772,7 +782,7 @@ function renderList() {
       <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="list" aria-label="전체 선택" /></th><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
       <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
         <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
-        <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}${i.photos.length > 1 ? `<div style="font-size:11px;color:var(--ink-faint);text-align:center;">${i.photos.length}장</div>` : ''}</td>
+        <td class="thumb-cell">${thumbsCell(i)}</td>
         <td class="nowrap">${esc(i.equipment)}</td>
         <td class="nowrap">${esc(i.process)}</td>
         <td class="nowrap">${esc(i.sub_process)}</td>
@@ -786,7 +796,7 @@ function renderList() {
   }
   area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
   area.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => deleteItem(b.dataset.del)));
-  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, Number(b.dataset.idx) || 0)));
   bindSelection(area, 'list');
 }
 
@@ -1016,7 +1026,7 @@ function renderEquipment() {
         <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="eq" data-eq="${esc(eq)}" aria-label="이 장비 전체 선택" /></th><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
         <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
           <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
-          <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}</td>
+          <td class="thumb-cell">${thumbsCell(i)}</td>
           <td class="nowrap">${esc(i.process)}</td>
           <td class="nowrap">${esc(i.sub_process)}</td>
           <td class="wrap"><b>${esc(i.material_name)}</b></td>
@@ -1033,7 +1043,7 @@ function renderEquipment() {
     if (d.open) eqOpen.add(d.dataset.eq); else eqOpen.delete(d.dataset.eq);
   }));
   area.querySelectorAll('[data-edit]').forEach(b => b.addEventListener('click', () => startEdit(b.dataset.edit)));
-  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, 0)));
+  area.querySelectorAll('[data-open]').forEach(b => b.addEventListener('click', () => openLightbox(b.dataset.open, Number(b.dataset.idx) || 0)));
   bindSelection(area, 'eq');
 }
 
