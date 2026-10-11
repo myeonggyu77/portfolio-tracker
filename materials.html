@@ -117,6 +117,16 @@
 
   .empty { text-align: center; padding: 50px 0; color: var(--ink-faint); font-size: 14px; }
 
+  /* 탭 (자재 목록 / 자재 신청) */
+  .tabs { display: flex; gap: 2px; margin-bottom: 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .tab { font-family: var(--sans); font-size: 14px; font-weight: 500; color: var(--ink-faint); background: none; border: none; padding: 10px 4px; margin-right: 20px; cursor: pointer; border-bottom: 2px solid transparent; position: relative; top: 1px; white-space: nowrap; }
+  .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab:hover:not(.active) { color: var(--ink-soft); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .coming-soon { background: var(--paper-raised); border: 1px dashed var(--line); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
+  .coming-soon .big { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+
   /* 사진 크게 보기 */
   .lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 9500; display: none; align-items: center; justify-content: center; }
   .lightbox.open { display: flex; }
@@ -205,6 +215,12 @@
     <div class="kpi"><div class="lbl">사진</div><div class="val" id="kpi-photos">0</div></div>
   </div>
 
+  <div class="tabs">
+    <button class="tab active" data-panel="panel-materials">자재 목록</button>
+    <button class="tab" data-panel="panel-request">자재 신청</button>
+  </div>
+
+  <div class="panel active" id="panel-materials">
   <div class="form-card" id="form-card">
     <h3 id="form-title">자재 등록</h3>
 
@@ -250,6 +266,15 @@
   </div>
   <div class="result-count" id="result-count"></div>
   <div id="list-area"></div>
+  </div>
+
+  <!-- 자재 신청 탭: 신청 항목(입력 칸) 목록은 사용자가 차후 정해주기로 함 — 정해지면 여기에 폼·목록을 채워 넣으면 돼요. -->
+  <div class="panel" id="panel-request">
+    <div class="coming-soon">
+      <div class="big">자재 신청</div>
+      신청 항목 목록은 정해지는 대로 추가할 예정이에요.
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -690,6 +715,12 @@ $('csv-btn').addEventListener('click', () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
+
+// ---------- 탭 전환 ----------
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === tab.dataset.panel));
+}));
 
 // ---------- 화면 전환 / 인증 ----------
 function showApp() {

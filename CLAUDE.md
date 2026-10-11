@@ -188,5 +188,6 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 - **백엔드**: 같은 Supabase 프로젝트(`kcmqzinekvikpmlxkdxf`), 같은 로그인 계정. 다른 두 앱과 달리 1행짜리 JSON이 아니라 **자재 1개 = 1행**인 `materials` 테이블을 써요(폰·탭·PC에서 동시에 입력해도 서로 덮어쓰지 않도록). 컬럼: `process`(공정), `sub_process`(세부공정), `material_name`(자재명, 필수), `fitting`(피팅값), `vendor`(업체), `memo`, `photos`(jsonb `[{path, thumb}]`), `created_at`, `updated_at`.
 - **사진**: 비공개 Storage 버킷 `material-photos`. 업로드 전에 브라우저에서 긴 변 1600px(원본용)·400px(썸네일용) JPEG로 줄여서 2개 파일로 올려요(`YYYY-MM/<id>.jpg`, `..._t.jpg`). 화면 표시는 `createSignedUrls`로 발급한 임시 주소(6시간). 자재 삭제·수정 중 사진 빼기 시 Storage 파일도 같이 지워요.
 - **여러 기기 동기화**: `materials` 테이블을 `supabase_realtime` publication에 추가해서, 다른 기기에서 등록/수정/삭제하면 열려있는 화면에 자동 반영돼요. 앱으로 돌아올 때(visibilitychange)와 "새로고침" 버튼으로도 다시 불러와요.
+- **탭(2026-10 추가)**: "자재 목록"(아래 등록 폼+목록, `panel-materials`) / "자재 신청"(`panel-request`). **자재 신청 탭은 아직 빈 자리(안내 문구만)** — 사용자가 신청 항목 목록을 차후에 알려주기로 함. 항목이 정해지면 그에 맞는 테이블(예: `material_requests`)과 폼·목록을 이 패널에 만들면 돼요.
 - **화면**: 등록 폼(사진 추가/바로 촬영/PC 드래그앤드롭, 공정·세부공정·자재명·업체는 입력 이력 자동완성) + 목록(검색, 공정/세부공정/업체 필터, 정렬, 카드/표 보기 전환, 사진 크게 보기(스와이프·방향키), CSV 다운로드, 수정·삭제).
 
