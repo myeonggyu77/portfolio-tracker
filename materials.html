@@ -113,6 +113,7 @@
   td.thumb-cell img { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; display: block; cursor: pointer; }
   td.wrap { white-space: pre-wrap; min-width: 140px; max-width: 260px; overflow-wrap: anywhere; }
   td.nowrap { white-space: nowrap; }
+  td.mono { font-family: var(--mono); font-size: 12px; }
   td.actions { white-space: nowrap; text-align: right; }
 
   .empty { text-align: center; padding: 50px 0; color: var(--ink-faint); font-size: 14px; }
@@ -246,6 +247,7 @@
       <div><div class="field-lbl">공정</div><input id="f-process" list="process-datalist" autocomplete="off" placeholder="예: 배관" /></div>
       <div><div class="field-lbl">세부공정</div><input id="f-subprocess" list="subprocess-datalist" autocomplete="off" placeholder="예: 급수배관" /></div>
       <div><div class="field-lbl">자재명 *</div><input id="f-material" list="material-datalist" autocomplete="off" placeholder="예: PPC 엘보 90°" /></div>
+      <div><div class="field-lbl">MDG 코드</div><input id="f-mdg" autocomplete="off" inputmode="numeric" placeholder="예: 591031" /></div>
       <div><div class="field-lbl">피팅값</div><input id="f-fitting" autocomplete="off" placeholder="예: 25A / 1&quot;" /></div>
       <div><div class="field-lbl">업체</div><input id="f-vendor" list="vendor-datalist" autocomplete="off" placeholder="예: ○○상사" /></div>
     </div>
@@ -260,7 +262,7 @@
   </div>
 
   <div class="toolbar">
-    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, 장비, 업체, 메모 등)" autocomplete="off" />
+    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, MDG 코드, 장비, 업체 등)" autocomplete="off" />
     <select id="filter-process"><option value="">공정 전체</option></select>
     <select id="filter-subprocess"><option value="">세부공정 전체</option></select>
     <select id="filter-vendor"><option value="">업체 전체</option></select>
@@ -283,7 +285,7 @@
   <!-- 장비별 자재 리스트: 자재 목록과 같은 데이터(materials 테이블)를 '장비' 칸 기준으로 묶어서 보여줘요. -->
   <div class="panel" id="panel-equipment">
     <div class="toolbar">
-      <input class="search" id="eq-search-input" type="search" placeholder="장비명 또는 자재 검색" autocomplete="off" />
+      <input class="search" id="eq-search-input" type="search" placeholder="장비명, 자재명, MDG 코드 검색" autocomplete="off" />
       <button class="ghost-btn" id="eq-expand-btn">모두 펼치기</button>
       <button class="ghost-btn" id="eq-collapse-btn">모두 접기</button>
       <button class="ghost-btn" id="eq-csv-btn">CSV 다운로드</button>
@@ -317,7 +319,7 @@ const THUMB_MAX_DIM = 400;    // 목록용 썸네일
 const SIGNED_URL_TTL = 60 * 60 * 6; // 비공개 사진을 보여주는 임시 주소 유효시간(초)
 
 let supabaseClient = null;
-let items = [];            // {id, equipment, process, sub_process, material_name, fitting, vendor, memo, photos:[{path, thumb}], created_at, updated_at}
+let items = [];            // {id, equipment, process, sub_process, material_name, mdg_code, fitting, vendor, memo, photos:[{path, thumb}], created_at, updated_at}
 let editingId = null;      // 수정 중인 자재 id (null이면 새 등록 모드)
 let formPhotos = [];       // 폼에 올라간 사진. 기존: {path, thumb}, 새로 추가: {file, previewUrl}
 let removedPhotos = [];    // 수정 중 삭제한 기존 사진 (저장 시 Storage에서도 지움)
@@ -360,7 +362,7 @@ async function fetchAndRenderData() {
     const { data, error } = await supabaseClient.from('materials').select('*').order('created_at', { ascending: false });
     if (error) throw error;
     items = data || [];
-    items.forEach(it => { if (!Array.isArray(it.photos)) it.photos = []; if (it.equipment == null) it.equipment = ''; });
+    items.forEach(it => { if (!Array.isArray(it.photos)) it.photos = []; if (it.equipment == null) it.equipment = ''; if (it.mdg_code == null) it.mdg_code = ''; });
   } catch (e) {
     console.error(e);
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
@@ -472,7 +474,7 @@ function resetForm() {
   editingId = null;
   formPhotos = [];
   removedPhotos = [];
-  ['f-equipment', 'f-process', 'f-subprocess', 'f-material', 'f-fitting', 'f-vendor', 'f-memo'].forEach(id => { $(id).value = ''; });
+  ['f-equipment', 'f-process', 'f-subprocess', 'f-material', 'f-mdg', 'f-fitting', 'f-vendor', 'f-memo'].forEach(id => { $(id).value = ''; });
   $('form-error').style.display = 'none';
   $('form-title').textContent = '자재 등록';
   $('save-btn').textContent = '등록';
@@ -490,6 +492,7 @@ function startEdit(id) {
   $('f-process').value = it.process;
   $('f-subprocess').value = it.sub_process;
   $('f-material').value = it.material_name;
+  $('f-mdg').value = it.mdg_code;
   $('f-fitting').value = it.fitting;
   $('f-vendor').value = it.vendor;
   $('f-memo').value = it.memo;
@@ -509,6 +512,7 @@ async function saveForm() {
     process: $('f-process').value.trim(),
     sub_process: $('f-subprocess').value.trim(),
     material_name: $('f-material').value.trim(),
+    mdg_code: $('f-mdg').value.trim(),
     fitting: $('f-fitting').value.trim(),
     vendor: $('f-vendor').value.trim(),
     memo: $('f-memo').value.trim(),
@@ -610,7 +614,7 @@ function filteredItems() {
   const fp = $('filter-process').value, fs = $('filter-subprocess').value, fv = $('filter-vendor').value;
   let list = items.filter(i =>
     (!fp || i.process === fp) && (!fs || i.sub_process === fs) && (!fv || i.vendor === fv) &&
-    (!q || [i.equipment, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
+    (!q || [i.equipment, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
   );
   const sort = $('sort-select').value;
   const cmp = (a, b) => a.localeCompare(b, 'ko');
@@ -653,24 +657,24 @@ function renderList() {
           ${row('장비', i.equipment)}${row('피팅값', i.fitting)}${row('업체', i.vendor)}${row('메모', i.memo)}
         </div>
         <div class="card-foot">
-          <span class="date">${fmtDate(i.created_at)}</span>
+          <span class="date">${i.mdg_code ? 'MDG ' + esc(i.mdg_code) : ''}</span>
           <span class="btns"><button class="small-btn" data-edit="${i.id}">수정</button><button class="small-btn danger" data-del="${i.id}">삭제</button></span>
         </div>
       </div>`;
     }).join('')}</div>`;
   } else {
     area.innerHTML = `<div class="overflow-x"><table>
-      <thead><tr><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th>등록일</th><th></th></tr></thead>
+      <thead><tr><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
       <tbody>${list.map(i => `<tr>
         <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}${i.photos.length > 1 ? `<div style="font-size:11px;color:var(--ink-faint);text-align:center;">${i.photos.length}장</div>` : ''}</td>
         <td class="nowrap">${esc(i.equipment)}</td>
         <td class="nowrap">${esc(i.process)}</td>
         <td class="nowrap">${esc(i.sub_process)}</td>
         <td class="wrap"><b>${esc(i.material_name)}</b></td>
+        <td class="nowrap mono">${esc(i.mdg_code)}</td>
         <td class="nowrap">${esc(i.fitting)}</td>
         <td class="nowrap">${esc(i.vendor)}</td>
         <td class="wrap">${esc(i.memo)}</td>
-        <td class="nowrap" style="font-family:var(--mono);font-size:12px;">${fmtDate(i.created_at)}</td>
         <td class="actions"><button class="small-btn" data-edit="${i.id}">수정</button> <button class="small-btn danger" data-del="${i.id}">삭제</button></td>
       </tr>`).join('')}</tbody></table></div>`;
   }
@@ -697,7 +701,7 @@ function equipmentGroups() {
   const groups = new Map();
   items.forEach(i => {
     const key = i.equipment || NO_EQUIPMENT;
-    if (q && ![key, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q)) return;
+    if (q && ![key, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q)) return;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(i);
   });
@@ -719,12 +723,13 @@ function renderEquipment() {
     <details class="eq-group" data-eq="${esc(eq)}" ${searching || eqOpen.has(eq) ? 'open' : ''}>
       <summary><span class="${eq === NO_EQUIPMENT ? 'eq-none' : ''}">${esc(eq)}</span><span class="eq-count">${list.length}</span></summary>
       <div class="overflow-x"><table>
-        <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+        <thead><tr><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
         <tbody>${list.map(i => `<tr>
           <td class="thumb-cell">${i.photos[0] ? `<img src="${esc(urlOf(i.photos[0].thumb))}" alt="" loading="lazy" data-open="${i.id}" />` : ''}</td>
           <td class="nowrap">${esc(i.process)}</td>
           <td class="nowrap">${esc(i.sub_process)}</td>
           <td class="wrap"><b>${esc(i.material_name)}</b></td>
+          <td class="nowrap mono">${esc(i.mdg_code)}</td>
           <td class="nowrap">${esc(i.fitting)}</td>
           <td class="nowrap">${esc(i.vendor)}</td>
           <td class="wrap">${esc(i.memo)}</td>
@@ -792,8 +797,8 @@ $('lightbox').addEventListener('touchend', (e) => {
 function downloadCsv(list, filePrefix) {
   if (!list.length) { showToast('다운로드할 자재가 없어요.', 'info', 3000); return; }
   const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const rows = [['장비', '공정', '세부공정', '자재명', '피팅값', '업체', '메모', '사진수', '등록일']]
-    .concat(list.map(i => [i.equipment, i.process, i.sub_process, i.material_name, i.fitting, i.vendor, i.memo, i.photos.length, fmtDate(i.created_at)]));
+  const rows = [['장비', '공정', '세부공정', '자재명', 'MDG 코드', '피팅값', '업체', '메모', '사진수']]
+    .concat(list.map(i => [i.equipment, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo, i.photos.length]));
   const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

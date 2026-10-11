@@ -185,10 +185,11 @@ const GOOGLE_SHEET_NAME = ''; // 비워두면 첫 번째 탭 사용
 
 현장 자재를 사진과 함께 목록화하는 앱. 서비스 주소: https://myeonggyu77.github.io/portfolio-tracker/materials.html
 
-- **백엔드**: 같은 Supabase 프로젝트(`kcmqzinekvikpmlxkdxf`), 같은 로그인 계정. 다른 두 앱과 달리 1행짜리 JSON이 아니라 **자재 1개 = 1행**인 `materials` 테이블을 써요(폰·탭·PC에서 동시에 입력해도 서로 덮어쓰지 않도록). 컬럼: `equipment`(장비, 2026-10 추가), `process`(공정), `sub_process`(세부공정), `material_name`(자재명, 필수), `fitting`(피팅값), `vendor`(업체), `memo`, `photos`(jsonb `[{path, thumb}]`), `created_at`, `updated_at`.
+- **백엔드**: 같은 Supabase 프로젝트(`kcmqzinekvikpmlxkdxf`), 같은 로그인 계정. 다른 두 앱과 달리 1행짜리 JSON이 아니라 **자재 1개 = 1행**인 `materials` 테이블을 써요(폰·탭·PC에서 동시에 입력해도 서로 덮어쓰지 않도록). 컬럼: `equipment`(장비, 2026-10 추가), `process`(공정), `sub_process`(세부공정), `material_name`(자재명, 필수), `mdg_code`(MDG 코드, 2026-10 추가), `fitting`(피팅값), `vendor`(업체), `memo`, `photos`(jsonb `[{path, thumb}]`), `created_at`, `updated_at`.
 - **사진**: 비공개 Storage 버킷 `material-photos`. 업로드 전에 브라우저에서 긴 변 1600px(원본용)·400px(썸네일용) JPEG로 줄여서 2개 파일로 올려요(`YYYY-MM/<id>.jpg`, `..._t.jpg`). 화면 표시는 `createSignedUrls`로 발급한 임시 주소(6시간). 자재 삭제·수정 중 사진 빼기 시 Storage 파일도 같이 지워요.
 - **여러 기기 동기화**: `materials` 테이블을 `supabase_realtime` publication에 추가해서, 다른 기기에서 등록/수정/삭제하면 열려있는 화면에 자동 반영돼요. 앱으로 돌아올 때(visibilitychange)와 "새로고침" 버튼으로도 다시 불러와요.
 - **탭(2026-10 추가)**: "자재 목록"(아래 등록 폼+목록, `panel-materials`) / "장비별 자재"(`panel-equipment`) / "자재 신청"(`panel-request`). 탭 전환은 `showTab(panelId)`.
 - **장비별 자재 탭(2026-10 추가)**: 별도 테이블 없이 `materials`의 `equipment` 칸으로 묶어서 보여주는 화면이에요(등록 폼 맨 앞에 "장비" 칸 추가). 장비별로 접고 펼 수 있는 그룹(`<details>`, 펼침 상태는 `eqOpen`에 기억), 장비명이 빈 자재는 맨 아래 "장비 미지정" 그룹, 검색 시 자동 펼침, 모두 펼치기/접기, CSV 다운로드. 그룹 안 "수정" 버튼은 "자재 목록" 탭으로 넘어가 수정 폼을 열어요. **자재 신청 탭은 아직 빈 자리(안내 문구만)** — 사용자가 신청 항목 목록을 차후에 알려주기로 함. 항목이 정해지면 그에 맞는 테이블(예: `material_requests`)과 폼·목록을 이 패널에 만들면 돼요.
+- **MDG 코드 칸 / 등록일 숨김(2026-10)**: 사용자 요청으로 목록(카드·표·장비별 자재·CSV)에 MDG 코드를 표시하고 **등록일은 화면·CSV에서 뺐어요**(`created_at`은 DB에 그대로 있고 "최신 등록순/오래된순" 정렬에만 써요). 카드 하단 왼쪽 자리(예전 등록일)에 "MDG 591031"이 보여요. 처음 38건(Tool Hookup 배기 덕트류)은 사진 속 자재표를 보고 SQL로 일괄 등록했고, 그때 메모 앞에 넣었던 "MDG xxxx · "는 이 칸으로 옮겼어요.
 - **화면**: 등록 폼(사진 추가/바로 촬영/PC 드래그앤드롭, 공정·세부공정·자재명·업체는 입력 이력 자동완성) + 목록(검색, 공정/세부공정/업체 필터, 정렬, 카드/표 보기 전환, 사진 크게 보기(스와이프·방향키), CSV 다운로드, 수정·삭제).
 
