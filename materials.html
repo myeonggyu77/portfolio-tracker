@@ -77,6 +77,20 @@
   /* 목록 툴바 / 필터 */
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
   .toolbar .search { flex: 1 1 220px; }
+  /* 자재 목록 검색 (탭 바로 아래, 크게) */
+  .list-search { position: relative; margin-bottom: 8px; }
+  .list-search input { -webkit-appearance: none; appearance: none; height: 48px; font-size: 16px; padding: 0 44px 0 40px; border-radius: 6px; border-color: var(--ink-faint); background: var(--paper-raised) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23928878" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 12px center; background-size: 18px; }
+  .list-search input::-webkit-search-cancel-button { display: none; }
+  .list-search .clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border: none; border-radius: 50%; background: var(--line-soft); color: var(--ink-soft); font-size: 16px; cursor: pointer; display: none; }
+  .list-search .clear.show { display: block; }
+  .search-hint { font-size: 11px; color: var(--ink-faint); margin: 0 0 14px; }
+  .search-hint b { color: var(--accent); font-weight: 600; }
+  /* 등록 폼 접기/펼치기 */
+  .form-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; }
+  .form-head h3 { margin: 0; }
+  .form-card.collapsed { padding-top: 12px; padding-bottom: 12px; }
+  .form-card:not(.collapsed) .form-head { margin-bottom: 12px; }
+  .form-card.collapsed #form-body { display: none; }
   .toolbar select { flex: 0 1 160px; }
   .view-toggle { display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
   .view-toggle button { font-family: var(--sans); font-size: 13px; border: none; background: var(--paper-raised); color: var(--ink-soft); padding: 9px 12px; cursor: pointer; }
@@ -290,8 +304,18 @@
   </div>
 
   <div class="panel active" id="panel-materials">
+  <div class="list-search">
+    <input id="search-input" type="search" placeholder="자재 검색 (이름·MDG·사이즈·업체)" autocomplete="off" enterkeyhint="search" />
+    <button class="clear" id="search-clear-btn" aria-label="검색어 지우기">✕</button>
+  </div>
+  <p class="search-hint" id="search-hint">띄어쓰기로 여러 단어를 넣으면 모두 포함된 자재만 찾아요. 예: <b>reducer 10</b>, <b>elbow 45</b></p>
+
   <div class="form-card" id="form-card">
-    <h3 id="form-title">자재 등록</h3>
+    <div class="form-head" id="form-head">
+      <h3 id="form-title">자재 등록</h3>
+      <button class="ghost-btn" id="form-toggle-btn" type="button">접기</button>
+    </div>
+    <div id="form-body">
 
     <div class="field-lbl">사진 (여러 장 가능)</div>
     <div class="photo-picker" id="photo-picker"></div>
@@ -316,10 +340,10 @@
       <button class="ghost-btn" id="clear-form-btn">입력 비우기</button>
       <button class="accent-btn" id="save-btn">등록</button>
     </div>
+    </div>
   </div>
 
   <div class="toolbar">
-    <input class="search" id="search-input" type="search" placeholder="검색 (자재명, MDG 코드, 장비, 업체 등)" autocomplete="off" />
     <select id="filter-process"><option value="">공정 전체</option></select>
     <select id="filter-subprocess"><option value="">세부공정 전체</option></select>
     <select id="filter-vendor"><option value="">업체 전체</option></select>
@@ -426,8 +450,10 @@ async function fetchAndRenderData() {
     showToast('데이터를 불러오지 못했어요. 새로고침 후 다시 시도해 주세요.', 'error', 7000);
   }
   await ensureSignedUrls(items.flatMap(it => it.photos.map(p => p.thumb)));
+  if (!formStateReady) { formStateReady = true; initFormOpen(); }
   renderAll();
 }
+let formStateReady = false;
 
 // 다른 기기(폰/탭/PC)에서 등록·수정·삭제하면 이 화면에도 자동으로 반영돼요.
 function subscribeRealtime() {
@@ -570,6 +596,7 @@ function startEdit(id) {
   $('save-btn').textContent = '수정 완료';
   $('cancel-edit-btn').style.display = 'inline-block';
   renderPhotoPicker();
+  setFormOpen(true, false);
   $('form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -678,12 +705,21 @@ function refreshFiltersAndLists() {
   fillDatalist('equipment-datalist', uniqSorted(items.map(i => i.equipment)));
 }
 
+// 검색: 띄어쓰기로 나눈 단어가 "모두" 들어있는 자재만 찾아요(대소문자 무시). 예: "reducer 10" → 10x4, 10x6, 12x10 …
+function searchText(i, extra = '') {
+  return [extra, i.equipment, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo].join(' ').toLowerCase();
+}
+function matchesQuery(text, q) {
+  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  return terms.every(t => text.includes(t));
+}
+
 function filteredItems() {
-  const q = $('search-input').value.trim().toLowerCase();
+  const q = $('search-input').value.trim();
   const fp = $('filter-process').value, fs = $('filter-subprocess').value, fv = $('filter-vendor').value;
   let list = items.filter(i =>
     (!fp || i.process === fp) && (!fs || i.sub_process === fs) && (!fv || i.vendor === fv) &&
-    (!q || [i.equipment, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q))
+    (!q || matchesQuery(searchText(i), q))
   );
   const sort = $('sort-select').value;
   const cmp = (a, b) => a.localeCompare(b, 'ko');
@@ -950,12 +986,12 @@ const NO_EQUIPMENT = '장비 미지정';
 const eqOpen = new Set(); // 펼쳐둔 장비 그룹 (다시 그려도 유지)
 
 function equipmentGroups() {
-  const q = $('eq-search-input').value.trim().toLowerCase();
+  const q = $('eq-search-input').value.trim();
   const cmp = (a, b) => a.localeCompare(b, 'ko');
   const groups = new Map();
   items.forEach(i => {
     const key = i.equipment || NO_EQUIPMENT;
-    if (q && ![key, i.process, i.sub_process, i.material_name, i.mdg_code, i.fitting, i.vendor, i.memo].join(' ').toLowerCase().includes(q)) return;
+    if (q && !matchesQuery(searchText(i, key), q)) return;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(i);
   });
@@ -1005,7 +1041,34 @@ $('eq-search-input').addEventListener('input', renderEquipment);
 $('eq-expand-btn').addEventListener('click', () => { equipmentGroups().forEach(([eq]) => eqOpen.add(eq)); $('eq-area').querySelectorAll('details').forEach(d => { d.open = true; }); });
 $('eq-collapse-btn').addEventListener('click', () => { eqOpen.clear(); $('eq-area').querySelectorAll('details').forEach(d => { d.open = false; }); });
 
-$('search-input').addEventListener('input', renderList);
+function onListSearch() {
+  const q = $('search-input').value.trim();
+  $('search-clear-btn').classList.toggle('show', !!q);
+  // 검색을 시작하면, 비어 있는 등록 폼은 접어서 결과가 바로 보이게 해요(입력 중이거나 수정 중이면 그대로 둠).
+  if (q && !editingId && isFormEmpty()) setFormOpen(false, false);
+  renderList();
+}
+$('search-input').addEventListener('input', onListSearch);
+$('search-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('search-input').blur(); $('result-count').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+$('search-clear-btn').addEventListener('click', () => { $('search-input').value = ''; onListSearch(); $('search-input').focus(); });
+
+// ---------- 등록 폼 접기/펼치기 ----------
+// 자재가 쌓이면 폼이 화면을 많이 차지해서, 기본은 접어두고(처음 쓸 때·수정할 때는 펼침) 마지막 선택을 기억해요.
+const FORM_OPEN_KEY = 'materials.formOpen';
+function isFormEmpty() {
+  return !formPhotos.length && ['f-equipment', 'f-process', 'f-subprocess', 'f-material', 'f-mdg', 'f-fitting', 'f-vendor', 'f-memo'].every(id => !$(id).value.trim());
+}
+function setFormOpen(open, remember = true) {
+  $('form-card').classList.toggle('collapsed', !open);
+  $('form-toggle-btn').textContent = open ? '접기' : '+ 펼치기';
+  if (remember) { try { localStorage.setItem(FORM_OPEN_KEY, open ? '1' : '0'); } catch (e) { /* 저장 못 해도 동작엔 지장 없음 */ } }
+}
+function initFormOpen() {
+  let saved = null;
+  try { saved = localStorage.getItem(FORM_OPEN_KEY); } catch (e) { /* 무시 */ }
+  setFormOpen(saved === null ? items.length === 0 : saved === '1', false);
+}
+$('form-head').addEventListener('click', () => setFormOpen($('form-card').classList.contains('collapsed')));
 $('filter-process').addEventListener('change', () => { refreshFiltersAndLists(); renderList(); });
 ['filter-subprocess', 'filter-vendor', 'sort-select'].forEach(id => $(id).addEventListener('change', renderList));
 $('view-card').addEventListener('click', () => { viewMode = 'card'; $('view-card').classList.add('active'); $('view-table').classList.remove('active'); renderList(); });
