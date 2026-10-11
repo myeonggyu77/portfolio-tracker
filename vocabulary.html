@@ -137,6 +137,8 @@
   .quiz-result .row { display: flex; justify-content: space-between; font-size: 13px; padding: 8px 0; border-bottom: 1px solid var(--line-soft); }
   .quiz-start-wrap { text-align: center; padding: 40px 0; }
   .quiz-start-wrap p { color: var(--ink-soft); font-size: 13px; margin-bottom: 18px; }
+  #pf-quick-lookup-result.found { color: var(--accent); font-weight: 600; }
+  #pf-quick-lookup-result.notfound { color: var(--down); }
 
   /* 아이폰 Safari는 입력칸 글자 크기가 16px보다 작으면 탭할 때 화면을 자동으로 확대해요.
      좁은 화면(모바일)에서만 입력칸 글자를 16px로 키워서 그 자동 확대를 막아요
@@ -299,6 +301,15 @@
   </div>
 
   <div class="panel" id="panel-phrase">
+    <div class="form-card">
+      <h3>번역 조회</h3>
+      <div class="form-grid" style="grid-template-columns: 1fr auto;">
+        <input type="text" id="pf-quick-lookup-input" placeholder="영어 또는 한글을 입력하세요" autocomplete="off" />
+        <button class="ghost-btn" id="pf-quick-lookup-btn" type="button" style="white-space:nowrap;">조회</button>
+      </div>
+      <div id="pf-quick-lookup-result" style="font-size:13px; min-height:18px;"></div>
+    </div>
+
     <div class="form-card">
       <h3 id="phrase-form-title">생활영어 등록</h3>
       <div class="form-error" id="phrase-form-error" style="display:none;"></div>
@@ -878,6 +889,59 @@ async function autoTranslatePhrase() {
 
 document.getElementById('pf-phrase').addEventListener('blur', () => {
   phraseLookupPromise = autoTranslatePhrase().finally(() => { phraseLookupPromise = null; });
+});
+
+// ---------- 번역 조회(2026-10 추가) ----------
+// 생활영어 탭 맨 위의 일회성 조회 버튼. 영어를 넣으면 한글로, 한글을 넣으면 영어로 —
+// 입력값에 한글이 섞여 있는지로 방향을 자동으로 판단해요. dict-lookup의 "text" 모드에
+// source/target을 넘겨서 양방향으로 번역해요(기본값은 en→ko라 한국어 입력일 때만
+// source=ko&target=en으로 바꿔 호출).
+function containsKorean(text) {
+  return /[가-힣㄰-㆏]/.test(text);
+}
+
+async function translateText(text, source, target) {
+  const params = new URLSearchParams({ text, source, target });
+  const url = `${SUPABASE_URL}/functions/v1/dict-lookup?${params.toString()}`;
+  try {
+    const res = await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, apikey: SUPABASE_ANON_KEY } });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return null;
+    return data;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function runQuickLookup() {
+  const inputEl = document.getElementById('pf-quick-lookup-input');
+  const btn = document.getElementById('pf-quick-lookup-btn');
+  const resultEl = document.getElementById('pf-quick-lookup-result');
+  const text = inputEl.value.trim();
+  resultEl.className = '';
+  if (!text) {
+    resultEl.textContent = '조회할 내용을 입력해 주세요.';
+    return;
+  }
+  const korean = containsKorean(text);
+  const source = korean ? 'ko' : 'en';
+  const target = korean ? 'en' : 'ko';
+  resultEl.textContent = '조회 중...';
+  btn.disabled = true;
+  const data = await translateText(text, source, target);
+  btn.disabled = false;
+  if (data && data.translated) {
+    resultEl.textContent = data.translated;
+    resultEl.className = 'found';
+  } else {
+    resultEl.textContent = '번역 결과를 찾지 못했어요.';
+    resultEl.className = 'notfound';
+  }
+}
+
+document.getElementById('pf-quick-lookup-btn').addEventListener('click', runQuickLookup);
+document.getElementById('pf-quick-lookup-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); runQuickLookup(); }
 });
 
 document.getElementById('pf-submit-btn').addEventListener('click', async () => {
