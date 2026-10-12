@@ -3,7 +3,7 @@
 // 실제 데이터(Supabase, 사진)는 캐싱하지 않고 항상 네트워크에서 최신 값을 가져와요.
 // (vocabulary-sw.js와 같은 구조 — 파일 이름만 자재관리 것으로 바꿨어요.)
 
-const CACHE_NAME = 'materials-shell-v1';
+const CACHE_NAME = 'materials-shell-v2'; // v2: 상자 아이콘으로 교체하며 캐시 무효화
 const SHELL_FILES = [
   './materials.html',
   './materials-manifest.json',
