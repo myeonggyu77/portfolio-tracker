@@ -31,7 +31,7 @@
 | `vocabulary-icon-192.png`, `vocabulary-icon-512.png`, `vocabulary-icon-512-maskable.png`, `vocabulary-apple-touch-icon.png` | (2026-09 말 추가) 단어장 전용 PWA 아이콘 4종. `icon-192.png` 등(포트폴리오 원장용)과 별개 파일 — 단어장 accent 색(`#0f6e56`) 배경에 흰색 "Aa" 글자. |
 | `materials.html` | (2026-09 말 추가) **자재관리** 앱 본체. 포트폴리오 원장·단어장과 독립된 세 번째 앱, 같은 Supabase 프로젝트·로그인 계정 공유. 12번 항목 참고. |
 | `materials-setup.sql` | 자재관리용 테이블·Storage 버킷·RLS 생성 SQL (이미 실행 완료, 참고용 기록) |
-| `materials-manifest.json`, `materials-sw.js`, `materials-icon-192.png`, `materials-icon-512.png`, `materials-icon-512-maskable.png`, `materials-apple-touch-icon.png` | 자재관리 전용 PWA 파일 (accent `#b4530a` 배경에 흰색 상자 3개 아이콘) |
+| `materials-manifest.json`, `materials-sw.js`, `materials-icon-192.png`, `materials-icon-512.png`, `materials-icon-512-maskable.png`, `materials-apple-touch-icon.png` | 자재관리 전용 PWA 파일. 아이콘은 (2026-10 교체) accent `#b4530a` 배경에 테이프 붙은 **입체 자재 상자**(사용자가 후보 3개 중 선택, Pillow로 생성). 교체하면서 `materials-sw.js` 캐시 이름을 `materials-shell-v2`로 올렸어요. |
 
 ## 3. 백엔드/외부 연동 설정값
 
