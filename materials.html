@@ -349,7 +349,7 @@
   <div class="toolbar">
     <select id="filter-process"><option value="">공정 전체</option></select>
     <select id="filter-subprocess"><option value="">세부공정 전체</option></select>
-    <select id="filter-vendor"><option value="">업체 전체</option></select>
+    <select id="filter-vendor" style="display:none;"><option value="">업체 전체</option></select>
     <select id="sort-select">
       <option value="new">최신 등록순</option>
       <option value="old">오래된순</option>
@@ -769,7 +769,7 @@ function renderList() {
         <div class="card-body">
           ${pathLabel(i) ? `<div class="card-path">${pathLabel(i)}</div>` : ''}
           <div class="card-name">${esc(i.material_name)}</div>
-          ${row('장비', i.equipment)}${row('피팅값', i.fitting)}${row('업체', i.vendor)}${row('메모', i.memo)}
+          ${row('피팅값', i.fitting)}${row('메모', i.memo)}
         </div>
         <div class="card-foot">
           <span class="date">${i.mdg_code ? 'MDG ' + esc(i.mdg_code) : ''}</span>
@@ -779,17 +779,15 @@ function renderList() {
     }).join('')}</div>`;
   } else {
     area.innerHTML = `<div class="overflow-x"><table>
-      <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="list" aria-label="전체 선택" /></th><th>사진</th><th>장비</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+      <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="list" aria-label="전체 선택" /></th><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>메모</th><th></th></tr></thead>
       <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
         <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
         <td class="thumb-cell">${thumbsCell(i)}</td>
-        <td class="nowrap">${esc(i.equipment)}</td>
         <td class="nowrap">${esc(i.process)}</td>
         <td class="nowrap">${esc(i.sub_process)}</td>
         <td class="wrap"><b>${esc(i.material_name)}</b></td>
         <td class="nowrap mono">${esc(i.mdg_code)}</td>
         <td class="nowrap">${esc(i.fitting)}</td>
-        <td class="nowrap">${esc(i.vendor)}</td>
         <td class="wrap">${esc(i.memo)}</td>
         <td class="actions"><button class="small-btn" data-edit="${i.id}">수정</button> <button class="small-btn danger" data-del="${i.id}">삭제</button></td>
       </tr>`).join('')}</tbody></table></div>`;
@@ -1023,7 +1021,7 @@ function renderEquipment() {
     <details class="eq-group" data-eq="${esc(eq)}" ${searching || eqOpen.has(eq) ? 'open' : ''}>
       <summary><span class="${eq === NO_EQUIPMENT ? 'eq-none' : ''}">${esc(eq)}</span><span class="eq-count">${list.length}</span></summary>
       <div class="overflow-x"><table>
-        <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="eq" data-eq="${esc(eq)}" aria-label="이 장비 전체 선택" /></th><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>업체</th><th>메모</th><th></th></tr></thead>
+        <thead><tr><th class="check-cell"><input type="checkbox" class="sel" data-sel-all="eq" data-eq="${esc(eq)}" aria-label="이 장비 전체 선택" /></th><th>사진</th><th>공정</th><th>세부공정</th><th>자재명</th><th>MDG 코드</th><th>피팅값</th><th>메모</th><th></th></tr></thead>
         <tbody>${list.map(i => `<tr class="${selectedIds.has(i.id) ? 'selected' : ''}">
           <td class="check-cell"><input type="checkbox" class="sel" data-sel="${i.id}" ${selectedIds.has(i.id) ? 'checked' : ''} aria-label="선택" /></td>
           <td class="thumb-cell">${thumbsCell(i)}</td>
@@ -1032,7 +1030,6 @@ function renderEquipment() {
           <td class="wrap"><b>${esc(i.material_name)}</b></td>
           <td class="nowrap mono">${esc(i.mdg_code)}</td>
           <td class="nowrap">${esc(i.fitting)}</td>
-          <td class="nowrap">${esc(i.vendor)}</td>
           <td class="wrap">${esc(i.memo)}</td>
           <td class="actions"><button class="small-btn" data-edit="${i.id}">수정</button></td>
         </tr>`).join('')}</tbody>
