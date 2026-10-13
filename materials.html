@@ -153,6 +153,20 @@
   .eq-group .overflow-x { border: none; border-top: 1px solid var(--line); border-radius: 0; max-height: none; }
   .coming-soon { background: var(--paper-raised); border: 1px dashed var(--line); border-radius: 6px; padding: 48px 20px; text-align: center; color: var(--ink-soft); font-size: 14px; line-height: 1.7; }
   .coming-soon .big { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  /* 자재 신청 탭 */
+  .rq-items { font-family: var(--mono); font-size: 14px; min-height: 220px; }
+  .rq-hint { font-size: 12px; color: var(--ink-faint); line-height: 1.6; margin: 6px 0 10px; }
+  .rq-preview, .rq-text { font-family: var(--mono); font-size: 13px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 4px; padding: 10px 12px; margin: 0; }
+  .rq-preview:empty { display: none; }
+  .rq-list { display: grid; gap: 12px; }
+  .rq-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 14px; }
+  .rq-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .rq-card-title { font-weight: 600; font-size: 15px; }
+  .rq-card-meta { font-size: 12px; color: var(--ink-faint); margin-top: 3px; }
+  .rq-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .rq-card-actions button { padding: 6px 10px; font-size: 12px; }
+  .rq-text.collapsed { max-height: 180px; overflow: hidden; position: relative; }
+  .rq-more { font-size: 12px; color: var(--accent); background: none; border: none; padding: 6px 0 0; cursor: pointer; }
 
   /* 선택 + 일괄 수정 */
   input.sel { width: 20px; height: 20px; padding: 0; accent-color: var(--accent); cursor: pointer; vertical-align: middle; }
@@ -379,12 +393,40 @@
     <div id="eq-area"></div>
   </div>
 
-  <!-- 자재 신청 탭: 신청 항목(입력 칸) 목록은 사용자가 차후 정해주기로 함 — 정해지면 여기에 폼·목록을 채워 넣으면 돼요. -->
+  <!-- 자재 신청 탭(2026-10 베타): public.material_requests 테이블(신청 1건 = 1행). 자재 내역은 현장 카톡 양식 그대로 텍스트로 받아서 합계(mm/ft)를 자동 계산해요. -->
   <div class="panel" id="panel-request">
-    <div class="coming-soon">
-      <div class="big">자재 신청</div>
-      신청 항목 목록은 정해지는 대로 추가할 예정이에요.
+    <div class="form-card" id="rq-form-card">
+      <div class="form-head" id="rq-form-head">
+        <h3 id="rq-form-title">자재 신청 작성</h3>
+        <button class="ghost-btn" id="rq-toggle-btn" type="button">접기</button>
+      </div>
+      <div id="rq-form-body">
+      <div class="form-grid">
+        <div><div class="field-lbl">신청일</div><input id="rq-date" type="date" /></div>
+        <div><div class="field-lbl">장비명</div><input id="rq-equipment" list="equipment-datalist" autocomplete="off" placeholder="예: WSSCTA02" /></div>
+        <div><div class="field-lbl">공정</div><input id="rq-process" autocomplete="off" placeholder="예: UPW" /></div>
+        <div><div class="field-lbl">위치</div><input id="rq-location" autocomplete="off" placeholder="예: 2F H25-24" /></div>
+        <div><div class="field-lbl">신청자</div><input id="rq-requester" autocomplete="off" placeholder="이름" /></div>
+        <div><div class="field-lbl">반입일</div><input id="rq-delivery" autocomplete="off" placeholder="예: 10/14" /></div>
+      </div>
+      <div class="field-lbl">자재 내역 *</div>
+      <textarea id="rq-items" class="rq-items" autocomplete="off" spellcheck="false" placeholder="40x40 sys'c&#10;5150 x 2&#10;1950 x 1&#10;&#10;I Rod ⅜&quot;&#10;150 x 1&#10;&#10;8&quot; 90° Elbow x 2"></textarea>
+      <p class="rq-hint">자재 이름을 한 줄 쓰고, 그 아래에 <b>길이 x 수량</b>을 한 줄씩 쓰면 자재별 합계(mm·ft)가 자동으로 붙어요. 엘보·가스켓처럼 길이가 없는 건 <b>자재명 x 수량</b>으로 쓰세요.</p>
+      <div class="field-lbl">미리보기 (복사되는 내용)</div>
+      <pre class="rq-preview" id="rq-preview"></pre>
+      <div class="form-error" id="rq-error" style="display:none;"></div>
+      <div class="form-actions" style="margin-top:10px;">
+        <button class="ghost-btn" id="rq-cancel-btn" style="display:none;">취소</button>
+        <button class="ghost-btn" id="rq-clear-btn">입력 비우기</button>
+        <button class="accent-btn" id="rq-save-btn">신청 저장</button>
+      </div>
+      </div>
     </div>
+    <div class="toolbar">
+      <input class="search" id="rq-search-input" type="search" placeholder="장비명, 위치, 신청자, 자재 검색" autocomplete="off" />
+    </div>
+    <div class="result-count" id="rq-result-count"></div>
+    <div class="rq-list" id="rq-list"></div>
   </div>
 </div>
 
@@ -455,6 +497,7 @@ async function fetchAndRenderData() {
   await ensureSignedUrls(items.flatMap(it => it.photos.map(p => p.thumb)));
   if (!formStateReady) { formStateReady = true; initFormOpen(); }
   renderAll();
+  fetchRequests();
 }
 let formStateReady = false;
 
@@ -1135,6 +1178,214 @@ function downloadCsv(list, filePrefix) {
 $('csv-btn').addEventListener('click', () => downloadCsv(filteredItems(), '자재목록'));
 $('eq-csv-btn').addEventListener('click', () => downloadCsv(equipmentGroups().flatMap(([, list]) => list), '장비별자재'));
 
+// ============================================================
+// 자재 신청 (2026-10 베타) — public.material_requests
+// ============================================================
+let requests = [];
+let rqEditingId = null;
+const rqExpanded = new Set();
+const LEN_LINE = /^\s*(\d+(?:\.\d+)?)\s*(?:mm)?\s*[xX×*]\s*(\d+)\s*(?:ea|EA)?\s*$/;
+const COUNT_LINE = /^(.*\D)\s+[xX×*]\s*(\d+)\s*(?:ea|EA)?\s*$/;
+const TOTAL_SUFFIX = /\s*\(\s*[\d,.]+\s*mm[^)]*\)\s*$/i;
+
+// 자재 내역 텍스트 → 그룹 목록 [{name, lens:[{len,qty}], count:null|qty}]
+function parseRequestItems(text) {
+  const groups = [];
+  let cur = null;
+  String(text || '').split(/\r?\n/).forEach(raw => {
+    const line = raw.trim();
+    if (!line) { cur = null; return; }
+    let m = line.match(LEN_LINE);
+    if (m && cur) { cur.lens.push({ len: Number(m[1]), qty: Number(m[2]) }); return; }
+    m = line.match(COUNT_LINE);
+    if (m) { groups.push({ name: m[1].trim(), lens: [], count: Number(m[2]) }); cur = null; return; }
+    cur = { name: line.replace(TOTAL_SUFFIX, ''), lens: [], count: null };
+    groups.push(cur);
+  });
+  return groups;
+}
+function fmtNum(n) { return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100); }
+function formatRequestItems(text) {
+  // 길이 있는 자재는 한 덩어리씩, 연달아 쓴 "자재명 x 수량" 줄들은 한 덩어리로 묶어서 빈 줄로 구분해요.
+  const blocks = [];
+  let countBlock = null;
+  parseRequestItems(text).forEach(g => {
+    if (g.count != null) {
+      if (!countBlock) { countBlock = []; blocks.push(countBlock); }
+      countBlock.push(`${g.name} x ${g.count}`);
+      return;
+    }
+    countBlock = null;
+    if (!g.lens.length) { blocks.push([g.name]); return; }
+    const mm = g.lens.reduce((a, e) => a + e.len * e.qty, 0);
+    const ft = (mm / 304.8).toFixed(2);
+    blocks.push([`${g.name} (${fmtNum(mm)}mm ${ft}ft)`, ...g.lens.map(e => `${fmtNum(e.len)} x ${e.qty}`)]);
+  });
+  return blocks.map(b => b.join('\n')).join('\n\n');
+}
+function koDateLine(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-').map(Number);
+  const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(y, m - 1, d).getDay()];
+  return `${y}.${String(m).padStart(2, '0')}.${String(d).padStart(2, '0')} ${wd}요일`;
+}
+function buildRequestText(r) {
+  return [
+    koDateLine(r.request_date),
+    '■ 자재신청',
+    '새로',
+    `장비명:${r.equipment || ''}`,
+    `공정 : ${r.process || ''}`,
+    `위치 : ${r.location || ''}`,
+    `신청자: ${r.requester || ''}`,
+    `반입일: ${r.delivery_date || ''}`,
+    '',
+    formatRequestItems(r.items_text),
+    '',
+    '신청합니다',
+  ].join('\n');
+}
+function todayIso() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function rqFormValues() {
+  return {
+    request_date: $('rq-date').value || todayIso(),
+    equipment: $('rq-equipment').value.trim(),
+    process: $('rq-process').value.trim(),
+    location: $('rq-location').value.trim(),
+    requester: $('rq-requester').value.trim(),
+    delivery_date: $('rq-delivery').value.trim(),
+    items_text: $('rq-items').value.replace(/\s+$/, ''),
+  };
+}
+function updateRqPreview() {
+  const v = rqFormValues();
+  $('rq-preview').textContent = v.items_text.trim() ? buildRequestText(v) : '';
+}
+function resetRqForm() {
+  rqEditingId = null;
+  ['rq-equipment', 'rq-process', 'rq-location', 'rq-requester', 'rq-delivery', 'rq-items'].forEach(id => { $(id).value = ''; });
+  $('rq-date').value = todayIso();
+  $('rq-form-title').textContent = '자재 신청 작성';
+  $('rq-save-btn').textContent = '신청 저장';
+  $('rq-cancel-btn').style.display = 'none';
+  $('rq-error').style.display = 'none';
+  updateRqPreview();
+}
+function setRqFormOpen(open) {
+  $('rq-form-body').style.display = open ? '' : 'none';
+  $('rq-toggle-btn').textContent = open ? '접기' : '펼치기';
+}
+function startRqEdit(id) {
+  const r = requests.find(x => x.id === id); if (!r) return;
+  rqEditingId = id;
+  $('rq-date').value = r.request_date || todayIso();
+  $('rq-equipment').value = r.equipment; $('rq-process').value = r.process; $('rq-location').value = r.location;
+  $('rq-requester').value = r.requester; $('rq-delivery').value = r.delivery_date; $('rq-items').value = r.items_text;
+  $('rq-form-title').textContent = '자재 신청 수정';
+  $('rq-save-btn').textContent = '수정 완료';
+  $('rq-cancel-btn').style.display = '';
+  setRqFormOpen(true);
+  updateRqPreview();
+  $('rq-form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+async function saveRequest() {
+  const v = rqFormValues();
+  const errEl = $('rq-error');
+  if (!v.items_text.trim()) { errEl.textContent = '자재 내역을 입력해 주세요.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  setBusy(true);
+  try {
+    const now = new Date().toISOString();
+    const { error } = rqEditingId
+      ? await supabaseClient.from('material_requests').update({ ...v, updated_at: now }).eq('id', rqEditingId)
+      : await supabaseClient.from('material_requests').insert(v);
+    if (error) throw error;
+    showToast(rqEditingId ? '신청 내용을 수정했어요.' : '자재 신청을 저장했어요.', 'success');
+    resetRqForm();
+    await fetchRequests();
+  } catch (e) {
+    console.error(e);
+    errEl.textContent = '저장하지 못했어요: ' + (e.message || e);
+    errEl.style.display = 'block';
+  } finally { setBusy(false); }
+}
+async function deleteRequest(id) {
+  const r = requests.find(x => x.id === id); if (!r) return;
+  if (!confirm(`${koDateLine(r.request_date)} ${r.equipment || ''} 신청을 삭제할까요?`)) return;
+  const { error } = await supabaseClient.from('material_requests').delete().eq('id', id);
+  if (error) { showToast('삭제하지 못했어요: ' + error.message, 'error'); return; }
+  if (rqEditingId === id) resetRqForm();
+  showToast('삭제했어요.', 'success');
+  await fetchRequests();
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+  }
+  showToast('복사했어요. 카톡 등에 붙여넣기 하세요.', 'success');
+}
+async function fetchRequests() {
+  const { data, error } = await supabaseClient.from('material_requests').select('*')
+    .order('request_date', { ascending: false }).order('created_at', { ascending: false });
+  if (error) { console.error(error); showToast('자재 신청 목록을 불러오지 못했어요.', 'error'); return; }
+  requests = data || [];
+  renderRequests();
+}
+function renderRequests() {
+  const q = $('rq-search-input').value;
+  const list = requests.filter(r => matchesQuery([r.equipment, r.process, r.location, r.requester, r.delivery_date, r.items_text].join(' '), q));
+  $('rq-result-count').textContent = requests.length ? `${list.length}건 표시 (전체 ${requests.length}건)` : '';
+  if (!list.length) {
+    $('rq-list').innerHTML = `<div class="coming-soon">${requests.length ? '검색 결과가 없어요.' : '아직 저장된 자재 신청이 없어요.<br>위에서 작성해 보세요.'}</div>`;
+    return;
+  }
+  $('rq-list').innerHTML = list.map(r => {
+    const open = rqExpanded.has(r.id);
+    const groups = parseRequestItems(r.items_text).length;
+    return `<div class="rq-card" data-id="${r.id}">
+      <div class="rq-card-head">
+        <div>
+          <div class="rq-card-title">${esc(r.equipment || '장비 미지정')}${r.process ? ' · ' + esc(r.process) : ''}</div>
+          <div class="rq-card-meta">${esc(koDateLine(r.request_date))}${r.location ? ' · ' + esc(r.location) : ''}${r.requester ? ' · ' + esc(r.requester) : ''}${r.delivery_date ? ' · 반입 ' + esc(r.delivery_date) : ''} · 자재 ${groups}종</div>
+        </div>
+        <div class="rq-card-actions">
+          <button class="accent-btn" data-act="copy">복사</button>
+          <button class="ghost-btn" data-act="edit">수정</button>
+          <button class="ghost-btn danger" data-act="del">삭제</button>
+        </div>
+      </div>
+      <pre class="rq-text${open ? '' : ' collapsed'}">${esc(buildRequestText(r))}</pre>
+      <button class="rq-more" data-act="more">${open ? '접기 ▲' : '전체 보기 ▼'}</button>
+    </div>`;
+  }).join('');
+}
+$('rq-list').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-act]'); if (!btn) return;
+  const id = btn.closest('.rq-card').dataset.id;
+  const act = btn.dataset.act;
+  if (act === 'copy') { const r = requests.find(x => x.id === id); if (r) copyText(buildRequestText(r)); }
+  else if (act === 'edit') startRqEdit(id);
+  else if (act === 'del') deleteRequest(id);
+  else if (act === 'more') { rqExpanded.has(id) ? rqExpanded.delete(id) : rqExpanded.add(id); renderRequests(); }
+});
+['rq-date', 'rq-equipment', 'rq-process', 'rq-location', 'rq-requester', 'rq-delivery', 'rq-items'].forEach(id => $(id).addEventListener('input', updateRqPreview));
+$('rq-save-btn').addEventListener('click', saveRequest);
+$('rq-cancel-btn').addEventListener('click', resetRqForm);
+$('rq-clear-btn').addEventListener('click', resetRqForm);
+$('rq-toggle-btn').addEventListener('click', () => setRqFormOpen($('rq-form-body').style.display === 'none'));
+$('rq-search-input').addEventListener('input', renderRequests);
+let rqChannel = null;
+function subscribeRequestsRealtime() {
+  if (rqChannel) return;
+  let timer = null;
+  rqChannel = supabaseClient.channel('material-requests-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'material_requests' }, () => { clearTimeout(timer); timer = setTimeout(fetchRequests, 400); })
+    .subscribe();
+}
+resetRqForm();
+
 // ---------- 탭 전환 ----------
 function showTab(panelId) {
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.panel === panelId));
@@ -1148,6 +1399,7 @@ function showApp() {
   $('backend-error').style.display = 'none';
   $('main-app').style.display = 'block';
   subscribeRealtime();
+  subscribeRequestsRealtime();
 }
 function showLogin() {
   $('login-overlay').style.display = 'flex';
@@ -1205,6 +1457,7 @@ async function doLogin() {
 
 $('logout-btn').addEventListener('click', async () => {
   if (realtimeChannel) { supabaseClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+  if (rqChannel) { supabaseClient.removeChannel(rqChannel); rqChannel = null; }
   await supabaseClient.auth.signOut();
   showLogin();
 });
