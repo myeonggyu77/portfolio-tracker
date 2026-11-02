@@ -106,6 +106,29 @@
   .name-cell { font-weight: 500; }
   #h-table .name-cell, #tk-table .name-cell, #dk-table .name-cell, #ds-table .name-cell,
   #h-table th.name-th, #tk-table th.name-th, #dk-table th.name-th, #ds-table th.name-th { width: 180px; }
+  .pb-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .pb-sum { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 4px; padding: 14px 16px; display: grid; gap: 10px; }
+  .pb-sum .lbl { font-size: 11px; color: var(--ink-faint); letter-spacing: 0.03em; }
+  .pb-sum .big { font-family: var(--mono); font-size: 26px; font-weight: 600; color: var(--accent); }
+  .pb-kv { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 13px; margin: 0; }
+  .pb-kv dt { color: var(--ink-soft); } .pb-kv dd { margin: 0; text-align: right; font-family: var(--mono); white-space: nowrap; }
+  .pb-eta { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; border-top: 1px solid var(--line-soft); padding-top: 10px; font-size: 13px; color: var(--ink-soft); }
+  .pb-eta b { font-family: var(--mono); font-size: 16px; color: var(--ink); }
+  .pb-bar { position: relative; height: 8px; background: var(--line-soft); border-radius: 4px; overflow: hidden; }
+  .pb-bar span { position: absolute; left: 0; top: 0; bottom: 0; background: var(--accent); border-radius: 4px; }
+  .pb-list { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 4px; }
+  .pb-row { padding: 14px 16px; border-top: 1px solid var(--line-soft); display: grid; gap: 10px; }
+  .pb-row:first-child { border-top: 0; }
+  .pb-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .pb-name { font-weight: 500; font-size: 14px; line-height: 1.35; min-width: 0; word-break: keep-all; }
+  .pb-ret { font-family: var(--mono); font-size: 18px; font-weight: 600; color: var(--accent); text-align: right; white-space: nowrap; }
+  .pb-ret small { display: block; font-family: var(--sans); font-size: 10px; font-weight: 400; color: var(--ink-faint); }
+  .pb-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; font-size: 12px; }
+  .pb-grid div { display: grid; gap: 2px; min-width: 0; }
+  .pb-grid .k { font-size: 10px; color: var(--ink-faint); }
+  .pb-grid .v { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pb-grid .v.up { color: var(--accent); }
+  @media (max-width: 440px) { .pb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .code-cell { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
   .ccy-badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; margin-left: 6px; background: var(--line-soft); color: var(--ink-soft); vertical-align: 1px; }
   .ccy-badge.usd { background: var(--accent-soft); color: var(--accent); }
@@ -277,6 +300,7 @@
     <button class="tab" data-panel="divus">미국 배당금</button>
     <button class="tab" data-panel="fxrate">환율정보</button>
     <button class="tab" data-panel="divstatus">배당현황</button>
+    <button class="tab" data-panel="payback">원금 회수</button>
     <button class="tab" data-panel="divwife">와이프배당금</button>
   </div>
 
@@ -580,20 +604,7 @@
 
   <!-- 배당현황 -->
   <div class="panel" id="panel-divstatus">
-    <h3 class="section-heading">종목별 배당 현황</h3>
-    <div class="overflow-x">
-    <table id="ds-summary-table" style="display:none;">
-      <thead><tr>
-        <th>종목</th><th class="num">배당총액</th><th class="num">평균가</th><th class="num">리턴율</th>
-      </tr></thead>
-      <tbody id="ds-summary-body"></tbody>
-    </table>
-    </div>
-    <div class="empty" id="ds-summary-empty" style="display:none;">
-      아직 배당현황 입력 내역이 없어요. 아래에서 내역을 추가하면 종목별로 자동 집계돼요.
-    </div>
-
-    <h3 class="section-heading" style="margin-top:24px;">배당현황 내역</h3>
+    <h3 class="section-heading">배당현황 내역</h3>
     <div class="toolbar">
       <div class="search-wrap"><input type="text" id="ds-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
       <div class="btn-group">
@@ -649,6 +660,22 @@
   </div>
 
   <!-- 와이프 배당금 (미국 배당금 탭 복제, 완전히 별도 관리) -->
+  <!-- 원금 회수: 받은 배당이 투자원금의 몇 %인지, 지금 속도로 언제 원금을 다 돌려받는지 -->
+  <div class="panel" id="panel-payback">
+    <div class="form-note" style="margin-bottom:14px;">주가는 빼고, 평균 매수가로 계산한 투자원금 중 지금까지 받은 배당이 몇 %인지 보여줘요. 원금 회수 예상일은 최근 배당 금액이 그대로 이어진다고 보고 계산해요.</div>
+    <div class="pb-summary" id="pb-summary"></div>
+    <div class="empty" id="pb-empty" style="display:none;">
+      <div class="big">배당을 받은 보유 종목이 없어요</div>
+      한국/미국 배당금 탭에 받은 배당을 입력하면 여기에 종목별로 나와요.
+    </div>
+    <div class="pb-list" id="pb-list"></div>
+    <div class="form-note" style="margin-top:14px;line-height:1.7;">
+      투자원금 = 평균 매수가 × 보유 수량 · 배당 수익률 = 받은 배당 ÷ 투자원금<br>
+      지금 속도의 월 배당 = 배당현황에 입력한 최근 주당 배당 평균(월배당 3회, 주배당 4회) × 보유 수량<br>
+      원금 회수 예상 = 남은 금액 ÷ 월 배당 만큼 오늘부터 더한 달 · 미국 종목은 세후(×0.85) 달러 기준이에요.
+    </div>
+  </div>
+
   <div class="panel" id="panel-divwife">
     <div class="toolbar">
       <div class="search-wrap"><input type="text" id="dw-search" class="search-input" placeholder="검색 (모든 항목)" /></div>
@@ -1407,6 +1434,7 @@ function renderAll() {
   renderDivKr();
   renderDivUs();
   renderDivStatus();
+  renderPayback(holdings);
   renderDivWife();
   refreshAutocompleteLists();
 }
@@ -1954,38 +1982,7 @@ function computeAvgBuyPriceByKey(key, country) {
   return { avgPrice: totalQty > 0 ? totalAmt/totalQty : 0, totalAmt, totalQty };
 }
 
-function renderDivStatusSummary() {
-  const body = document.getElementById('ds-summary-body'), empty = document.getElementById('ds-summary-empty'), table = document.getElementById('ds-summary-table');
-  body.innerHTML = '';
-  if (divStatus.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
-  empty.style.display = 'none'; table.style.display = 'table';
-
-  const groups = {};
-  divStatus.forEach(d => {
-    const ikey = itemKey(d);
-    const key = ikey + '|' + d.country;
-    if (!groups[key]) groups[key] = { name: d.name.trim(), code: d.code || '', country: d.country, ikey, total: 0 };
-    groups[key].total += d.country === '미국' ? (d.usdAmount || 0) : (d.krwAmount || 0);
-  });
-
-  Object.values(groups)
-    .sort((a,b) => b.total - a.total || a.name.localeCompare(b.name, 'ko'))
-    .forEach(g => {
-      const ccy = g.country === '미국' ? 'USD' : 'KRW';
-      const { avgPrice, totalAmt } = computeAvgBuyPriceByKey(g.ikey, g.country);
-      const returnRate = totalAmt > 0 ? (g.total / totalAmt) * 100 : 0;
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td class="name-cell">${g.name}<span class="country-tag ${g.country==='미국'?'us':''}">${g.country}</span></td>
-        <td class="num">${fmtCTrim(g.total, ccy)}</td>
-        <td class="num">${avgPrice > 0 ? fmtCTrim(avgPrice, ccy) : '-'}</td>
-        <td class="num">${totalAmt > 0 ? fmtPct(returnRate) : '-'}</td>`;
-      body.appendChild(tr);
-    });
-}
-
 function renderDivStatus() {
-  renderDivStatusSummary();
   const body = document.getElementById('ds-body'), empty = document.getElementById('ds-empty'), table = document.getElementById('ds-table');
   body.innerHTML = '';
   const term = searchTerms.ds;
@@ -2014,6 +2011,95 @@ function renderDivStatus() {
   body.querySelectorAll('.edit').forEach(b => b.onclick = () => openDsForm(b.dataset.id));
   body.querySelectorAll('.del').forEach(b => b.onclick = async () => { if (!confirmDelete()) return; divStatus = divStatus.filter(d=>d.id!==b.dataset.id); await saveDivStatus(); renderAll(); });
   wireRowCheckboxes('ds', 'ds-body');
+}
+
+// ---- 원금 회수 ----
+// 보유 종목마다 받은 배당 ÷ 투자원금, 그리고 배당현황의 최근 주당 배당으로 원금 회수 예상일을 계산해요.
+function paybackRate(h) {
+  const key = itemKey(h);
+  const country = h.ccy === 'USD' ? '미국' : '한국';
+  const rows = divStatus
+    .filter(d => itemKey(d) === key && (d.country || '').trim() === country && d.payDate)
+    .sort((a, b) => b.payDate.localeCompare(a.payDate));
+  if (rows.length === 0) return null;
+  // 지급 간격이 10일 이하면 주배당(1년 52회), 아니면 월배당(1년 12회)
+  const gaps = [];
+  for (let i = 0; i < Math.min(rows.length - 1, 4); i++) {
+    gaps.push((new Date(rows[i].payDate) - new Date(rows[i + 1].payDate)) / 86400000);
+  }
+  gaps.sort((a, b) => a - b);
+  const weekly = gaps.length > 0 && gaps[Math.floor(gaps.length / 2)] <= 10;
+  const recent = rows.slice(0, weekly ? 4 : 3);
+  const amt = d => country === '미국' ? (d.usdAmount || 0) * 0.85 : (d.krwAmount || 0);
+  const perShare = recent.reduce((s, d) => s + amt(d), 0) / recent.length;
+  return perShare * h.qty * (weekly ? 52 : 12) / 12;
+}
+function paybackEta(months) {
+  if (!isFinite(months) || months <= 0) return null;
+  const d = new Date();
+  d.setDate(d.getDate() + Math.round(months * 30.437));
+  const t = Math.round(months), y = Math.floor(t / 12), mo = t % 12;
+  return {
+    ym: d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월',
+    left: ((y ? y + '년 ' : '') + (mo || !y ? mo + '개월' : '')).trim()
+  };
+}
+function renderPayback(holdings) {
+  const sumEl = document.getElementById('pb-summary'), listEl = document.getElementById('pb-list'), empty = document.getElementById('pb-empty');
+  const rows = holdings
+    .filter(h => h.divReceived > 0 && h.qty * h.avgCost > 0)
+    .map(h => {
+      const cost = h.qty * h.avgCost;
+      const monthly = paybackRate(h);
+      const remain = Math.max(0, cost - h.divReceived);
+      return { ...h, country: h.ccy === 'USD' ? '미국' : '한국', cost, monthly, remain,
+               dr: h.divReceived / cost, months: monthly ? remain / monthly : NaN };
+    })
+    .sort((a, b) => b.dr - a.dr);
+  if (rows.length === 0) { empty.style.display = 'block'; sumEl.innerHTML = ''; listEl.innerHTML = ''; listEl.style.display = 'none'; return; }
+  empty.style.display = 'none'; listEl.style.display = 'block';
+  const bar = v => `<div class="pb-bar"><span style="width:${Math.min(100, v * 100)}%"></span></div>`;
+  const pct = v => (v * 100).toFixed(1) + '%';
+
+  sumEl.innerHTML = ['한국', '미국'].map(c => {
+    const rs = rows.filter(r => r.country === c);
+    if (rs.length === 0) return '';
+    const ccy = c === '미국' ? 'USD' : 'KRW';
+    const cost = rs.reduce((s, r) => s + r.cost, 0), div = rs.reduce((s, r) => s + r.divReceived, 0);
+    const mon = rs.reduce((s, r) => s + (r.monthly || 0), 0);
+    const eta = mon > 0 ? paybackEta(Math.max(0, cost - div) / mon) : null;
+    return `<div class="pb-sum">
+      <div class="lbl">${c} 배당주 ${rs.length}종목 · 원금 대비 배당 수익률</div>
+      <div class="big">${pct(div / cost)}</div>
+      ${bar(div / cost)}
+      <dl class="pb-kv">
+        <dt>투자원금</dt><dd>${fmtC(cost, ccy)}</dd>
+        <dt>받은 배당</dt><dd>+${fmtC(div, ccy)}</dd>
+        <dt>원금까지 남은 금액</dt><dd>${fmtC(Math.max(0, cost - div), ccy)}</dd>
+        <dt>지금 속도의 월 배당</dt><dd>${mon > 0 ? fmtC(mon, ccy) : '-'}</dd>
+      </dl>
+      <div class="pb-eta">원금 회수 예상 <b>${eta ? eta.ym : (div >= cost ? '회수 완료' : '-')}</b>${eta ? `<span>${eta.left} 남음</span>` : ''}</div>
+    </div>`;
+  }).join('');
+
+  listEl.innerHTML = rows.map(r => {
+    const eta = paybackEta(r.months);
+    return `<div class="pb-row">
+      <div class="pb-head">
+        <div class="pb-name">${r.name}<span class="country-tag ${r.country === '미국' ? 'us' : ''}">${r.country}</span></div>
+        <div class="pb-ret">${pct(r.dr)}<small>배당 수익률</small></div>
+      </div>
+      ${bar(r.dr)}
+      <div class="pb-grid">
+        <div><span class="k">평균가 × 수량</span><span class="v">${fmtC(r.avgCost, r.ccy)} × ${fmtQty(r.qty)}</span></div>
+        <div><span class="k">투자원금</span><span class="v">${fmtC(r.cost, r.ccy)}</span></div>
+        <div><span class="k">받은 배당</span><span class="v up">+${fmtC(r.divReceived, r.ccy)}</span></div>
+        <div><span class="k">지금 속도의 월 배당</span><span class="v">${r.monthly ? fmtC(r.monthly, r.ccy) : '-'}</span></div>
+        <div><span class="k">원금 회수 예상</span><span class="v"><b>${eta ? eta.ym : (r.remain === 0 ? '회수 완료' : '-')}</b></span></div>
+        <div><span class="k">남은 기간</span><span class="v">${eta ? eta.left : '-'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ---- Tabs ----
