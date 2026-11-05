@@ -53,7 +53,8 @@
   .backup-actions { display: flex; gap: 6px; }
   .backup-actions .ghost-btn { font-size: 12px; padding: 5px 10px; }
 
-  .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 24px; }
+  .kpi-row { display: none !important; }
+  .kpi-row-old { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-bottom: 24px; }
   .kpi { background: var(--paper-raised); padding: 14px 16px; }
   .kpi .lbl { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; white-space: nowrap; }
   .kpi .val { font-family: var(--mono); font-size: 18px; font-weight: 600; }
@@ -129,6 +130,39 @@
   .pb-grid .v { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pb-grid .v.up { color: var(--accent); }
   @media (max-width: 440px) { .pb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* 메인(보유 종목) 화면 — 요약 2장 + 종목 카드 */
+  .hs-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .hs-sum { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 4px; }
+  .hs-sum .lbl { font-size: 12px; color: var(--ink-faint); }
+  .hs-sum .big { font-family: var(--mono); font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
+  .hs-sum .pl { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+  .hs-sum .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-soft); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .hs-sum .meta b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
+  .hs-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .hs-chips { display: flex; gap: 6px; }
+  .hs-chip { font-family: var(--sans); font-size: 13px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-raised); color: var(--ink-soft); cursor: pointer; }
+  .hs-chip.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  #hs-sort { width: auto; height: 32px; font-size: 13px; }
+  .hs-list { display: grid; gap: 8px; }
+  .hs-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; }
+  .hs-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .hs-name { font-size: 15px; font-weight: 600; line-height: 1.3; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+  .hs-name .country-tag { vertical-align: 2px; }
+  .hs-val { text-align: right; white-space: nowrap; }
+  .hs-val .v { font-family: var(--mono); font-size: 16px; font-weight: 600; }
+  .hs-val .r { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .hs-sub { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-soft); flex-wrap: wrap; }
+  .hs-sub .q { font-family: var(--mono); }
+  .hs-price { display: inline-flex; align-items: center; gap: 4px; }
+  .hs-price input.price-input { width: 92px; height: 26px; font-size: 12px; font-family: var(--mono); text-align: right; padding: 0 6px; }
+  .hs-div { font-size: 12px; color: var(--accent); }
+  .hs-div b { font-family: var(--mono); font-weight: 500; }
+  .up-red { color: #d64545; } .down-blue { color: #2f6fd6; }
+  .hs-tools { display: flex; gap: 8px; justify-content: flex-end; margin: 14px 0; flex-wrap: wrap; }
+  .hs-charts { margin-top: 6px; }
+  .hs-charts > summary { cursor: pointer; font-size: 13px; color: var(--ink-soft); padding: 10px 0; border-top: 1px solid var(--line); list-style: none; }
+  .hs-charts > summary::before { content: '▸ '; } .hs-charts[open] > summary::before { content: '▾ '; }
+  @media (max-width: 600px) { .hs-price input.price-input { font-size: 16px; width: 100px; height: 30px; } }
   .code-cell { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
   .ccy-badge { display: inline-block; font-size: 10px; font-family: var(--mono); padding: 1px 5px; border-radius: 3px; margin-left: 6px; background: var(--line-soft); color: var(--ink-soft); vertical-align: 1px; }
   .ccy-badge.usd { background: var(--accent-soft); color: var(--accent); }
@@ -306,39 +340,45 @@
 
   <!-- HOLDINGS (computed dashboard) -->
   <div class="panel active" id="panel-holdings">
-    <div class="toolbar">
-      <span class="hint">매매 내역을 종합해 자동으로 계산돼요. 종목을 추가하려면 매매내역 탭에서 거래를 등록하세요.</span>
-      <div class="btn-group">
-        <button class="ghost-btn" id="h-fetch-prices-btn">현재가 자동조회</button>
-        <button class="ghost-btn" id="h-download-btn">다운로드</button>
+    <div class="hs-summary" id="hs-summary"></div>
+    <div class="hs-bar">
+      <div class="hs-chips" role="group" aria-label="국가">
+        <button class="hs-chip active" data-f="all">전체</button>
+        <button class="hs-chip" data-f="한국">한국</button>
+        <button class="hs-chip" data-f="미국">미국</button>
       </div>
-    </div>
-    <div class="asset-trend-row" id="asset-trend-row"></div>
-    <div class="div-chart-card" id="div-chart-card" style="display:none;">
-      <div class="div-chart-year">
-        <button id="dc-prev" aria-label="이전 연도">◀</button>
-        <span class="yr" id="dc-year-label"></span>
-        <button id="dc-next" aria-label="다음 연도">▶</button>
-      </div>
-      <div class="div-chart-total" id="dc-total">0원</div>
-      <div class="div-chart-bars" id="dc-bars"></div>
-      <div class="div-chart-legend">
-        <span><span class="dot krw"></span>한국 배당금 (원화)</span>
-        <span><span class="dot usd"></span>미국 배당금 (원화환산, 세후)</span>
-      </div>
+      <select id="hs-sort" aria-label="정렬">
+        <option value="value">평가금액순</option>
+        <option value="ret">수익률순</option>
+        <option value="name">이름순</option>
+      </select>
     </div>
     <div class="empty" id="h-empty" style="display:none;">
       <div class="big">보유 중인 종목이 없어요</div>
       매매내역 탭에서 매수 거래를 등록하면 여기 자동으로 나타나요.
     </div>
-    <div class="overflow-x">
-    <table id="h-table" style="display:none;">
-      <thead><tr>
-        <th class="name-th">종목명</th><th class="num">보유수량</th><th class="num">평균매입가</th><th class="num">매입금액</th><th class="num">현재가</th><th class="num">평가금액</th><th class="num">평가손익</th><th class="num">누적배당수령</th><th class="num">누적배당수익률</th>
-      </tr></thead>
-      <tbody id="h-body"></tbody>
-    </table>
+    <div class="hs-list" id="h-list"></div>
+    <div class="hs-tools">
+      <button class="ghost-btn" id="h-fetch-prices-btn">현재가 자동조회</button>
+      <button class="ghost-btn" id="h-download-btn">다운로드</button>
     </div>
+    <details class="hs-charts" id="hs-charts">
+      <summary>자산 추이 · 월별 배당 차트</summary>
+      <div class="asset-trend-row" id="asset-trend-row"></div>
+      <div class="div-chart-card" id="div-chart-card" style="display:none;">
+        <div class="div-chart-year">
+          <button id="dc-prev" aria-label="이전 연도">◀</button>
+          <span class="yr" id="dc-year-label"></span>
+          <button id="dc-next" aria-label="다음 연도">▶</button>
+        </div>
+        <div class="div-chart-total" id="dc-total">0원</div>
+        <div class="div-chart-bars" id="dc-bars"></div>
+        <div class="div-chart-legend">
+          <span><span class="dot krw"></span>한국 배당금 (원화)</span>
+          <span><span class="dot usd"></span>미국 배당금 (원화환산, 세후)</span>
+        </div>
+      </div>
+    </details>
   </div>
 
   <!-- 한국 매매내역 -->
@@ -1493,56 +1533,86 @@ function renderKpis(holdings) {
   document.getElementById('kpi-div').textContent = fmtC(divKrwTotal, 'KRW');
 }
 
+let hsFilter = 'all';
+function holdingRow(h) {
+  const key = itemKey(h) + '|' + h.ccy;
+  const curPrice = currentPrices[key];
+  const cost = h.qty * h.avgCost;
+  const value = h.qty * (curPrice !== undefined ? curPrice : h.avgCost);
+  return { ...h, key, curPrice, cost, value, pnl: value - cost, ret: cost > 0 ? (value - cost) / cost : 0 };
+}
+function signed(n, ccy) { return (n >= 0 ? '+' : '-') + fmtC(Math.abs(n), ccy); }
+function signedPct(r) { return (r >= 0 ? '+' : '-') + Math.abs(r * 100).toFixed(2) + '%'; }
 function renderHoldings(holdings) {
-  const body = document.getElementById('h-body'), empty = document.getElementById('h-empty'), table = document.getElementById('h-table');
-  body.innerHTML = '';
-  if (holdings.length === 0) { empty.style.display = 'block'; table.style.display = 'none'; return; }
-  empty.style.display = 'none'; table.style.display = 'table';
-  holdings.sort((a,b) => (b.qty*b.avgCost) - (a.qty*a.avgCost) || a.name.localeCompare(b.name, 'ko'));
-  holdings.forEach(h => {
-    const amount = h.qty * h.avgCost;
-    const key = itemKey(h) + '|' + h.ccy;
-    const curPrice = currentPrices[key];
-    const marketValue = h.qty * (curPrice !== undefined ? curPrice : h.avgCost);
-    const pnl = marketValue - amount;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="name-cell">${h.name}<span class="ccy-badge ${h.ccy==='USD'?'usd':''}">${h.ccy}</span><span class="country-tag ${h.country==='미국'?'us':''}">${h.country}</span></td>
-      <td class="num">${fmtQty(h.qty)}</td>
-      <td class="num">${fmtC(h.avgCost, h.ccy)}</td>
-      <td class="num">${fmtC(amount, h.ccy)}</td>
-      <td class="num"><input type="text" inputmode="decimal" class="price-input holding-price" data-key="${key}" data-ccy="${h.ccy}" value="${curPrice !== undefined ? fmtC(curPrice, h.ccy) : ''}" placeholder="입력" /></td>
-      <td class="num">${fmtC(marketValue, h.ccy)}</td>
-      <td class="num" style="color:${pnl >= 0 ? '#d64545' : '#2f6fd6'}">${pnl >= 0 ? '+' : ''}${fmtC(pnl, h.ccy)}</td>
-      <td class="num">${fmtC(h.divReceived, h.ccy)}</td>
-      <td class="num">${fmtPct(h.divYield)}</td>`;
-    body.appendChild(tr);
+  const list = document.getElementById('h-list'), empty = document.getElementById('h-empty'), sumEl = document.getElementById('hs-summary');
+  const rows = holdings.map(holdingRow);
+  // 요약: 한국(원) / 미국(달러)
+  sumEl.innerHTML = [['한국', 'KRW'], ['미국', 'USD']].map(([c, ccy]) => {
+    const rs = rows.filter(r => r.ccy === ccy);
+    if (rs.length === 0) return '';
+    const cost = rs.reduce((s, r) => s + r.cost, 0), value = rs.reduce((s, r) => s + r.value, 0);
+    const div = rs.reduce((s, r) => s + r.divReceived, 0), pnl = value - cost;
+    const cls = pnl >= 0 ? 'up-red' : 'down-blue';
+    return `<div class="hs-sum">
+      <div class="lbl">${c} 주식 · ${rs.length}종목 평가금액</div>
+      <div class="big">${fmtC(value, ccy)}</div>
+      <div class="pl ${cls}">${signed(pnl, ccy)} (${signedPct(cost > 0 ? pnl / cost : 0)})</div>
+      <div class="meta"><span>투자원금 <b>${fmtC(cost, ccy)}</b></span><span>받은 배당 <b>${fmtC(div, ccy)}</b></span></div>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = '';
+  const shown = rows.filter(r => hsFilter === 'all' || r.country === hsFilter);
+  if (shown.length === 0) { empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  const sortBy = (document.getElementById('hs-sort') || {}).value || 'value';
+  // 원화/달러가 섞여 있으면 평가금액순은 국가별로 묶어서 정렬
+  shown.sort((a, b) => {
+    if (sortBy === 'name') return a.name.localeCompare(b.name, 'ko');
+    if (sortBy === 'ret') return b.ret - a.ret;
+    if (a.ccy !== b.ccy) return a.ccy === 'KRW' ? -1 : 1;
+    return b.value - a.value;
   });
-  body.querySelectorAll('.holding-price').forEach(inp => {
+  list.innerHTML = shown.map(r => {
+    const cls = r.pnl >= 0 ? 'up-red' : 'down-blue';
+    return `<div class="hs-card">
+      <div class="hs-top">
+        <div class="hs-name">${r.name}<span class="country-tag ${r.country === '미국' ? 'us' : ''}">${r.country}</span></div>
+        <div class="hs-val"><div class="v">${fmtC(r.value, r.ccy)}</div><div class="r ${cls}">${signedPct(r.ret)}</div></div>
+      </div>
+      <div class="hs-sub">
+        <span class="q">${fmtQty(r.qty)}주 · 평균 ${fmtC(r.avgCost, r.ccy)}</span>
+        <span class="hs-price">현재가 <input type="text" inputmode="decimal" class="price-input holding-price" data-key="${r.key}" data-ccy="${r.ccy}" value="${r.curPrice !== undefined ? fmtC(r.curPrice, r.ccy) : ''}" placeholder="입력" /></span>
+      </div>
+      <div class="hs-sub">
+        <span class="${cls}">손익 ${signed(r.pnl, r.ccy)}</span>
+        ${r.divReceived > 0 ? `<span class="hs-div">받은 배당 <b>${fmtC(r.divReceived, r.ccy)}</b> (${fmtPct(r.divYield)})</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.holding-price').forEach(inp => {
     inp.addEventListener('focus', () => {
-      const key = inp.dataset.key;
-      const cur = currentPrices[key];
+      const cur = currentPrices[inp.dataset.key];
       inp.value = cur !== undefined ? cur : '';
       inp.select();
     });
     inp.addEventListener('blur', async () => {
-      const key = inp.dataset.key;
-      const ccy = inp.dataset.ccy;
-      const raw = inp.value.replace(/[^0-9.\-]/g, '');
-      const v = parseFloat(raw);
-      if (isNaN(v) || v <= 0) {
-        delete currentPrices[key];
-        inp.value = '';
-      } else {
-        currentPrices[key] = v;
-        inp.value = fmtC(v, ccy);
-      }
+      const key = inp.dataset.key, ccy = inp.dataset.ccy;
+      const v = parseFloat(inp.value.replace(/[^0-9.\-]/g, ''));
+      if (isNaN(v) || v <= 0) { delete currentPrices[key]; inp.value = ''; }
+      else { currentPrices[key] = v; inp.value = fmtC(v, ccy); }
       await saveCurrentPrices();
       renderAll();
     });
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') inp.blur(); });
   });
 }
+document.querySelectorAll('.hs-chip').forEach(btn => btn.onclick = () => {
+  hsFilter = btn.dataset.f;
+  document.querySelectorAll('.hs-chip').forEach(b => b.classList.toggle('active', b === btn));
+  renderHoldings(computeHoldings());
+});
+document.getElementById('hs-sort').onchange = () => renderHoldings(computeHoldings());
 
 // 종가 자동조회 — stooq.com의 CORS 개방 CSV 엔드포인트를 사용 (키 불필요).
 // 일부 종목(특히 국내 소형주)은 데이터가 없어 실패할 수 있어요 — 이 경우 수동 입력으로 대체하세요.
