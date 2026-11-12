@@ -32,3 +32,24 @@ alter table public.materials add column if not exists equipment text not null de
 
 -- 2026-10: MDG 코드 칸 추가 (메모 앞에 "MDG xxxx · "로 넣어뒀던 값은 이 칸으로 옮김)
 alter table public.materials add column if not exists mdg_code text not null default '';
+
+-- 2026-10: '자재 신청' 탭(베타)용 신청 테이블 — 신청 1건 = 1행, 자재 내역은 현장 카톡 양식 텍스트 그대로(items_text)
+create table if not exists public.material_requests (
+  id uuid primary key default gen_random_uuid(),
+  request_date date not null default current_date,  -- 신청일
+  equipment text not null default '',                -- 장비명
+  process text not null default '',                  -- 공정
+  location text not null default '',                 -- 위치
+  requester text not null default '',                -- 신청자
+  delivery_date text not null default '',            -- 반입일(자유 입력, 예: 10/14)
+  items_text text not null default '',               -- 자재 내역 텍스트
+  status text not null default '신청',               -- (예비) 진행 상태, 아직 화면에서 안 씀
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.material_requests enable row level security;
+create policy "authenticated read" on public.material_requests for select to authenticated using (true);
+create policy "authenticated insert" on public.material_requests for insert to authenticated with check (true);
+create policy "authenticated update" on public.material_requests for update to authenticated using (true) with check (true);
+create policy "authenticated delete" on public.material_requests for delete to authenticated using (true);
+alter publication supabase_realtime add table public.material_requests;
