@@ -130,34 +130,38 @@
   .pb-grid .v { font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .pb-grid .v.up { color: var(--accent); }
   @media (max-width: 440px) { .pb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  /* 메인(보유 종목) 화면 — 요약 2장 + 종목 카드 */
-  .hs-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 18px; }
-  .hs-sum { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; gap: 4px; }
-  .hs-sum .lbl { font-size: 12px; color: var(--ink-faint); }
-  .hs-sum .big { font-family: var(--mono); font-size: 24px; font-weight: 600; letter-spacing: -0.01em; }
-  .hs-sum .pl { font-family: var(--mono); font-size: 14px; font-weight: 500; }
-  .hs-sum .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-soft); border-top: 1px solid var(--line-soft); padding-top: 8px; margin-top: 6px; flex-wrap: wrap; }
-  .hs-sum .meta b { font-family: var(--mono); font-weight: 500; color: var(--ink); }
-  .hs-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  /* 메인(보유 종목) 화면 — 카드 대시보드형: 둥근 카드 + 그림자 + 종목 아바타 + 알약 배지 */
+  .hs-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .hs-sum { background: var(--paper-raised); border-radius: 16px; padding: 18px 18px; box-shadow: 0 1px 3px rgba(20,20,10,0.04), 0 8px 20px rgba(20,20,10,0.06); display: grid; gap: 4px; }
+  .hs-sum .lbl { font-size: 12px; color: var(--ink-faint); font-weight: 600; }
+  .hs-sum .big { font-family: var(--mono); font-size: 25px; font-weight: 800; letter-spacing: -0.01em; }
+  .hs-sum .pl { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12.5px; font-weight: 700; margin-top: 6px; padding: 3px 10px; border-radius: 999px; width: fit-content; }
+  .hs-sum .meta { display: flex; justify-content: flex-start; gap: 16px; font-size: 12px; color: var(--ink-soft); margin-top: 12px; flex-wrap: wrap; }
+  .hs-sum .meta b { font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  .hs-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .hs-chips { display: flex; gap: 6px; }
   .hs-chip { font-family: var(--sans); font-size: 13px; padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-raised); color: var(--ink-soft); cursor: pointer; }
   .hs-chip.active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
   #hs-sort { width: auto; height: 32px; font-size: 13px; }
-  .hs-list { display: grid; gap: 8px; }
-  .hs-card { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 8px; }
+  .hs-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .hs-card { background: var(--paper-raised); border-radius: 16px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(20,20,10,0.04), 0 6px 16px rgba(20,20,10,0.05); display: flex; gap: 12px; align-items: flex-start; }
+  .hs-avatar { flex-shrink: 0; width: 40px; height: 40px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11.5px; color: #fff; letter-spacing: -0.02em; }
+  .hs-body { flex: 1; min-width: 0; display: grid; gap: 7px; }
   .hs-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  .hs-name { font-size: 15px; font-weight: 600; line-height: 1.3; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
+  .hs-name { font-size: 15px; font-weight: 700; line-height: 1.3; min-width: 0; word-break: keep-all; overflow-wrap: anywhere; }
   .hs-name .country-tag { vertical-align: 2px; }
   .hs-val { text-align: right; white-space: nowrap; }
-  .hs-val .v { font-family: var(--mono); font-size: 16px; font-weight: 600; }
-  .hs-val .r { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .hs-val .v { font-family: var(--mono); font-size: 15px; font-weight: 800; }
+  .hs-val .r { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 700; margin-top: 3px; padding: 1px 8px; border-radius: 999px; }
   .hs-sub { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-soft); flex-wrap: wrap; }
   .hs-sub .q { font-family: var(--mono); }
   .hs-price { display: inline-flex; align-items: center; gap: 4px; }
   .hs-price input.price-input { width: 92px; height: 26px; font-size: 12px; font-family: var(--mono); text-align: right; padding: 0 6px; }
   .hs-div { font-size: 12px; color: var(--accent); }
   .hs-div b { font-family: var(--mono); font-weight: 500; }
-  .up-red { color: #d64545; } .down-blue { color: #2f6fd6; }
+  .up-red { color: #c23c3c; } .down-blue { color: #2f6fd6; }
+  .pl.up-red, .hs-val .r.up-red { background: #fdecec; color: #c23c3c; }
+  .pl.down-blue, .hs-val .r.down-blue { background: #eaf1fc; color: #2f6fd6; }
   .hs-tools { display: flex; gap: 8px; justify-content: flex-end; margin: 14px 0; flex-wrap: wrap; }
   .hs-charts { margin-top: 6px; }
   .hs-charts > summary { cursor: pointer; font-size: 13px; color: var(--ink-soft); padding: 10px 0; border-top: 1px solid var(--line); list-style: none; }
@@ -1533,6 +1537,19 @@ function renderKpis(holdings) {
   document.getElementById('kpi-div').textContent = fmtC(divKrwTotal, 'KRW');
 }
 
+const HS_AVATAR_COLORS = ['#2563eb', '#0ea5a4', '#7c3aed', '#d97706', '#059669', '#db2777', '#4b5563', '#0284c7'];
+function avatarColor(name) {
+  const s = name || '';
+  let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return HS_AVATAR_COLORS[h % HS_AVATAR_COLORS.length];
+}
+function avatarInitials(name) {
+  const s = (name || '').trim();
+  if (!s) return '?';
+  if (/^[가-힣]/.test(s)) return s.slice(0, 2);
+  const alnum = s.replace(/[^A-Za-z0-9]/g, '');
+  return (alnum || s).slice(0, 4).toUpperCase();
+}
 let hsFilter = 'all';
 function holdingRow(h) {
   const key = itemKey(h) + '|' + h.ccy;
@@ -1576,17 +1593,20 @@ function renderHoldings(holdings) {
   list.innerHTML = shown.map(r => {
     const cls = r.pnl >= 0 ? 'up-red' : 'down-blue';
     return `<div class="hs-card">
-      <div class="hs-top">
-        <div class="hs-name">${r.name}<span class="country-tag ${r.country === '미국' ? 'us' : ''}">${r.country}</span></div>
-        <div class="hs-val"><div class="v">${fmtC(r.value, r.ccy)}</div><div class="r ${cls}">${signedPct(r.ret)}</div></div>
-      </div>
-      <div class="hs-sub">
-        <span class="q">${fmtQty(r.qty)}주 · 평균 ${fmtC(r.avgCost, r.ccy)}</span>
-        <span class="hs-price">현재가 <input type="text" inputmode="decimal" class="price-input holding-price" data-key="${r.key}" data-ccy="${r.ccy}" value="${r.curPrice !== undefined ? fmtC(r.curPrice, r.ccy) : ''}" placeholder="입력" /></span>
-      </div>
-      <div class="hs-sub">
-        <span class="${cls}">손익 ${signed(r.pnl, r.ccy)}</span>
-        ${r.divReceived > 0 ? `<span class="hs-div">받은 배당 <b>${fmtC(r.divReceived, r.ccy)}</b> (${fmtPct(r.divYield)})</span>` : ''}
+      <div class="hs-avatar" style="background:${avatarColor(r.name)}">${avatarInitials(r.name)}</div>
+      <div class="hs-body">
+        <div class="hs-top">
+          <div class="hs-name">${r.name}<span class="country-tag ${r.country === '미국' ? 'us' : ''}">${r.country}</span></div>
+          <div class="hs-val"><div class="v">${fmtC(r.value, r.ccy)}</div><div class="r ${cls}">${signedPct(r.ret)}</div></div>
+        </div>
+        <div class="hs-sub">
+          <span class="q">${fmtQty(r.qty)}주 · 평균 ${fmtC(r.avgCost, r.ccy)}</span>
+          <span class="hs-price">현재가 <input type="text" inputmode="decimal" class="price-input holding-price" data-key="${r.key}" data-ccy="${r.ccy}" value="${r.curPrice !== undefined ? fmtC(r.curPrice, r.ccy) : ''}" placeholder="입력" /></span>
+        </div>
+        <div class="hs-sub">
+          <span class="${cls}">손익 ${signed(r.pnl, r.ccy)}</span>
+          ${r.divReceived > 0 ? `<span class="hs-div">받은 배당 <b>${fmtC(r.divReceived, r.ccy)}</b> (${fmtPct(r.divYield)})</span>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
